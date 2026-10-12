@@ -1,0 +1,13 @@
+{
+  "name": "Projektraum",
+  "short_name": "Projektraum",
+  "description": "Projekte, Aufgaben und Meilensteine im Team",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F4F5",
+  "theme_color": "#16191D",
+  "lang": "de",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
