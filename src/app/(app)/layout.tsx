@@ -18,12 +18,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         className="flex-[1_1_260px] bg-white border-r border-[#DDE1E5] px-4 py-5 flex flex-col gap-6"
       >
         <Link href="/" className="flex items-center gap-2.5 px-1 min-h-11">
-          <span aria-hidden className="size-8 rounded-lg bg-[#16191D] flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="7" height="16" rx="1.5" />
-              <rect x="14" y="4" width="7" height="10" rx="1.5" />
-            </svg>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="" width={32} height={32} className="size-8 rounded-lg" />
           <span className="font-extrabold text-[17px] tracking-tight">Projektraum</span>
         </Link>
 

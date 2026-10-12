@@ -41,7 +41,7 @@ export default async function Home() {
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
         {workspaces.map((ws) => (
           <section key={ws.id} className="bg-white border border-[#DDE1E5] rounded-xl p-5 flex flex-col gap-3">
             <h2 className="flex items-center gap-2 text-lg font-bold">

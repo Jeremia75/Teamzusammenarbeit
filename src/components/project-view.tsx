@@ -226,7 +226,7 @@ export function ProjectView(props: Props) {
       <div className="flex flex-wrap gap-4 items-start">
         <div className="flex-[999_1_560px] min-w-0">
           {view === "board" ? (
-            <div className="overflow-x-auto pb-2">
+            <div className="relative overflow-x-auto pb-2">
               <div className="flex gap-3.5 items-start">
                 {STATUSES.map((col) => {
                   const colTasks = visible.filter((t) => t.status === col.id);
@@ -410,7 +410,7 @@ function TaskList({
   );
 
   return (
-    <div className="bg-white border border-[#DDE1E5] rounded-xl overflow-x-auto">
+    <div className="relative bg-white border border-[#DDE1E5] rounded-xl overflow-x-auto">
       <table className="w-full min-w-[720px] text-sm border-collapse">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-[#5A626B]">
