@@ -45,10 +45,22 @@ Organisation (Mandant – eure Firma, später jeder zahlende Kunde)
 
 - [x] Datenmodell mit Mandantentrennung und Zugriffsregeln (getestet)
 - [x] Registrierung und Login
-- [x] Übersicht der Bereiche und Projekte
+- [x] Übersicht der Bereiche und Projekte, Projekte anlegen, Firma anlegen
 - [x] Als App installierbar (PWA-Manifest)
-- [ ] Board- und Listenansicht pro Projekt
-- [ ] Aufgabendetails mit Unteraufgaben, Kommentaren und Zuständigen
-- [ ] Meilensteine mit Fortschrittsanzeige
-- [ ] Teammitglieder per E-Mail einladen
-- [ ] Echtzeit-Aktualisierung im Board
+- [x] Board (mit Drag & Drop) und Listenansicht pro Projekt, Filter „Nur meine Aufgaben“
+- [x] Aufgabendetails: Status, Priorität, Fälligkeit, Meilenstein, Zuständige, Beschreibung
+- [x] Unteraufgaben mit Fortschritt, Kommentare
+- [x] Meilensteine mit Fortschrittsanzeige
+- [x] Teammitglieder per E-Mail hinzufügen (Person muss registriert sein)
+- [x] Echtzeit-Aktualisierung im Board
+- [ ] Einladungs-Mail an noch nicht registrierte Personen
+- [ ] Zeitleiste / Gantt
+- [ ] Benachrichtigungen
+- [ ] Dateianhänge
+
+## Teammitglieder aufnehmen
+
+1. Die Person registriert sich selbst unter der App-Adresse.
+2. Ein Admin der Firma trägt auf der Übersicht beim gewünschten Bereich ihre E-Mail-Adresse unter „Mitglied hinzufügen“ ein.
+
+Private Bereiche lassen sich nicht teilen.
