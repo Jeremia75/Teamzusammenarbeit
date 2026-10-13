@@ -12,10 +12,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const workspaces = await loadWorkspaces();
 
   return (
-    <div className="min-h-screen flex flex-wrap items-stretch">
+    <div className="min-h-screen flex flex-wrap md:flex-nowrap items-stretch">
       <nav
         aria-label="Hauptnavigation"
-        className="flex-[1_1_260px] bg-white border-r border-[#DDE1E5] px-4 py-5 flex flex-col gap-6"
+        className="flex-[1_1_260px] md:flex-[0_0_260px] bg-white border-r border-[#DDE1E5] px-4 py-5 flex flex-col gap-6 md:sticky md:top-0 md:h-screen md:overflow-y-auto md:overscroll-contain"
       >
         <Link href="/" className="flex items-center gap-2.5 px-1 min-h-11">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <SidebarProjects workspaces={workspaces} />
 
-        <div className="mt-auto flex flex-col gap-2 border-t border-[#EEF1F4] pt-4">
+        <div className="flex flex-col gap-2 border-t border-[#EEF1F4] pt-4">
           <Link
             href="/hilfe"
             className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-[#3E4650] hover:bg-[#F2F4F5] hover:text-[#16191D]"
