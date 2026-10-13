@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { Task, TaskStatus } from "@/lib/database.types";
 import { STATUS_TINT, formatDate, isOverdue, priorityOf, recurrenceLabel, statusOf } from "@/lib/labels";
@@ -13,7 +14,11 @@ export type BoardColumn = {
   /** Statusspalte: Farbe + Status; Rubrik: section_id (null = ohne Rubrik) */
   status?: TaskStatus;
   sectionId?: string | null;
+  /** Spalte eines Projekts (Rubrik-Ansicht über mehrere Projekte) */
+  projectId?: string;
   editable?: boolean;
+  /** Spaltentitel wird zum Link (z. B. Rubrik öffnen) */
+  href?: string;
 };
 
 type Drop = { col: string; before: string | null } | null;
@@ -29,7 +34,9 @@ type Props = {
   onOpen: (id: string) => void;
   onToggleDone: (task: Task) => void;
   onMove: (taskId: string, col: BoardColumn, beforeId: string | null) => void;
-  onQuickAdd: (col: BoardColumn, title: string) => void;
+  onQuickAdd?: (col: BoardColumn, title: string) => void;
+  /** Projekt der Aufgabe auf der Karte anzeigen (Ansicht über mehrere Projekte) */
+  projectOf?: (task: Task) => { name: string; color: string } | undefined;
   onAddSection?: (name: string) => void;
   onRenameSection?: (id: string, name: string) => void;
   onDeleteSection?: (id: string) => void;
@@ -112,6 +119,7 @@ export function Board(props: Props) {
                     subtasks={props.subtasksOf(t.id)}
                     people={props.peopleOf(t.id)}
                     milestone={props.milestoneName(t.milestone_id)}
+                    project={props.projectOf?.(t)}
                     selected={props.openId === t.id}
                     onOpen={() => props.onOpen(t.id)}
                     onToggleDone={() => props.onToggleDone(t)}
@@ -125,7 +133,7 @@ export function Board(props: Props) {
               ))}
               {dragId && drop?.col === col.key && drop.before === null && <DropLine />}
 
-              <QuickAdd onAdd={(title) => props.onQuickAdd(col, title)} />
+              {props.onQuickAdd && <QuickAdd onAdd={(title) => props.onQuickAdd?.(col, title)} />}
             </section>
           );
         })}
@@ -193,7 +201,15 @@ export function ColumnHeader({
   return (
     <div className="relative flex items-center gap-2 px-1.5 min-h-9">
       {statusColor && <span aria-hidden className="size-2.5 rounded-full" style={{ background: statusColor }} />}
-      <h3 className="text-sm font-bold truncate">{col.title}</h3>
+      <h3 className="text-sm font-bold truncate">
+        {col.href ? (
+          <Link href={col.href} title={`Alle Aufgaben in „${col.title}“ anzeigen`} className="hover:underline underline-offset-4 decoration-2">
+            {col.title}
+          </Link>
+        ) : (
+          col.title
+        )}
+      </h3>
       <span className="text-xs font-bold text-[#5A626B]">{count}</span>
       {col.editable && sectionId && (
         <>
@@ -289,6 +305,7 @@ export function TaskCard({
   subtasks,
   people,
   milestone,
+  project,
   selected,
   onOpen,
   onToggleDone,
@@ -301,6 +318,7 @@ export function TaskCard({
   subtasks: Task[];
   people: Member[];
   milestone: string;
+  project?: { name: string; color: string };
   selected: boolean;
   onOpen: () => void;
   onToggleDone: () => void;
@@ -348,6 +366,15 @@ export function TaskCard({
             </span>
           )}
           <span className={`font-semibold leading-snug ${done ? "line-through text-[#5A626B]" : ""}`}>{task.title}</span>
+          {project && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#3E4650] min-w-0">
+              <span aria-hidden className="size-2 rounded-sm shrink-0" style={{ background: project.color }} />
+              <span className="truncate">
+                <span className="sr-only">Projekt: </span>
+                {project.name}
+              </span>
+            </span>
+          )}
           <span className="flex flex-wrap gap-1.5">
             {task.priority !== "medium" && (
               <span className="text-xs font-bold px-2 py-0.5 rounded-md" style={{ background: prio.bg, color: prio.fg }}>

@@ -61,7 +61,7 @@ export function ProjectBoard({
   const known = (id: string | null) => !!id && sections.some((s) => s.id === id);
   const columns: BoardColumn[] = [
     ...(sorted.length === 0 || projects.some((p) => !known(p.sectionId)) ? [{ key: "none", title: "Ohne Rubrik", sectionId: null }] : []),
-    ...sorted.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: true })),
+    ...sorted.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: true, href: `/r/${s.id}` })),
   ];
   const projectsOf = (col: BoardColumn) =>
     projects.filter((p) => (col.sectionId ? p.sectionId === col.sectionId : !known(p.sectionId))).sort(byPosition);

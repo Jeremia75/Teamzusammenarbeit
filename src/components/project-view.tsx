@@ -452,7 +452,7 @@ export function ProjectView(props: Props) {
 }
 
 // ------------------------------------------------------------------- Liste
-function TaskList({
+export function TaskList({
   tasks,
   sections,
   subtasksOf,
@@ -461,6 +461,7 @@ function TaskList({
   openId,
   onOpen,
   onAdd,
+  projectOf,
 }: {
   tasks: Task[];
   sections: Section[];
@@ -469,7 +470,9 @@ function TaskList({
   milestoneName: (id: string | null) => string;
   openId: string | null;
   onOpen: (id: string) => void;
-  onAdd: (title: string) => void;
+  onAdd?: (title: string) => void;
+  /** Spalte „Projekt“ zeigen (Ansicht über mehrere Projekte) */
+  projectOf?: (task: Task) => { name: string; color: string } | undefined;
 }) {
   const order: Record<TaskStatus, number> = { doing: 0, review: 1, todo: 2, done: 3 };
   const sorted = [...tasks].sort(
@@ -482,13 +485,14 @@ function TaskList({
       <table className="w-full min-w-[820px] text-sm border-collapse">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-[#5A626B]">
-            <th className="px-4 py-3 font-bold">Aufgabe</th>
-            <th className="px-2 py-3 font-bold">Status</th>
-            <th className="px-2 py-3 font-bold">Rubrik</th>
-            <th className="px-2 py-3 font-bold">Meilenstein</th>
-            <th className="px-2 py-3 font-bold">Fällig</th>
-            <th className="px-2 py-3 font-bold">Unteraufg.</th>
-            <th className="px-4 py-3 font-bold">Wer</th>
+            <th scope="col" className="px-4 py-3 font-bold">Aufgabe</th>
+            {projectOf && <th scope="col" className="px-2 py-3 font-bold">Projekt</th>}
+            <th scope="col" className="px-2 py-3 font-bold">Status</th>
+            <th scope="col" className="px-2 py-3 font-bold">Rubrik</th>
+            <th scope="col" className="px-2 py-3 font-bold">Meilenstein</th>
+            <th scope="col" className="px-2 py-3 font-bold">Fällig</th>
+            <th scope="col" className="px-2 py-3 font-bold">Unteraufg.</th>
+            <th scope="col" className="px-4 py-3 font-bold">Wer</th>
           </tr>
         </thead>
         <tbody>
@@ -507,6 +511,14 @@ function TaskList({
                     {t.recurrence && <span className="sr-only"> (wiederkehrend)</span>}
                   </button>
                 </td>
+                {projectOf && (
+                  <td className="px-2 text-[#3E4650]">
+                    <span className="inline-flex items-center gap-1.5 font-semibold">
+                      <span aria-hidden className="size-2 rounded-sm shrink-0" style={{ background: projectOf(t)?.color }} />
+                      {projectOf(t)?.name}
+                    </span>
+                  </td>
+                )}
                 <td className="px-2">
                   <span className="inline-flex items-center gap-1.5 font-semibold whitespace-nowrap">
                     <span aria-hidden className="size-2 rounded-full" style={{ background: st.color }} />
@@ -533,9 +545,12 @@ function TaskList({
           })}
         </tbody>
       </table>
-      <div className="border-t border-[#EEF1F4] p-2">
-        <QuickAdd onAdd={onAdd} />
-      </div>
+      {onAdd && (
+        <div className="border-t border-[#EEF1F4] p-2">
+          <QuickAdd onAdd={onAdd} />
+        </div>
+      )}
+      {sorted.length === 0 && !onAdd && <p className="px-4 py-6 text-sm text-[#5A626B]">Keine Aufgaben.</p>}
     </div>
   );
 }
