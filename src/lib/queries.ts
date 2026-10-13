@@ -7,7 +7,8 @@ export type SidebarWorkspace = {
   organizationId: string;
   orgName: string;
   isPersonal: boolean;
-  projects: { id: string; name: string; color: string }[];
+  projects: { id: string; name: string; color: string; sectionId: string | null; position: number }[];
+  sections: { id: string; name: string; position: number }[];
 };
 
 export type ProjectStats = {
@@ -85,7 +86,7 @@ export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("workspaces")
-    .select("id, name, color, organization_id, organizations(name, is_personal), projects(id, name, color, archived_at)")
+    .select("id, name, color, organization_id, organizations(name, is_personal), projects(id, name, color, archived_at, section_id, position), project_sections(id, name, position)")
     .order("created_at");
 
   if (error) throw new Error(error.message);
@@ -98,10 +99,32 @@ export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
       organizationId: w.organization_id,
       orgName: w.organizations?.name ?? "",
       isPersonal: w.organizations?.is_personal ?? false,
-      projects: (w.projects ?? [])
-        .filter((p) => !p.archived_at)
-        .sort((a, b) => a.name.localeCompare(b.name, "de"))
-        .map((p) => ({ id: p.id, name: p.name, color: p.color })),
+      ...boardOrder(w.projects ?? [], w.project_sections ?? []),
     }))
     .sort((a, b) => Number(b.isPersonal) - Number(a.isPersonal));
+}
+
+/** Projekte in Board-Reihenfolge: zuerst ohne Rubrik, dann je Rubrik nach Position. */
+function boardOrder(
+  projects: { id: string; name: string; color: string; archived_at: string | null; section_id: string | null; position: number }[],
+  sections: { id: string; name: string; position: number }[],
+) {
+  const secs = [...sections].sort((a, b) => a.position - b.position);
+  const rank = new Map(secs.map((s, i) => [s.id, i + 1]));
+  const list = projects
+    .filter((p) => !p.archived_at)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      color: p.color,
+      sectionId: p.section_id && rank.has(p.section_id) ? p.section_id : null,
+      position: p.position,
+    }))
+    .sort(
+      (a, b) =>
+        (a.sectionId ? rank.get(a.sectionId)! : 0) - (b.sectionId ? rank.get(b.sectionId)! : 0) ||
+        a.position - b.position ||
+        a.name.localeCompare(b.name, "de"),
+    );
+  return { projects: list, sections: secs };
 }

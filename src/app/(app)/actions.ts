@@ -8,6 +8,7 @@ import { PROJECT_COLORS } from "@/lib/labels";
 export async function createProject(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const workspaceId = String(formData.get("workspace_id") ?? "");
+  const sectionId = String(formData.get("section_id") ?? "") || null;
   if (!name || !workspaceId) return;
 
   const supabase = await createClient();
@@ -15,11 +16,18 @@ export async function createProject(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // ans Ende der Rubrik (bzw. "ohne Rubrik") stellen
+  let last = supabase.from("projects").select("position").eq("workspace_id", workspaceId);
+  last = sectionId ? last.eq("section_id", sectionId) : last.is("section_id", null);
+  const { data: lastRow } = await last.order("position", { ascending: false }).limit(1).maybeSingle();
+
   const { data, error } = await supabase
     .from("projects")
     .insert({
       name,
       workspace_id: workspaceId,
+      section_id: sectionId,
+      position: (lastRow?.position ?? 0) + 1,
       color: PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)],
       created_by: user?.id ?? null,
     })

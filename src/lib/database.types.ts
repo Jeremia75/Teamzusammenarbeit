@@ -52,12 +52,21 @@ export type Database = {
         Update: { avatar_color?: string; created_at?: string; display_name?: string; id?: string };
         Relationships: [];
       };
+      project_sections: {
+        Row: { created_at: string; id: string; name: string; position: number; workspace_id: string };
+        Insert: { created_at?: string; id?: string; name: string; position?: number; workspace_id: string };
+        Update: { created_at?: string; id?: string; name?: string; position?: number; workspace_id?: string };
+        Relationships: [
+          { foreignKeyName: "project_sections_workspace_id_fkey"; columns: ["workspace_id"]; isOneToOne: false; referencedRelation: "workspaces"; referencedColumns: ["id"] },
+        ];
+      };
       projects: {
-        Row: { archived_at: string | null; color: string; created_at: string; created_by: string | null; description: string; id: string; name: string; updated_at: string; workspace_id: string };
-        Insert: { archived_at?: string | null; color?: string; created_at?: string; created_by?: string | null; description?: string; id?: string; name: string; updated_at?: string; workspace_id: string };
-        Update: { archived_at?: string | null; color?: string; created_at?: string; created_by?: string | null; description?: string; id?: string; name?: string; updated_at?: string; workspace_id?: string };
+        Row: { archived_at: string | null; color: string; created_at: string; created_by: string | null; description: string; id: string; name: string; updated_at: string; workspace_id: string; section_id: string | null; position: number };
+        Insert: { archived_at?: string | null; color?: string; created_at?: string; created_by?: string | null; description?: string; id?: string; name: string; updated_at?: string; workspace_id: string; section_id?: string | null; position?: number };
+        Update: { archived_at?: string | null; color?: string; created_at?: string; created_by?: string | null; description?: string; id?: string; name?: string; updated_at?: string; workspace_id?: string; section_id?: string | null; position?: number };
         Relationships: [
           { foreignKeyName: "projects_workspace_id_fkey"; columns: ["workspace_id"]; isOneToOne: false; referencedRelation: "workspaces"; referencedColumns: ["id"] },
+          { foreignKeyName: "projects_section_id_fkey"; columns: ["section_id"]; isOneToOne: false; referencedRelation: "project_sections"; referencedColumns: ["id"] },
         ];
       };
       task_assignees: {
@@ -144,6 +153,7 @@ export type Project = T["projects"]["Row"];
 export type Profile = T["profiles"]["Row"];
 export type Comment = T["comments"]["Row"];
 export type Section = T["sections"]["Row"];
+export type ProjectSection = T["project_sections"]["Row"];
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];

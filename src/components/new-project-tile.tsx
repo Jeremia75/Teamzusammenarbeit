@@ -3,11 +3,29 @@
 import { useState } from "react";
 import { createProject } from "@/app/(app)/actions";
 
-export function NewProjectTile({ workspaceId }: { workspaceId: string }) {
+/** "Neues Projekt" – als große Kachel (Kachelansicht) oder schlank (in einer Board-Rubrik). */
+export function NewProjectTile({
+  workspaceId,
+  sectionId = null,
+  compact = false,
+}: {
+  workspaceId: string;
+  sectionId?: string | null;
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
+  const fieldId = `np-${workspaceId}-${sectionId ?? "none"}-${compact ? "c" : "t"}`;
 
   if (!open) {
-    return (
+    return compact ? (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full h-11 rounded-lg px-3 text-left text-sm text-[#5A626B] hover:bg-white/70"
+      >
+        + Projekt hinzufügen
+      </button>
+    ) : (
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -22,17 +40,14 @@ export function NewProjectTile({ workspaceId }: { workspaceId: string }) {
   }
 
   return (
-    <form action={createProject} className="h-full min-h-28 rounded-xl border-2 border-dashed border-[#9AA4AE] bg-white p-3 flex flex-col gap-2">
+    <form
+      action={createProject}
+      className={`rounded-xl bg-white p-3 flex flex-col gap-2 ${compact ? "border border-[#DDE1E5]" : "h-full min-h-28 border-2 border-dashed border-[#9AA4AE]"}`}
+    >
       <input type="hidden" name="workspace_id" value={workspaceId} />
-      <label className="sr-only" htmlFor={`tile-${workspaceId}`}>Projektname</label>
-      <input
-        id={`tile-${workspaceId}`}
-        name="name"
-        required
-        autoFocus
-        placeholder="Projektname"
-        className="h-10 rounded-lg border border-[#DDE1E5] px-3 text-sm"
-      />
+      {sectionId && <input type="hidden" name="section_id" value={sectionId} />}
+      <label className="sr-only" htmlFor={fieldId}>Projektname</label>
+      <input id={fieldId} name="name" required autoFocus placeholder="Projektname" className="h-10 rounded-lg border border-[#DDE1E5] px-3 text-sm" />
       <div className="flex gap-2">
         <button type="submit" className="h-10 px-4 rounded-lg bg-[#16191D] text-white text-sm font-bold">
           Anlegen

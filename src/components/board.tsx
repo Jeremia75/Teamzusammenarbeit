@@ -136,11 +136,11 @@ export function Board(props: Props) {
   );
 }
 
-function DropLine() {
+export function DropLine() {
   return <div aria-hidden className="h-1 rounded-full bg-[#1F5FBF] my-0.5" />;
 }
 
-function ColumnHeader({
+export function ColumnHeader({
   col,
   count,
   statusColor,
@@ -237,7 +237,7 @@ function MenuItem({ children, onClick, danger }: { children: React.ReactNode; on
   );
 }
 
-function AddSection({ onAdd }: { onAdd: (name: string) => void }) {
+export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, Marketing" }: { onAdd: (name: string) => void; placeholder?: string }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   if (!open) {
@@ -261,13 +261,12 @@ function AddSection({ onAdd }: { onAdd: (name: string) => void }) {
       }}
       className="flex-[0_0_260px] rounded-xl bg-white border border-[#DDE1E5] p-2.5 flex flex-col gap-2"
     >
-      <label className="sr-only" htmlFor="new-section">Name der Rubrik</label>
       <input
-        id="new-section"
+        aria-label="Name der Rubrik"
         value={name}
         autoFocus
         onChange={(e) => setName(e.target.value)}
-        placeholder="z. B. Recherche, Behörden, Marketing"
+        placeholder={placeholder}
         className="h-10 rounded-lg border border-[#DDE1E5] px-3 text-sm"
       />
       <div className="flex gap-2">
