@@ -22,6 +22,7 @@ export function ProjectTile({
     <Link
       href={`/p/${project.id}`}
       draggable={false}
+      data-card
       className={`h-full bg-(--c-surface) border border-(--c-line) rounded-xl flex flex-col hover:border-(--c-line-hover) hover:shadow-sm transition ${
         compact ? "p-3 gap-2" : "p-4 gap-3"
       }`}

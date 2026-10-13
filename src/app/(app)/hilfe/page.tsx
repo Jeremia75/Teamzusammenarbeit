@@ -48,6 +48,7 @@ const TOPICS: [string, string][] = [
   ["wiederholen", "Wiederkehrende Aufgaben"],
   ["team", "Im Team arbeiten"],
   ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
+  ["darstellung", "Aussehen anpassen"],
   ["installieren", "Projektraum auf dem PC installieren"],
   ["fragen", "Häufige Fragen"],
 ];
@@ -404,6 +405,41 @@ export default function HelpPage() {
         <Tip>Damit die Erinnerung vor einem Termin funktioniert, braucht die Aufgabe ein Datum im Feld Fällig am.</Tip>
       </Section>
 
+      <Section id="darstellung" title="Aussehen anpassen">
+        <p>
+          Du kannst Projektraum so einstellen, wie es dir gefällt. Die Einstellungen gelten nur für dich. Andere im Team sehen weiter ihre
+          eigene Darstellung.
+        </p>
+        <p>
+          <strong>Schnell umschalten.</strong> Links in der Seitenleiste wählst du <K>Hell</K>, <K>Dunkel</K> oder <K>Automatisch</K>.
+          Automatisch richtet sich danach, was in Windows eingestellt ist.
+        </p>
+        <p>
+          <strong>Alles selbst gestalten.</strong> Öffne links <K>Darstellung</K>. Dort geht es so:
+        </p>
+        <ol>
+          <li>
+            Wähle oben einen Stil als Ausgangspunkt, zum Beispiel <K>Modern</K>, <K>Jung</K> oder <K>Oldschool</K>.
+          </li>
+          <li>Ändere einzelne Farben. Ein Klick auf ein Farbfeld öffnet die Farbauswahl.</li>
+          <li>Stell Ecken, Rahmen, Schrift und Abstände ein. Mit Kompakt passen mehr Aufgaben auf den Bildschirm.</li>
+          <li>
+            Lade ein eigenes Foto als Hintergrund hoch, wenn du magst. Mit <K>Bild abschwächen</K> wird es blasser, damit die Schrift
+            gut lesbar bleibt.
+          </li>
+          <li>
+            Klick auf <K>Speichern</K>.
+          </li>
+        </ol>
+        <p>
+          Jede Änderung siehst du sofort in der ganzen App, aber erst mit Speichern bleibt sie. Gehst du ohne Speichern weg, kommt die alte
+          Darstellung zurück. Wird eine Farbkombination schwer lesbar, zeigt dir Projektraum das unter <strong>So sehen Aufgaben aus</strong>.
+        </p>
+        <Tip>
+          Mit <K>Standard</K> kommst du jederzeit zur ursprünglichen Darstellung zurück. Klick danach auf Speichern.
+        </Tip>
+      </Section>
+
       <Section id="installieren" title="Projektraum auf dem PC installieren">
         <p>Du kannst Projektraum wie ein normales Programm auf deinem Windows-PC einrichten. Dann hat es ein eigenes Fenster und ein Symbol in der Taskleiste.</p>
         <ol>
@@ -441,7 +477,7 @@ export default function HelpPage() {
             ],
             [
               "Kann ich Projektraum dunkel einstellen?",
-              "Ja. Links in der Seitenleiste wählst du zwischen Hell, Dunkel und Automatisch. Automatisch richtet sich danach, was in Windows eingestellt ist. Die Wahl gilt für das Gerät, auf dem du sie triffst.",
+              "Ja. Links in der Seitenleiste wählst du zwischen Hell, Dunkel und Automatisch. Automatisch richtet sich danach, was in Windows eingestellt ist. Diese Wahl gilt für das Gerät, auf dem du sie triffst. Ein eigenes Design unter Darstellung gilt dagegen auf allen deinen Geräten.",
             ],
             [
               "Muss ich etwas speichern?",

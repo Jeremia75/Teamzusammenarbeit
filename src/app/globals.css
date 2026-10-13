@@ -179,3 +179,23 @@ body {
   color: var(--c-ink);
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
+
+/* Eigene Darstellung: Rahmen und Pinnwand-Look für Karten (data-card) */
+.pr-scope[data-border="keiner"] [data-card] {
+  border-color: transparent;
+}
+.pr-scope[data-border="dick"] [data-card] {
+  border-width: 2px;
+  border-color: var(--c-ink);
+  box-shadow: 3px 3px 0 var(--c-ink);
+}
+.pr-scope[data-tilt="1"] [data-card] {
+  transform: rotate(-0.8deg);
+}
+.pr-scope[data-tilt="1"] :nth-child(even) > [data-card],
+.pr-scope[data-tilt="1"] [data-card]:nth-child(even) {
+  transform: rotate(0.7deg);
+}
+.pr-scope[data-tilt="1"] [data-card]:hover {
+  transform: none;
+}

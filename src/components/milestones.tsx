@@ -80,6 +80,7 @@ export function Milestones({
             return (
               <div
                 key={m.id}
+                data-card
                 className={`relative bg-(--c-surface) rounded-xl border-2 transition ${
                   active ? "border-(--c-accent) shadow-sm" : "border-(--c-line) hover:border-(--c-line-hover)"
                 }`}

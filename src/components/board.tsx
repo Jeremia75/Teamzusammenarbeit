@@ -334,6 +334,7 @@ export function TaskCard({
   return (
     <div
       draggable
+      data-card
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", task.id);

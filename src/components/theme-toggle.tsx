@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAppearance } from "@/components/appearance-provider";
 
 export const THEME_KEY = "projektraum:theme";
 type Theme = "light" | "dark" | "system";
@@ -40,6 +42,7 @@ const OPTIONS: { id: Theme; label: string; icon: React.ReactNode }[] = [
 
 /** Umschalter Hell / Dunkel / Automatisch (wie Windows) – gemerkt auf diesem Gerät. */
 export function ThemeToggle() {
+  const { live } = useAppearance();
   const [theme, setTheme] = useState<Theme>("system");
 
   useEffect(() => {
@@ -60,6 +63,22 @@ export function ThemeToggle() {
     } catch {
       /* ignorieren */
     }
+  }
+
+  // Eigenes Design aktiv: Hell/Dunkel gilt dann nicht
+  if (live) {
+    return (
+      <Link
+        href="/darstellung"
+        className="flex items-center justify-between gap-2 min-h-11 rounded-lg border border-(--c-line) px-3 text-xs font-semibold text-(--c-text-2) hover:text-(--c-ink)"
+      >
+        <span className="flex items-center gap-2">
+          <span aria-hidden className="size-3 rounded-full bg-(--c-accent)" />
+          Eigenes Design aktiv
+        </span>
+        <span className="text-(--c-accent)">Ändern</span>
+      </Link>
+    );
   }
 
   return (

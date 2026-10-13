@@ -52,6 +52,12 @@ export type Database = {
         Update: { avatar_color?: string; created_at?: string; display_name?: string; id?: string };
         Relationships: [];
       };
+      appearance_settings: {
+        Row: { user_id: string; settings: Json | null; image_path: string | null; updated_at: string };
+        Insert: { user_id: string; settings?: Json | null; image_path?: string | null; updated_at?: string };
+        Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
+        Relationships: [];
+      };
       notification_settings: {
         Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; asked_at: string | null; last_daily_on: string | null; updated_at: string };
         Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
