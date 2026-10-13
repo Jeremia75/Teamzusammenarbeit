@@ -47,6 +47,7 @@ const TOPICS: [string, string][] = [
   ["meilensteine", "Ziele und Meilensteine"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
   ["team", "Im Team arbeiten"],
+  ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
   ["installieren", "Projektraum auf dem PC installieren"],
   ["fragen", "Häufige Fragen"],
 ];
@@ -366,6 +367,43 @@ export default function HelpPage() {
         </p>
       </Section>
 
+      <Section id="benachrichtigungen" title="E-Mail-Benachrichtigungen">
+        <p>
+          Projektraum kann dich per E-Mail an deine Aufgaben erinnern. Sobald du deine erste Aufgabe hast, fragt Projektraum dich einmal,
+          ob du das möchtest. Ändern kannst du es jederzeit links in der Seitenleiste unter <K>Benachrichtigungen</K>.
+        </p>
+        <p>Du kannst zwei Dinge einstellen.</p>
+        <ol>
+          <li>
+            <strong>Eine regelmäßige E-Mail.</strong> Wähle eine von drei Möglichkeiten:
+            <ul>
+              <li>
+                <K>Jeden Morgen einen Überblick</K>. Um 7 Uhr bekommst du eine Liste mit allem, was überfällig ist, was heute und morgen
+                fällig ist und was in den nächsten 7 Tagen ansteht.
+              </li>
+              <li>
+                <K>Nur kurz vor einem Termin</K>. Du bekommst nur dann eine E-Mail, wenn eine Aufgabe morgen oder heute fällig ist. An
+                Tagen ohne Termin kommt nichts.
+              </li>
+              <li>
+                <K>Keine regelmäßige E-Mail</K>.
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Eine E-Mail bei neuen Aufgaben.</strong> Ordnet dir jemand eine Aufgabe zu, bekommst du wenige Minuten später eine
+            E-Mail. Ordnet dir jemand mehrere Aufgaben kurz hintereinander zu, kommen sie gesammelt in einer E-Mail. Trägst du dich selbst
+            ein, kommt keine E-Mail.
+          </li>
+        </ol>
+        <p>
+          In den E-Mails stehen die Aufgaben, für die du verantwortlich bist. Dazu kommen Aufgaben, die du selbst angelegt hast und die
+          noch niemandem zugeordnet sind. Erledigte Aufgaben fehlen. Ein Klick auf eine Aufgabe in der E-Mail öffnet ihr Projekt.
+        </p>
+        <p>Die E-Mails gehen an die Adresse, mit der du dich anmeldest. Sie steht links unten in der Seitenleiste.</p>
+        <Tip>Damit die Erinnerung vor einem Termin funktioniert, braucht die Aufgabe ein Datum im Feld Fällig am.</Tip>
+      </Section>
+
       <Section id="installieren" title="Projektraum auf dem PC installieren">
         <p>Du kannst Projektraum wie ein normales Programm auf deinem Windows-PC einrichten. Dann hat es ein eigenes Fenster und ein Symbol in der Taskleiste.</p>
         <ol>
@@ -396,6 +434,10 @@ export default function HelpPage() {
             [
               "Was passiert, wenn ich eine Aufgabe lösche?",
               "Die Aufgabe und ihre Unteraufgaben sind endgültig weg. Deshalb fragt Projektraum vorher nach. Wenn du sie nur nicht mehr sehen willst, hake sie lieber ab.",
+            ],
+            [
+              "Ich bekomme zu viele oder keine E-Mails.",
+              "Öffne links in der Seitenleiste Benachrichtigungen und stell dort ein, was du möchtest. Kommt gar nichts an, schau auch im Spam-Ordner nach.",
             ],
             [
               "Muss ich etwas speichern?",

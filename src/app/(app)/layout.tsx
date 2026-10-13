@@ -3,13 +3,17 @@ import { createClient } from "@/lib/supabase/server";
 import { loadWorkspaces } from "@/lib/queries";
 import { signOut } from "./actions";
 import { SidebarProjects } from "@/components/sidebar-projects";
+import { NotificationPrompt } from "@/components/notification-prompt";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const workspaces = await loadWorkspaces();
+  const [workspaces, { data: notify }] = await Promise.all([
+    loadWorkspaces(),
+    supabase.from("notification_settings").select("asked_at").eq("user_id", user?.id ?? "").maybeSingle(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-wrap md:flex-nowrap items-stretch">
@@ -37,6 +41,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </svg>
             Hilfe
           </Link>
+          <Link
+            href="/einstellungen"
+            className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-[#3E4650] hover:bg-[#F2F4F5] hover:text-[#16191D]"
+          >
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9" />
+              <path d="M10.3 20a1.9 1.9 0 0 0 3.4 0" />
+            </svg>
+            Benachrichtigungen
+          </Link>
           <span className="text-sm text-[#5A626B] px-1 truncate">{user?.email}</span>
           <form action={signOut}>
             <button type="submit" className="w-full min-h-11 rounded-lg border border-[#DDE1E5] text-sm font-semibold hover:bg-[#F2F4F5]">
@@ -47,6 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </nav>
 
       <main className="flex-[999_1_560px] min-w-0">{children}</main>
+      {user && <NotificationPrompt userId={user.id} email={user.email ?? ""} needed={!notify?.asked_at} />}
     </div>
   );
 }

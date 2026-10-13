@@ -112,6 +112,7 @@ export function RubricView(props: Props) {
         .single();
       if (error) return fail("Aufgabe nicht angelegt: " + error.message);
       setTasks((prev) => (prev.some((t) => t.id === data.id) ? prev : [...prev, data]));
+      window.dispatchEvent(new Event("projektraum:task-created"));
     },
     [supabase, tasks, currentUserId, fail],
   );

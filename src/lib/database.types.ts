@@ -52,6 +52,12 @@ export type Database = {
         Update: { avatar_color?: string; created_at?: string; display_name?: string; id?: string };
         Relationships: [];
       };
+      notification_settings: {
+        Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; asked_at: string | null; last_daily_on: string | null; updated_at: string };
+        Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
+        Update: { email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
+        Relationships: [];
+      };
       project_sections: {
         Row: { created_at: string; id: string; name: string; position: number; workspace_id: string };
         Insert: { created_at?: string; id?: string; name: string; position?: number; workspace_id: string };
@@ -154,6 +160,7 @@ export type Profile = T["profiles"]["Row"];
 export type Comment = T["comments"]["Row"];
 export type Section = T["sections"]["Row"];
 export type ProjectSection = T["project_sections"]["Row"];
+export type NotificationSettings = T["notification_settings"]["Row"];
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];
