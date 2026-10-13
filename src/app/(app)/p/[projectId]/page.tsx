@@ -19,9 +19,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
   // Kein Zugriff oder nicht vorhanden – RLS liefert in beiden Fällen nichts
   if (!project) notFound();
 
-  const [{ data: tasks }, { data: milestones }, { data: memberRows }] = await Promise.all([
+  const [{ data: tasks }, { data: milestones }, { data: sections }, { data: memberRows }] = await Promise.all([
     supabase.from("tasks").select("*").eq("project_id", projectId).order("position"),
     supabase.from("milestones").select("*").eq("project_id", projectId).order("position"),
+    supabase.from("sections").select("*").eq("project_id", projectId).order("position"),
     supabase.from("workspace_members").select("user_id").eq("workspace_id", project.workspace_id),
   ]);
 
@@ -44,10 +45,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
   return (
     <ProjectView
       currentUserId={user?.id ?? ""}
-      workspaceName={project.workspaces?.name ?? ""}
+      workspace={{ id: project.workspace_id, name: project.workspaces?.name ?? "" }}
       project={{ id: project.id, name: project.name, description: project.description, color: project.color }}
       initialTasks={tasks ?? []}
       initialMilestones={milestones ?? []}
+      initialSections={sections ?? []}
       initialAssignees={assignees ?? []}
       members={members}
     />

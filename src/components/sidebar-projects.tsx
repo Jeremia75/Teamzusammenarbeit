@@ -15,9 +15,17 @@ export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[]
       {workspaces.map((ws) => (
         <section key={ws.id} className="flex flex-col gap-1">
           <div className="flex items-center justify-between px-1 pb-1">
-            <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#5A626B]">
-              <span aria-hidden className="size-2 rounded-full" style={{ background: ws.color }} />
-              {ws.isPersonal ? ws.name : `${ws.orgName} · ${ws.name}`}
+            <h2 className="min-w-0">
+              <Link
+                href={`/w/${ws.id}`}
+                aria-current={pathname === `/w/${ws.id}` ? "page" : undefined}
+                className={`flex items-center gap-2 min-h-9 rounded-md px-1 -mx-1 text-xs font-bold uppercase tracking-wider hover:text-[#16191D] ${
+                  pathname === `/w/${ws.id}` ? "text-[#16191D]" : "text-[#5A626B]"
+                }`}
+              >
+                <span aria-hidden className="size-2 rounded-full shrink-0" style={{ background: ws.color }} />
+                <span className="truncate">{ws.isPersonal ? ws.name : `${ws.orgName} · ${ws.name}`}</span>
+              </Link>
             </h2>
             <button
               type="button"

@@ -74,23 +74,35 @@ export type Database = {
           id: string; milestone_id: string | null; parent_id: string | null; position: number;
           priority: Database["public"]["Enums"]["task_priority"]; project_id: string;
           status: Database["public"]["Enums"]["task_status"]; title: string; updated_at: string;
+          section_id: string | null; recurrence: Database["public"]["Enums"]["task_recurrence"] | null; recurrence_spawned: boolean;
         };
         Insert: {
           completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null;
           id?: string; milestone_id?: string | null; parent_id?: string | null; position?: number;
           priority?: Database["public"]["Enums"]["task_priority"]; project_id: string;
           status?: Database["public"]["Enums"]["task_status"]; title: string; updated_at?: string;
+          section_id?: string | null; recurrence?: Database["public"]["Enums"]["task_recurrence"] | null; recurrence_spawned?: boolean;
         };
         Update: {
           completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null;
           id?: string; milestone_id?: string | null; parent_id?: string | null; position?: number;
           priority?: Database["public"]["Enums"]["task_priority"]; project_id?: string;
           status?: Database["public"]["Enums"]["task_status"]; title?: string; updated_at?: string;
+          section_id?: string | null; recurrence?: Database["public"]["Enums"]["task_recurrence"] | null; recurrence_spawned?: boolean;
         };
         Relationships: [
           { foreignKeyName: "tasks_milestone_id_fkey"; columns: ["milestone_id"]; isOneToOne: false; referencedRelation: "milestones"; referencedColumns: ["id"] },
           { foreignKeyName: "tasks_parent_id_fkey"; columns: ["parent_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
           { foreignKeyName: "tasks_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] },
+          { foreignKeyName: "tasks_section_id_fkey"; columns: ["section_id"]; isOneToOne: false; referencedRelation: "sections"; referencedColumns: ["id"] },
+        ];
+      };
+      sections: {
+        Row: { created_at: string; id: string; name: string; position: number; project_id: string };
+        Insert: { created_at?: string; id?: string; name: string; position?: number; project_id: string };
+        Update: { created_at?: string; id?: string; name?: string; position?: number; project_id?: string };
+        Relationships: [
+          { foreignKeyName: "sections_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] },
         ];
       };
       workspace_members: {
@@ -119,6 +131,7 @@ export type Database = {
       org_role: "owner" | "admin" | "member";
       task_priority: "low" | "medium" | "high";
       task_status: "todo" | "doing" | "review" | "done";
+      task_recurrence: "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
     };
     CompositeTypes: { [_ in never]: never };
   };
@@ -130,5 +143,7 @@ export type Milestone = T["milestones"]["Row"];
 export type Project = T["projects"]["Row"];
 export type Profile = T["profiles"]["Row"];
 export type Comment = T["comments"]["Row"];
+export type Section = T["sections"]["Row"];
+export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];

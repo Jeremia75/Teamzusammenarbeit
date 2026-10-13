@@ -1,25 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Milestone, Task, TaskStatus } from "@/lib/database.types";
-import { STATUSES, formatDate, isOverdue, priorityOf } from "@/lib/labels";
+import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
+import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
+import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
 import { Milestones } from "@/components/milestones";
+import { Board, QuickAdd, type BoardColumn } from "@/components/board";
+import { StatusBar, StatusLegend } from "@/components/status-bar";
 
 export type Member = { id: string; name: string; color: string };
 export type Assignee = { task_id: string; user_id: string };
 
 type Props = {
   currentUserId: string;
-  workspaceName: string;
+  workspace: { id: string; name: string };
   project: { id: string; name: string; description: string; color: string };
   initialTasks: Task[];
   initialMilestones: Milestone[];
+  initialSections: Section[];
   initialAssignees: Assignee[];
   members: Member[];
 };
+
+type View = "sections" | "status" | "list";
 
 export function ProjectView(props: Props) {
   const { project, members, currentUserId } = props;
@@ -27,36 +34,57 @@ export function ProjectView(props: Props) {
 
   const [tasks, setTasks] = useState<Task[]>(props.initialTasks);
   const [milestones, setMilestones] = useState<Milestone[]>(props.initialMilestones);
+  const [sections, setSections] = useState<Section[]>(props.initialSections);
   const [assignees, setAssignees] = useState<Assignee[]>(props.initialAssignees);
-  const [view, setView] = useState<"board" | "list">("board");
+  const [view, setViewState] = useState<View>(props.initialSections.length ? "sections" : "status");
   const [onlyMine, setOnlyMine] = useState(false);
+  const [msFilter, setMsFilter] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+
+  // Gewählte Ansicht pro Projekt merken (nur in diesem Browser)
+  const viewKey = `projektraum:view:${project.id}`;
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(viewKey) as View | null;
+      if (v === "sections" || v === "status" || v === "list") setViewState(v);
+    } catch {
+      /* Speicher nicht verfügbar – Standardansicht bleibt */
+    }
+  }, [viewKey]);
+  const setView = (v: View) => {
+    setViewState(v);
+    try {
+      localStorage.setItem(viewKey, v);
+    } catch {
+      /* ignorieren */
+    }
+  };
 
   // ---------------------------------------------------------------- Daten
   const reload = useCallback(async () => {
-    const [t, m] = await Promise.all([
+    // Alles parallel laden und gemeinsam setzen, damit Karten nicht ohne Zuständige aufblitzen
+    const [t, m, s, a] = await Promise.all([
       supabase.from("tasks").select("*").eq("project_id", project.id).order("position"),
       supabase.from("milestones").select("*").eq("project_id", project.id).order("position"),
+      supabase.from("sections").select("*").eq("project_id", project.id).order("position"),
+      supabase.from("task_assignees").select("task_id, user_id, tasks!inner(project_id)").eq("tasks.project_id", project.id),
     ]);
     if (t.data) setTasks(t.data);
     if (m.data) setMilestones(m.data);
-    const ids = (t.data ?? []).map((x) => x.id);
-    if (ids.length) {
-      const a = await supabase.from("task_assignees").select("task_id, user_id").in("task_id", ids);
-      if (a.data) setAssignees(a.data);
-    } else {
-      setAssignees([]);
-    }
+    if (s.data) setSections(s.data);
+    if (a.data) setAssignees(a.data.map(({ task_id, user_id }) => ({ task_id, user_id })));
   }, [supabase, project.id]);
 
   // Echtzeit: Änderungen anderer Teammitglieder sofort übernehmen
   useEffect(() => {
+    const f = `project_id=eq.${project.id}`;
     const channel = supabase
       .channel(`project-${project.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: `project_id=eq.${project.id}` }, reload)
-      .on("postgres_changes", { event: "*", schema: "public", table: "milestones", filter: `project_id=eq.${project.id}` }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: f }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "milestones", filter: f }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "sections", filter: f }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "task_assignees" }, reload)
       .subscribe();
     return () => {
@@ -74,11 +102,14 @@ export function ProjectView(props: Props) {
 
   const updateTask = useCallback(
     async (id: string, patch: Partial<Task>) => {
+      const before = tasks.find((t) => t.id === id);
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
       const { error } = await supabase.from("tasks").update(patch).eq("id", id);
-      if (error) fail("Änderung nicht gespeichert: " + error.message);
+      if (error) return fail("Änderung nicht gespeichert: " + error.message);
+      // Bei wiederkehrenden Aufgaben legt die Datenbank die nächste an – holen
+      if (patch.status === "done" && before?.recurrence && before.status !== "done") reload();
     },
-    [supabase, fail],
+    [supabase, fail, tasks, reload],
   );
 
   const addTask = useCallback(
@@ -86,14 +117,21 @@ export function ProjectView(props: Props) {
       const position = tasks.reduce((max, t) => Math.max(max, t.position), 0) + 1;
       const { data, error } = await supabase
         .from("tasks")
-        .insert({ project_id: project.id, title, position, created_by: currentUserId, ...extra })
+        .insert({
+          project_id: project.id,
+          title,
+          position,
+          created_by: currentUserId,
+          milestone_id: extra.parent_id ? null : msFilter,
+          ...extra,
+        })
         .select()
         .single();
       if (error) return fail("Aufgabe nicht angelegt: " + error.message);
       setTasks((prev) => (prev.some((t) => t.id === data.id) ? prev : [...prev, data]));
       return data;
     },
-    [supabase, tasks, project.id, currentUserId, fail],
+    [supabase, tasks, project.id, currentUserId, fail, msFilter],
   );
 
   const deleteTask = useCallback(
@@ -138,12 +176,63 @@ export function ProjectView(props: Props) {
 
   const deleteMilestone = useCallback(
     async (id: string) => {
+      if (msFilter === id) setMsFilter(null);
       setMilestones((prev) => prev.filter((m) => m.id !== id));
       setTasks((prev) => prev.map((t) => (t.milestone_id === id ? { ...t, milestone_id: null } : t)));
       const { error } = await supabase.from("milestones").delete().eq("id", id);
       if (error) fail(error.message);
     },
+    [supabase, fail, msFilter],
+  );
+
+  // ------------------------------------------------------------ Rubriken
+  const sortedSections = useMemo(() => [...sections].sort(byPosition), [sections]);
+
+  const addSection = useCallback(
+    async (name: string) => {
+      const position = sortedSections.length ? sortedSections[sortedSections.length - 1].position + 1 : 1;
+      const { data, error } = await supabase.from("sections").insert({ project_id: project.id, name, position }).select().single();
+      if (error) return fail("Rubrik nicht angelegt: " + error.message);
+      setSections((prev) => (prev.some((s) => s.id === data.id) ? prev : [...prev, data]));
+    },
+    [supabase, project.id, sortedSections, fail],
+  );
+
+  const renameSection = useCallback(
+    async (id: string, name: string) => {
+      setSections((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)));
+      const { error } = await supabase.from("sections").update({ name }).eq("id", id);
+      if (error) fail(error.message);
+    },
     [supabase, fail],
+  );
+
+  const deleteSection = useCallback(
+    async (id: string) => {
+      setSections((prev) => prev.filter((s) => s.id !== id));
+      setTasks((prev) => prev.map((t) => (t.section_id === id ? { ...t, section_id: null } : t)));
+      const { error } = await supabase.from("sections").delete().eq("id", id);
+      if (error) fail(error.message);
+    },
+    [supabase, fail],
+  );
+
+  const shiftSection = useCallback(
+    async (id: string, dir: -1 | 1) => {
+      const idx = sortedSections.findIndex((s) => s.id === id);
+      const other = sortedSections[idx + dir];
+      if (!other) return;
+      const a = sortedSections[idx];
+      setSections((prev) =>
+        prev.map((s) => (s.id === a.id ? { ...s, position: other.position } : s.id === other.id ? { ...s, position: a.position } : s)),
+      );
+      const [r1, r2] = await Promise.all([
+        supabase.from("sections").update({ position: other.position }).eq("id", a.id),
+        supabase.from("sections").update({ position: a.position }).eq("id", other.id),
+      ]);
+      if (r1.error || r2.error) fail("Reihenfolge nicht gespeichert");
+    },
+    [supabase, sortedSections, fail],
   );
 
   // ---------------------------------------------------------- Ableitungen
@@ -157,36 +246,81 @@ export function ProjectView(props: Props) {
     [assignees, memberById],
   );
 
-  const topLevel = tasks.filter((t) => !t.parent_id);
-  const visible = onlyMine
-    ? topLevel.filter((t) => assignees.some((a) => a.task_id === t.id && a.user_id === currentUserId))
-    : topLevel;
-  const subtasksOf = (id: string) => tasks.filter((t) => t.parent_id === id);
+  const topLevel = useMemo(() => tasks.filter((t) => !t.parent_id).sort(byPosition), [tasks]);
+  const visible = topLevel.filter(
+    (t) =>
+      (!msFilter || t.milestone_id === msFilter) &&
+      (!onlyMine || assignees.some((a) => a.task_id === t.id && a.user_id === currentUserId)),
+  );
+  const subtasksOf = (id: string) => tasks.filter((t) => t.parent_id === id).sort(byPosition);
   const milestoneName = (id: string | null) => milestones.find((m) => m.id === id)?.name ?? "";
+  const filterMilestone = milestones.find((m) => m.id === msFilter) ?? null;
 
-  const doneCount = topLevel.filter((t) => t.status === "done").length;
-  const pct = topLevel.length ? Math.round((doneCount / topLevel.length) * 100) : 0;
+  const counts = { todo: 0, doing: 0, review: 0, done: 0 } as Record<TaskStatus, number>;
+  topLevel.forEach((t) => (counts[t.status] += 1));
   const openTask = tasks.find((t) => t.id === openId) ?? null;
+
+  // Spalten je Ansicht
+  const columns: BoardColumn[] =
+    view === "status"
+      ? STATUSES.map((s) => ({ key: s.id, title: s.label, status: s.id }))
+      : [
+          ...(sortedSections.length === 0 || visible.some((t) => !t.section_id || !sections.some((s) => s.id === t.section_id))
+            ? [{ key: "none", title: "Ohne Rubrik", sectionId: null }]
+            : []),
+          ...sortedSections.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: true })),
+        ];
+
+  const tasksOf = (col: BoardColumn) =>
+    visible.filter((t) =>
+      col.status
+        ? t.status === col.status
+        : col.sectionId
+          ? t.section_id === col.sectionId
+          : !t.section_id || !sections.some((s) => s.id === t.section_id),
+    );
+
+  function moveTask(taskId: string, col: BoardColumn, beforeId: string | null) {
+    const others = tasksOf(col).filter((t) => t.id !== taskId);
+    const position = positionBetween(others, beforeId);
+    const patch: Partial<Task> = { position };
+    if (col.status) patch.status = col.status;
+    else patch.section_id = col.sectionId ?? null;
+    updateTask(taskId, patch);
+  }
+
+  function quickAdd(col: BoardColumn, title: string) {
+    const last = tasksOf(col).at(-1);
+    addTask(title, {
+      position: last ? last.position + 1 : 1,
+      ...(col.status ? { status: col.status } : { section_id: col.sectionId ?? null }),
+    });
+  }
+
+  function selectMilestone(id: string | null) {
+    setMsFilter(id);
+    if (id) requestAnimationFrame(() => boardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
 
   // ---------------------------------------------------------------- UI
   return (
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-sm font-semibold text-[#5A626B]">{props.workspaceName} / Projekt</span>
+          <Link href={`/w/${props.workspace.id}`} className="self-start text-sm font-semibold text-[#5A626B] hover:text-[#16191D] hover:underline underline-offset-4">
+            ← {props.workspace.name}
+          </Link>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
             <span aria-hidden className="size-3.5 rounded" style={{ background: project.color }} />
             {project.name}
           </h1>
-          {project.description && <p className="text-[#5A626B]">{project.description}</p>}
+          {project.description && <p className="text-[#5A626B] whitespace-pre-line max-w-3xl">{project.description}</p>}
         </div>
-        <div className="flex flex-col gap-1.5 min-w-48">
+        <div className="flex flex-col gap-1.5 min-w-56">
           <span className="text-sm font-semibold text-[#5A626B]">
-            Fortschritt: {doneCount} von {topLevel.length} erledigt
+            {counts.done} von {topLevel.length} erledigt
           </span>
-          <span className="block h-2 rounded bg-[#DDE1E5] overflow-hidden">
-            <span className="block h-full rounded bg-[#1F5FBF] transition-all" style={{ width: `${pct}%` }} />
-          </span>
+          <StatusBar counts={counts} />
         </div>
       </header>
 
@@ -199,196 +333,128 @@ export function ProjectView(props: Props) {
         </div>
       )}
 
-      <Milestones milestones={milestones} tasks={topLevel} onAdd={addMilestone} onDelete={deleteMilestone} />
+      <Milestones
+        milestones={milestones}
+        tasks={topLevel}
+        onAdd={addMilestone}
+        onDelete={deleteMilestone}
+        selectedId={msFilter}
+        onSelect={selectMilestone}
+      />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DDE1E5]">
-        <div role="group" aria-label="Ansicht" className="flex gap-1">
-          {(["board", "list"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-              className={`min-h-11 px-4 font-bold text-sm -mb-px border-b-[3px] ${
-                view === v ? "border-[#1F5FBF] text-[#16191D]" : "border-transparent text-[#5A626B]"
-              }`}
-            >
-              {v === "board" ? "Board" : "Liste"}
-            </button>
-          ))}
+      <div ref={boardRef} className="scroll-mt-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DDE1E5]">
+          <div role="group" aria-label="Ansicht" className="flex gap-1">
+            {(
+              [
+                ["sections", "Board · Rubriken"],
+                ["status", "Board · Status"],
+                ["list", "Liste"],
+              ] as const
+            ).map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`min-h-11 px-3.5 font-bold text-sm -mb-px border-b-[3px] ${
+                  view === v ? "border-[#1F5FBF] text-[#16191D]" : "border-transparent text-[#5A626B] hover:text-[#16191D]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
+            <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-[#1F5FBF]" />
+            Nur meine Aufgaben
+          </label>
         </div>
-        <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
-          <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-[#1F5FBF]" />
-          Nur meine Aufgaben
-        </label>
-      </div>
 
-      <div className="flex flex-wrap gap-4 items-start">
-        <div className="flex-[999_1_560px] min-w-0">
-          {view === "board" ? (
-            <div className="relative overflow-x-auto pb-2">
-              <div className="flex gap-3.5 items-start">
-                {STATUSES.map((col) => {
-                  const colTasks = visible.filter((t) => t.status === col.id);
-                  return (
-                    <section
-                      key={col.id}
-                      aria-label={col.label}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => {
-                        if (dragId) updateTask(dragId, { status: col.id as TaskStatus });
-                        setDragId(null);
-                      }}
-                      className="flex-[1_0_250px] bg-[#E8EBEE] rounded-xl p-2.5 flex flex-col gap-2.5"
-                    >
-                      <h2 className="flex items-center gap-2 px-1.5 pt-1 text-sm font-bold">
-                        <span aria-hidden className="size-2 rounded-full" style={{ background: col.color }} />
-                        {col.label}
-                        <span className="ml-auto text-xs text-[#5A626B]">{colTasks.length}</span>
-                      </h2>
-                      {colTasks.map((t) => (
-                        <TaskCard
-                          key={t.id}
-                          task={t}
-                          subtasks={subtasksOf(t.id)}
-                          people={peopleOf(t.id)}
-                          milestone={milestoneName(t.milestone_id)}
-                          selected={openId === t.id}
-                          onOpen={() => setOpenId(openId === t.id ? null : t.id)}
-                          onDragStart={() => setDragId(t.id)}
-                        />
-                      ))}
-                      <QuickAdd onAdd={(title) => addTask(title, { status: col.id })} />
-                    </section>
-                  );
-                })}
+        {(filterMilestone || view === "sections") && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {filterMilestone ? (
+              <div className="flex items-center gap-2 rounded-full bg-[#EEF3FB] border border-[#B9CDEB] pl-3.5 pr-1 py-1 text-sm font-semibold text-[#174A94]">
+                Meilenstein: {filterMilestone.name} · {visible.length} {visible.length === 1 ? "Aufgabe" : "Aufgaben"}
+                <button
+                  type="button"
+                  onClick={() => setMsFilter(null)}
+                  aria-label="Meilenstein-Filter aufheben"
+                  className="size-8 rounded-full hover:bg-[#D9E6F7] flex items-center justify-center"
+                >
+                  <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
               </div>
-            </div>
-          ) : (
-            <TaskList
-              tasks={visible}
-              subtasksOf={subtasksOf}
-              peopleOf={peopleOf}
-              milestoneName={milestoneName}
-              openId={openId}
-              onOpen={(id) => setOpenId(openId === id ? null : id)}
-              onAdd={(title) => addTask(title)}
+            ) : (
+              <span />
+            )}
+            {view === "sections" && <StatusLegend />}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-4 items-start">
+          <div className="flex-[999_1_560px] min-w-0">
+            {view === "list" ? (
+              <TaskList
+                tasks={visible}
+                sections={sortedSections}
+                subtasksOf={subtasksOf}
+                peopleOf={peopleOf}
+                milestoneName={milestoneName}
+                openId={openId}
+                onOpen={(id) => setOpenId(openId === id ? null : id)}
+                onAdd={(title) => addTask(title)}
+              />
+            ) : (
+              <Board
+                columns={columns}
+                tasksOf={tasksOf}
+                colorful={view === "sections"}
+                openId={openId}
+                subtasksOf={subtasksOf}
+                peopleOf={peopleOf}
+                milestoneName={msFilter ? () => "" : milestoneName}
+                onOpen={(id) => setOpenId(openId === id ? null : id)}
+                onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
+                onMove={moveTask}
+                onQuickAdd={quickAdd}
+                onAddSection={view === "sections" ? addSection : undefined}
+                onRenameSection={renameSection}
+                onDeleteSection={deleteSection}
+                onShiftSection={shiftSection}
+              />
+            )}
+          </div>
+
+          {openTask && (
+            <TaskDetail
+              key={openTask.id}
+              task={openTask}
+              subtasks={subtasksOf(openTask.id)}
+              milestones={milestones}
+              sections={sortedSections}
+              members={members}
+              assigned={peopleOf(openTask.id).map((m) => m.id)}
+              currentUserId={currentUserId}
+              onClose={() => setOpenId(null)}
+              onUpdate={updateTask}
+              onAddSubtask={(title) => addTask(title, { parent_id: openTask.id })}
+              onDelete={deleteTask}
+              onToggleAssignee={(uid) => toggleAssignee(openTask.id, uid)}
             />
           )}
         </div>
-
-        {openTask && (
-          <TaskDetail
-            key={openTask.id}
-            task={openTask}
-            subtasks={subtasksOf(openTask.id)}
-            milestones={milestones}
-            members={members}
-            assigned={peopleOf(openTask.id).map((m) => m.id)}
-            currentUserId={currentUserId}
-            onClose={() => setOpenId(null)}
-            onUpdate={updateTask}
-            onAddSubtask={(title) => addTask(title, { parent_id: openTask.id })}
-            onDelete={deleteTask}
-            onToggleAssignee={(uid) => toggleAssignee(openTask.id, uid)}
-          />
-        )}
       </div>
     </div>
-  );
-}
-
-// ------------------------------------------------------------------ Karten
-function TaskCard({
-  task,
-  subtasks,
-  people,
-  milestone,
-  selected,
-  onOpen,
-  onDragStart,
-}: {
-  task: Task;
-  subtasks: Task[];
-  people: Member[];
-  milestone: string;
-  selected: boolean;
-  onOpen: () => void;
-  onDragStart: () => void;
-}) {
-  const prio = priorityOf(task.priority);
-  const subDone = subtasks.filter((s) => s.status === "done").length;
-  const overdue = isOverdue(task.due_date, task.status);
-
-  return (
-    <button
-      type="button"
-      draggable
-      onDragStart={onDragStart}
-      onClick={onOpen}
-      aria-expanded={selected}
-      className={`w-full text-left bg-white rounded-lg p-3 flex flex-col gap-2.5 border-2 cursor-pointer ${
-        selected ? "border-[#1F5FBF]" : "border-white hover:border-[#C9D0D6]"
-      }`}
-    >
-      <span className="flex flex-wrap gap-1.5">
-        <span className="text-xs font-bold px-2 py-0.5 rounded-md" style={{ background: prio.bg, color: prio.fg }}>
-          {prio.label}
-        </span>
-        {milestone && (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#EEF1F4] text-[#3E4650]">{milestone}</span>
-        )}
-      </span>
-      <span className={`font-semibold leading-snug ${task.status === "done" ? "line-through text-[#5A626B]" : ""}`}>
-        {task.title}
-      </span>
-      <span className="flex items-center gap-3 text-xs font-semibold text-[#5A626B]">
-        {task.due_date && (
-          <span className={overdue ? "text-[#9A3412]" : ""}>
-            {overdue ? "Überfällig: " : ""}
-            {formatDate(task.due_date)}
-          </span>
-        )}
-        {subtasks.length > 0 && (
-          <span>
-            {subDone}/{subtasks.length} Unteraufgaben
-          </span>
-        )}
-        <span className="ml-auto flex">
-          {people.map((p) => (
-            <Avatar key={p.id} member={p} size={24} className="-ml-1.5 border-2 border-white" />
-          ))}
-        </span>
-      </span>
-    </button>
-  );
-}
-
-function QuickAdd({ onAdd }: { onAdd: (title: string) => void }) {
-  const [value, setValue] = useState("");
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const v = value.trim();
-        if (v) onAdd(v);
-        setValue("");
-      }}
-    >
-      <label className="sr-only">Neue Aufgabe</label>
-      <input
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder="+ Aufgabe hinzufügen"
-        className="w-full h-11 rounded-lg bg-transparent px-3 text-sm placeholder:text-[#5A626B] focus:bg-white focus:outline-2 focus:outline-[#1F5FBF]"
-      />
-    </form>
   );
 }
 
 // ------------------------------------------------------------------- Liste
 function TaskList({
   tasks,
+  sections,
   subtasksOf,
   peopleOf,
   milestoneName,
@@ -397,6 +463,7 @@ function TaskList({
   onAdd,
 }: {
   tasks: Task[];
+  sections: Section[];
   subtasksOf: (id: string) => Task[];
   peopleOf: (id: string) => Member[];
   milestoneName: (id: string | null) => string;
@@ -408,14 +475,16 @@ function TaskList({
   const sorted = [...tasks].sort(
     (a, b) => order[a.status] - order[b.status] || (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"),
   );
+  const sectionName = (id: string | null) => sections.find((s) => s.id === id)?.name ?? "";
 
   return (
     <div className="relative bg-white border border-[#DDE1E5] rounded-xl overflow-x-auto">
-      <table className="w-full min-w-[720px] text-sm border-collapse">
+      <table className="w-full min-w-[820px] text-sm border-collapse">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-[#5A626B]">
             <th className="px-4 py-3 font-bold">Aufgabe</th>
             <th className="px-2 py-3 font-bold">Status</th>
+            <th className="px-2 py-3 font-bold">Rubrik</th>
             <th className="px-2 py-3 font-bold">Meilenstein</th>
             <th className="px-2 py-3 font-bold">Fällig</th>
             <th className="px-2 py-3 font-bold">Unteraufg.</th>
@@ -435,14 +504,16 @@ function TaskList({
                     className={`min-h-11 px-2 text-left font-semibold ${t.status === "done" ? "line-through text-[#5A626B]" : ""}`}
                   >
                     {t.title}
+                    {t.recurrence && <span className="sr-only"> (wiederkehrend)</span>}
                   </button>
                 </td>
                 <td className="px-2">
-                  <span className="inline-flex items-center gap-1.5 font-semibold">
+                  <span className="inline-flex items-center gap-1.5 font-semibold whitespace-nowrap">
                     <span aria-hidden className="size-2 rounded-full" style={{ background: st.color }} />
                     {st.label}
                   </span>
                 </td>
+                <td className="px-2 text-[#3E4650]">{sectionName(t.section_id)}</td>
                 <td className="px-2 text-[#3E4650]">{milestoneName(t.milestone_id)}</td>
                 <td className={`px-2 whitespace-nowrap ${isOverdue(t.due_date, t.status) ? "text-[#9A3412] font-semibold" : "text-[#3E4650]"}`}>
                   {formatDate(t.due_date)}

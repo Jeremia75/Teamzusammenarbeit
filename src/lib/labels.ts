@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus } from "@/lib/database.types";
+import type { TaskPriority, TaskRecurrence, TaskStatus } from "@/lib/database.types";
 
 export const STATUSES: { id: TaskStatus; label: string; color: string }[] = [
   { id: "todo", label: "Offen", color: "#8A94A0" },
@@ -12,6 +12,26 @@ export const PRIORITIES: { id: TaskPriority; label: string; bg: string; fg: stri
   { id: "medium", label: "Mittel", bg: "#FEF3C7", fg: "#854D0E" },
   { id: "low", label: "Niedrig", bg: "#E6EEF7", fg: "#1E4F8A" },
 ];
+
+export const RECURRENCES: { id: TaskRecurrence; label: string }[] = [
+  { id: "daily", label: "Täglich" },
+  { id: "weekly", label: "Wöchentlich" },
+  { id: "biweekly", label: "Alle 2 Wochen" },
+  { id: "monthly", label: "Monatlich" },
+  { id: "yearly", label: "Jährlich" },
+];
+
+export function recurrenceLabel(id: TaskRecurrence | null) {
+  return RECURRENCES.find((r) => r.id === id)?.label ?? "";
+}
+
+/** Helle Hintergrundtönung je Status für Karten in der Rubriken-Ansicht */
+export const STATUS_TINT: Record<TaskStatus, string> = {
+  todo: "#FFFFFF",
+  doing: "#EEF4FC",
+  review: "#FDF3EC",
+  done: "#EEF7F4",
+};
 
 export const PROJECT_COLORS = ["#1F5FBF", "#0E7C66", "#6B4FB3", "#B4561C", "#8A6A12", "#B0336B"];
 

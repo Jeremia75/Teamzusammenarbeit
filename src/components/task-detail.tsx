@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Comment, Milestone, Task, TaskPriority } from "@/lib/database.types";
-import { PRIORITIES, STATUSES } from "@/lib/labels";
+import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence } from "@/lib/database.types";
+import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
 import type { Member } from "@/components/project-view";
 
@@ -11,6 +11,7 @@ type Props = {
   task: Task;
   subtasks: Task[];
   milestones: Milestone[];
+  sections: Section[];
   members: Member[];
   assigned: string[];
   currentUserId: string;
@@ -108,6 +109,44 @@ export function TaskDetail(props: Props) {
             ))}
           </select>
         </label>
+        <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+          Wiederholen
+          <select
+            value={task.recurrence ?? ""}
+            onChange={(e) => onUpdate(task.id, { recurrence: (e.target.value || null) as TaskRecurrence | null, recurrence_spawned: false })}
+            className={`${field} text-[#16191D]`}
+          >
+            <option value="">Nicht wiederholen</option>
+            {RECURRENCES.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          {task.recurrence && (
+            <span className="font-normal text-[#3E4650]">
+              Wenn du sie erledigst, entsteht automatisch die nächste
+              {task.due_date ? ` (ab ${formatDate(task.due_date)} gerechnet)` : " (ab heute gerechnet)"}.
+            </span>
+          )}
+        </label>
+        {!task.parent_id && props.sections.length > 0 && (
+          <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+            Rubrik
+            <select
+              value={task.section_id ?? ""}
+              onChange={(e) => onUpdate(task.id, { section_id: e.target.value || null })}
+              className={`${field} text-[#16191D]`}
+            >
+              <option value="">Ohne Rubrik</option>
+              {props.sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         {!task.parent_id && (
           <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
             Meilenstein
