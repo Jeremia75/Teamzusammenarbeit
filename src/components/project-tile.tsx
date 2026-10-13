@@ -22,7 +22,7 @@ export function ProjectTile({
     <Link
       href={`/p/${project.id}`}
       draggable={false}
-      className={`h-full bg-white border border-[#DDE1E5] rounded-xl flex flex-col hover:border-[#9AA4AE] hover:shadow-sm transition ${
+      className={`h-full bg-(--c-surface) border border-(--c-line) rounded-xl flex flex-col hover:border-(--c-line-hover) hover:shadow-sm transition ${
         compact ? "p-3 gap-2" : "p-4 gap-3"
       }`}
     >
@@ -31,9 +31,9 @@ export function ProjectTile({
         {project.name}
       </span>
       <StatusBar counts={s} height={compact ? 6 : 8} />
-      <span className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-[#3E4650]">
+      <span className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-(--c-text-2)">
         {total === 0 ? (
-          <span className="text-[#5A626B]">Noch keine Aufgaben</span>
+          <span className="text-(--c-muted)">Noch keine Aufgaben</span>
         ) : (
           <>
             <span>
@@ -42,13 +42,13 @@ export function ProjectTile({
             <span>
               <strong>{s.done}</strong> erledigt
             </span>
-            {s.overdue > 0 && <span className="text-[#9A3412] font-semibold">{s.overdue} überfällig</span>}
+            {s.overdue > 0 && <span className="text-(--c-danger) font-semibold">{s.overdue} überfällig</span>}
           </>
         )}
       </span>
       {s.next && (
-        <span className={`mt-auto text-[13px] text-[#5A626B] border-t border-[#EEF1F4] line-clamp-2 ${compact ? "pt-2" : "pt-2.5"}`}>
-          Als Nächstes: <span className="text-[#16191D] font-semibold">{s.next.title}</span> · {formatDate(s.next.due)}
+        <span className={`mt-auto text-[13px] text-(--c-muted) border-t border-(--c-line-soft) line-clamp-2 ${compact ? "pt-2" : "pt-2.5"}`}>
+          Als Nächstes: <span className="text-(--c-ink) font-semibold">{s.next.title}</span> · {formatDate(s.next.due)}
         </span>
       )}
     </Link>

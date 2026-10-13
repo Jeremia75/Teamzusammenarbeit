@@ -1,16 +1,16 @@
 import type { TaskPriority, TaskRecurrence, TaskStatus } from "@/lib/database.types";
 
 export const STATUSES: { id: TaskStatus; label: string; color: string }[] = [
-  { id: "todo", label: "Offen", color: "#8A94A0" },
-  { id: "doing", label: "In Arbeit", color: "#1F5FBF" },
-  { id: "review", label: "Zur Prüfung", color: "#B4561C" },
-  { id: "done", label: "Erledigt", color: "#0E7C66" },
+  { id: "todo", label: "Offen", color: "var(--st-todo)" },
+  { id: "doing", label: "In Arbeit", color: "var(--st-doing)" },
+  { id: "review", label: "Zur Prüfung", color: "var(--st-review)" },
+  { id: "done", label: "Erledigt", color: "var(--st-done)" },
 ];
 
 export const PRIORITIES: { id: TaskPriority; label: string; bg: string; fg: string }[] = [
-  { id: "high", label: "Hoch", bg: "#FDE8E1", fg: "#9A3412" },
-  { id: "medium", label: "Mittel", bg: "#FEF3C7", fg: "#854D0E" },
-  { id: "low", label: "Niedrig", bg: "#E6EEF7", fg: "#1E4F8A" },
+  { id: "high", label: "Hoch", bg: "var(--prio-high-bg)", fg: "var(--prio-high-fg)" },
+  { id: "medium", label: "Mittel", bg: "var(--prio-mid-bg)", fg: "var(--prio-mid-fg)" },
+  { id: "low", label: "Niedrig", bg: "var(--prio-low-bg)", fg: "var(--prio-low-fg)" },
 ];
 
 export const RECURRENCES: { id: TaskRecurrence; label: string }[] = [
@@ -27,10 +27,10 @@ export function recurrenceLabel(id: TaskRecurrence | null) {
 
 /** Helle Hintergrundtönung je Status für Karten in der Rubriken-Ansicht */
 export const STATUS_TINT: Record<TaskStatus, string> = {
-  todo: "#FFFFFF",
-  doing: "#EEF4FC",
-  review: "#FDF3EC",
-  done: "#EEF7F4",
+  todo: "var(--tint-todo)",
+  doing: "var(--tint-doing)",
+  review: "var(--tint-review)",
+  done: "var(--tint-done)",
 };
 
 export const PROJECT_COLORS = ["#1F5FBF", "#0E7C66", "#6B4FB3", "#B4561C", "#8A6A12", "#B0336B"];

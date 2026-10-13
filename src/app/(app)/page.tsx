@@ -13,7 +13,7 @@ export default async function Home() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-extrabold tracking-tight">Übersicht</h1>
-          <p className="text-[#5A626B]">
+          <p className="text-(--c-muted)">
             {totalProjects === 0
               ? "Lege dein erstes Projekt an."
               : `${totalProjects} ${totalProjects === 1 ? "Projekt" : "Projekte"} in ${workspaces.length} ${workspaces.length === 1 ? "Bereich" : "Bereichen"}.`}
@@ -34,23 +34,23 @@ export default async function Home() {
       ))}
 
       {!hasCompany && (
-        <section className="bg-white border border-[#DDE1E5] rounded-xl p-5 flex flex-col gap-4">
+        <section className="bg-(--c-surface) border border-(--c-line) rounded-xl p-5 flex flex-col gap-4">
           <div>
             <h2 className="text-lg font-bold">Firma anlegen</h2>
-            <p className="text-sm text-[#5A626B]">
+            <p className="text-sm text-(--c-muted)">
               Für die Zusammenarbeit im Team. Deine privaten Projekte bleiben davon getrennt.
             </p>
           </div>
           <form action={createOrganization} className="flex flex-wrap gap-3 items-end">
             <label className="flex flex-col gap-1 text-sm font-semibold flex-[1_1_200px]">
               Name der Firma
-              <input name="name" required className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal" />
+              <input name="name" required className="h-11 rounded-lg border border-(--c-line) px-3 font-normal" />
             </label>
             <label className="flex flex-col gap-1 text-sm font-semibold flex-[1_1_160px]">
               Erster Bereich
-              <input name="workspace" defaultValue="Beruflich" className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal" />
+              <input name="workspace" defaultValue="Beruflich" className="h-11 rounded-lg border border-(--c-line) px-3 font-normal" />
             </label>
-            <button type="submit" className="h-11 px-5 rounded-lg bg-[#16191D] text-white font-bold">
+            <button type="submit" className="h-11 px-5 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold">
               Anlegen
             </button>
           </form>

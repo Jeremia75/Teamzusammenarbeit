@@ -19,14 +19,14 @@ export function MemberForm({ workspaceId }: { workspaceId: string }) {
           type="email"
           required
           placeholder="E-Mail-Adresse"
-          className="min-w-0 flex-1 h-11 rounded-lg border border-[#DDE1E5] px-3 text-sm"
+          className="min-w-0 flex-1 h-11 rounded-lg border border-(--c-line) px-3 text-sm"
         />
-        <button type="submit" disabled={pending} className="h-11 px-4 rounded-lg bg-[#16191D] text-white text-sm font-bold disabled:opacity-60">
+        <button type="submit" disabled={pending} className="h-11 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold disabled:opacity-60">
           Hinzufügen
         </button>
       </div>
       {state && (
-        <p role="status" className={`text-sm ${state.ok ? "text-[#0B5E4E]" : "text-[#9A3412]"}`}>
+        <p role="status" className={`text-sm ${state.ok ? "text-(--c-success-ink)" : "text-(--c-danger)"}`}>
           {state.message}
         </p>
       )}

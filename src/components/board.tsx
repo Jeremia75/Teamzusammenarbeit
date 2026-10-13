@@ -74,7 +74,7 @@ export function Board(props: Props) {
                 finish(col);
               }}
               className={`flex-[1_0_272px] max-w-[340px] rounded-xl p-2.5 flex flex-col gap-2 transition-colors ${
-                dragId && drop?.col === col.key ? "bg-[#DCE3EA]" : "bg-[#E8EBEE]"
+                dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"
               }`}
             >
               <ColumnHeader
@@ -145,7 +145,7 @@ export function Board(props: Props) {
 }
 
 export function DropLine() {
-  return <div aria-hidden className="h-1 rounded-full bg-[#1F5FBF] my-0.5" />;
+  return <div aria-hidden className="h-1 rounded-full bg-(--c-accent) my-0.5" />;
 }
 
 export function ColumnHeader({
@@ -192,7 +192,7 @@ export function ColumnHeader({
             if (name.trim() && name.trim() !== col.title) onRename(sectionId, name.trim());
             setEditing(false);
           }}
-          className="min-w-0 flex-1 h-9 rounded-lg border border-[#C9D0D6] px-2.5 text-sm font-bold bg-white"
+          className="min-w-0 flex-1 h-9 rounded-lg border border-(--c-line-strong) px-2.5 text-sm font-bold bg-(--c-surface)"
         />
       </form>
     );
@@ -210,7 +210,7 @@ export function ColumnHeader({
           col.title
         )}
       </h3>
-      <span className="text-xs font-bold text-[#5A626B]">{count}</span>
+      <span className="text-xs font-bold text-(--c-muted)">{count}</span>
       {col.editable && sectionId && (
         <>
           <button
@@ -218,7 +218,7 @@ export function ColumnHeader({
             aria-label={`Rubrik ${col.title} bearbeiten`}
             aria-expanded={menu}
             onClick={() => setMenu(!menu)}
-            className="ml-auto size-8 rounded-lg hover:bg-[#DCE1E6] flex items-center justify-center text-[#3E4650]"
+            className="ml-auto size-8 rounded-lg hover:bg-(--c-col-btn-hover) flex items-center justify-center text-(--c-text-2)"
           >
             <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="5" cy="12" r="1.8" />
@@ -227,7 +227,7 @@ export function ColumnHeader({
             </svg>
           </button>
           {menu && (
-            <div role="menu" className="absolute right-0 top-10 z-10 w-48 rounded-lg border border-[#DDE1E5] bg-white shadow-lg py-1 text-sm">
+            <div role="menu" className="absolute right-0 top-10 z-10 w-48 rounded-lg border border-(--c-line) bg-(--c-surface) shadow-lg py-1 text-sm">
               <MenuItem onClick={() => { setMenu(false); setEditing(true); }}>Umbenennen</MenuItem>
               {!isFirst && <MenuItem onClick={() => { setMenu(false); onShift?.(sectionId, -1); }}>Nach links</MenuItem>}
               {!isLast && <MenuItem onClick={() => { setMenu(false); onShift?.(sectionId, 1); }}>Nach rechts</MenuItem>}
@@ -246,7 +246,7 @@ function MenuItem({ children, onClick, danger }: { children: React.ReactNode; on
       type="button"
       role="menuitem"
       onClick={onClick}
-      className={`w-full text-left px-3 min-h-10 hover:bg-[#F2F4F5] font-semibold ${danger ? "text-[#9A3412]" : ""}`}
+      className={`w-full text-left px-3 min-h-10 hover:bg-(--c-bg) font-semibold ${danger ? "text-(--c-danger)" : ""}`}
     >
       {children}
     </button>
@@ -261,7 +261,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex-[0_0_220px] min-h-12 rounded-xl border-2 border-dashed border-[#C9D0D6] text-sm font-semibold text-[#3E4650] hover:border-[#9AA4AE] hover:bg-white"
+        className="flex-[0_0_220px] min-h-12 rounded-xl border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
       >
         + Rubrik hinzufügen
       </button>
@@ -275,7 +275,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
         setName("");
         setOpen(false);
       }}
-      className="flex-[0_0_260px] rounded-xl bg-white border border-[#DDE1E5] p-2.5 flex flex-col gap-2"
+      className="flex-[0_0_260px] rounded-xl bg-(--c-surface) border border-(--c-line) p-2.5 flex flex-col gap-2"
     >
       <input
         aria-label="Name der Rubrik"
@@ -283,10 +283,10 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
         autoFocus
         onChange={(e) => setName(e.target.value)}
         placeholder={placeholder}
-        className="h-10 rounded-lg border border-[#DDE1E5] px-3 text-sm"
+        className="h-10 rounded-lg border border-(--c-line) px-3 text-sm"
       />
       <div className="flex gap-2">
-        <button type="submit" className="h-10 px-4 rounded-lg bg-[#16191D] text-white text-sm font-bold">
+        <button type="submit" className="h-10 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold">
           Anlegen
         </button>
         <button type="button" onClick={() => setOpen(false)} className="h-10 px-3 text-sm font-semibold">
@@ -341,9 +341,9 @@ export function TaskCard({
       }}
       onDragEnd={onDragEnd}
       className={`relative rounded-lg border-2 overflow-hidden transition ${dragging ? "opacity-40" : ""} ${
-        selected ? "border-[#1F5FBF]" : "border-transparent hover:border-[#C9D0D6]"
+        selected ? "border-(--c-accent)" : "border-transparent hover:border-(--c-line-strong)"
       } ${done && colorful ? "opacity-75" : ""}`}
-      style={{ background: colorful ? STATUS_TINT[task.status] : "#FFFFFF" }}
+      style={{ background: colorful ? STATUS_TINT[task.status] : "var(--c-surface)" }}
     >
       {colorful && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: st.color }} />}
       <div className={`flex gap-2 p-3 ${colorful ? "pl-4" : ""}`}>
@@ -353,9 +353,9 @@ export function TaskCard({
           aria-label={done ? `${task.title} wieder öffnen` : `${task.title} als erledigt markieren`}
           aria-pressed={done}
           className="shrink-0 size-6 -mt-0.5 rounded-full border-2 flex items-center justify-center hover:scale-110 transition"
-          style={{ borderColor: done ? "#0E7C66" : "#9AA4AE", background: done ? "#0E7C66" : "transparent" }}
+          style={{ borderColor: done ? "var(--st-done)" : "var(--c-line-hover)", background: done ? "var(--st-done)" : "transparent" }}
         >
-          <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={done ? "#FFFFFF" : "#9AA4AE"} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+          <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={done ? "#FFFFFF" : "var(--c-line-hover)"} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12l5 5 9-10" />
           </svg>
         </button>
@@ -365,9 +365,9 @@ export function TaskCard({
               {st.label}
             </span>
           )}
-          <span className={`font-semibold leading-snug ${done ? "line-through text-[#5A626B]" : ""}`}>{task.title}</span>
+          <span className={`font-semibold leading-snug ${done ? "line-through text-(--c-muted)" : ""}`}>{task.title}</span>
           {project && (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-[#3E4650] min-w-0">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-(--c-text-2) min-w-0">
               <span aria-hidden className="size-2 rounded-sm shrink-0" style={{ background: project.color }} />
               <span className="truncate">
                 <span className="sr-only">Projekt: </span>
@@ -382,13 +382,13 @@ export function TaskCard({
               </span>
             )}
             {milestone && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#EEF1F4] text-[#3E4650] max-w-full truncate">{milestone}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-(--c-line-soft) text-(--c-text-2) max-w-full truncate">{milestone}</span>
             )}
           </span>
           {(task.due_date || subtasks.length > 0 || people.length > 0 || task.recurrence) && (
-            <span className="flex items-center gap-3 text-xs font-semibold text-[#5A626B]">
+            <span className="flex items-center gap-3 text-xs font-semibold text-(--c-muted)">
               {task.due_date && (
-                <span className={overdue ? "text-[#9A3412]" : ""}>
+                <span className={overdue ? "text-(--c-danger)" : ""}>
                   {overdue ? "Überfällig: " : ""}
                   {formatDate(task.due_date)}
                 </span>
@@ -409,7 +409,7 @@ export function TaskCard({
               )}
               <span className="ml-auto flex">
                 {people.map((p) => (
-                  <Avatar key={p.id} member={p} size={24} className="-ml-1.5 border-2 border-white" />
+                  <Avatar key={p.id} member={p} size={24} className="-ml-1.5 border-2 border-(--c-surface)" />
                 ))}
               </span>
             </span>
@@ -421,7 +421,7 @@ export function TaskCard({
 }
 
 function statusTextColor(s: TaskStatus) {
-  return { todo: "#4F5862", doing: "#174A94", review: "#8A3F12", done: "#0B5E4E" }[s];
+  return { todo: "var(--st-todo-ink)", doing: "var(--st-doing-ink)", review: "var(--st-review-ink)", done: "var(--st-done-ink)" }[s];
 }
 
 export function QuickAdd({ onAdd }: { onAdd: (title: string) => void }) {
@@ -440,7 +440,7 @@ export function QuickAdd({ onAdd }: { onAdd: (title: string) => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="+ Aufgabe hinzufügen"
-        className="w-full h-11 rounded-lg bg-transparent px-3 text-sm placeholder:text-[#5A626B] focus:bg-white focus:outline-2 focus:outline-[#1F5FBF]"
+        className="w-full h-11 rounded-lg bg-transparent px-3 text-sm placeholder:text-(--c-muted) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
       />
     </form>
   );

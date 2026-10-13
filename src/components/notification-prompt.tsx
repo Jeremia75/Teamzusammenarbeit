@@ -65,16 +65,16 @@ export function NotificationPrompt({ userId, email, needed }: { userId: string; 
         e.preventDefault();
         later();
       }}
-      className="m-auto w-[min(560px,calc(100vw-32px))] max-h-[calc(100vh-32px)] rounded-2xl bg-[#F6F7F8] p-0 shadow-2xl backdrop:bg-black/40"
+      className="m-auto w-[min(560px,calc(100vw-32px))] max-h-[calc(100vh-32px)] rounded-2xl bg-(--c-hover) p-0 shadow-2xl backdrop:bg-black/40"
     >
       <div className="p-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 id="np-title" className="text-xl font-extrabold tracking-tight">
             Sollen wir dich per E-Mail erinnern?
           </h2>
-          <p className="text-[#3E4650]">
+          <p className="text-(--c-text-2)">
             Du hast deine erste Aufgabe. Damit nichts untergeht, kann Projektraum dir E-Mails schicken. Du kannst das später jederzeit unter{" "}
-            <Link href="/einstellungen" onClick={later} className="font-semibold text-[#1F5FBF] underline underline-offset-4">
+            <Link href="/einstellungen" onClick={later} className="font-semibold text-(--c-accent) underline underline-offset-4">
               Benachrichtigungen
             </Link>{" "}
             ändern.
@@ -92,7 +92,7 @@ export function NotificationPrompt({ userId, email, needed }: { userId: string; 
               }, 1200)
             }
             secondary={
-              <button type="button" onClick={later} className="h-11 px-3 font-semibold text-[#3E4650] hover:text-[#16191D]">
+              <button type="button" onClick={later} className="h-11 px-3 font-semibold text-(--c-text-2) hover:text-(--c-ink)">
                 Später entscheiden
               </button>
             }

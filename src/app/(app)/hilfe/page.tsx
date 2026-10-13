@@ -6,7 +6,7 @@ export const metadata = { title: "Hilfe · Projektraum" };
 /** So heißt ein Knopf oder Feld in der App – optisch wie ein kleiner Knopf */
 function K({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-block whitespace-nowrap rounded-md border border-[#C9D0D6] bg-white px-1.5 py-px text-[0.92em] font-semibold text-[#16191D]">
+    <span className="inline-block whitespace-nowrap rounded-md border border-(--c-line-strong) bg-(--c-surface) px-1.5 py-px text-[0.92em] font-semibold text-(--c-ink)">
       {children}
     </span>
   );
@@ -14,11 +14,11 @@ function K({ children }: { children: React.ReactNode }) {
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-6 bg-white border border-[#DDE1E5] rounded-xl p-5 sm:p-6 flex flex-col gap-3">
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-6 bg-(--c-surface) border border-(--c-line) rounded-xl p-5 sm:p-6 flex flex-col gap-3">
       <h2 id={`${id}-h`} className="text-xl font-extrabold tracking-tight">
         {title}
       </h2>
-      <div className="flex flex-col gap-3 text-[15.5px] leading-relaxed text-[#2A3038] [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1">
+      <div className="flex flex-col gap-3 text-[15.5px] leading-relaxed text-(--c-ink-2) [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1">
         {children}
       </div>
     </section>
@@ -27,7 +27,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 function Tip({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-lg bg-[#EEF3FB] border border-[#C9DAF2] px-4 py-3 text-[15px] text-[#174A94]">
+    <p className="rounded-lg bg-(--c-accent-soft) border border-(--c-accent-line) px-4 py-3 text-[15px] text-(--c-accent-ink)">
       <strong>Tipp:</strong> {children}
     </p>
   );
@@ -57,18 +57,18 @@ export default function HelpPage() {
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 max-w-4xl">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">Hilfe</h1>
-        <p className="text-[#3E4650] text-[16px] leading-relaxed max-w-2xl">
+        <p className="text-(--c-text-2) text-[16px] leading-relaxed max-w-2xl">
           Hier erfährst du Schritt für Schritt, wie Projektraum funktioniert. Du brauchst keine Erfahrung mit solchen Programmen.
           Lies am besten zuerst die ersten beiden Abschnitte. Den Rest kannst du nachschlagen, wenn du ihn brauchst.
         </p>
       </header>
 
-      <nav aria-label="Inhalt der Hilfe" className="bg-white border border-[#DDE1E5] rounded-xl p-5">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#5A626B] mb-2">Inhalt</h2>
+      <nav aria-label="Inhalt der Hilfe" className="bg-(--c-surface) border border-(--c-line) rounded-xl p-5">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-(--c-muted) mb-2">Inhalt</h2>
         <ol className="sm:columns-2 gap-x-10 list-decimal pl-6 text-[15px]">
           {TOPICS.map(([id, title]) => (
             <li key={id} className="py-1 break-inside-avoid">
-              <a href={`#${id}`} className="font-semibold text-[#1F5FBF] hover:underline underline-offset-4">
+              <a href={`#${id}`} className="font-semibold text-(--c-accent) hover:underline underline-offset-4">
                 {title}
               </a>
             </li>
@@ -79,14 +79,14 @@ export default function HelpPage() {
       <Section id="aufbau" title="So ist Projektraum aufgebaut">
         <p>Projektraum ordnet deine Arbeit in vier Ebenen. Jede Ebene steckt in der nächstgrößeren.</p>
         <div aria-hidden className="flex flex-col gap-2 text-sm font-semibold">
-          <div className="rounded-xl border-2 border-[#1F5FBF] bg-[#EEF3FB] p-3">
-            Bereich <span className="font-normal text-[#3E4650]">z. B. Privat oder Beruflich</span>
-            <div className="mt-2 rounded-lg border-2 border-[#0E7C66] bg-[#EEF7F4] p-3">
-              Projekt <span className="font-normal text-[#3E4650]">z. B. Umzug oder Firmengründung</span>
-              <div className="mt-2 rounded-lg border-2 border-[#B4561C] bg-[#FDF3EC] p-3">
-                Aufgabe <span className="font-normal text-[#3E4650]">z. B. Mietvertrag kündigen</span>
-                <div className="mt-2 rounded-lg border-2 border-[#8A94A0] bg-white p-3">
-                  Unteraufgabe <span className="font-normal text-[#3E4650]">z. B. Kündigungsfrist nachsehen</span>
+          <div className="rounded-xl border-2 border-(--c-accent) bg-(--c-accent-soft) p-3">
+            Bereich <span className="font-normal text-(--c-text-2)">z. B. Privat oder Beruflich</span>
+            <div className="mt-2 rounded-lg border-2 border-(--c-success) bg-(--c-tint-done) p-3">
+              Projekt <span className="font-normal text-(--c-text-2)">z. B. Umzug oder Firmengründung</span>
+              <div className="mt-2 rounded-lg border-2 border-(--c-review) bg-(--c-tint-review) p-3">
+                Aufgabe <span className="font-normal text-(--c-text-2)">z. B. Mietvertrag kündigen</span>
+                <div className="mt-2 rounded-lg border-2 border-(--c-todo) bg-(--c-surface) p-3">
+                  Unteraufgabe <span className="font-normal text-(--c-text-2)">z. B. Kündigungsfrist nachsehen</span>
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function HelpPage() {
         </ul>
         <p>
           Jede Projektkarte zeigt einen farbigen Balken. Daran siehst du auf einen Blick, wie viel schon erledigt ist. Mehr dazu unter{" "}
-          <a href="#farben" className="font-semibold text-[#1F5FBF] underline underline-offset-4">
+          <a href="#farben" className="font-semibold text-(--c-accent) underline underline-offset-4">
             Was die Farben bedeuten
           </a>
           .
@@ -440,6 +440,10 @@ export default function HelpPage() {
               "Öffne links in der Seitenleiste Benachrichtigungen und stell dort ein, was du möchtest. Kommt gar nichts an, schau auch im Spam-Ordner nach.",
             ],
             [
+              "Kann ich Projektraum dunkel einstellen?",
+              "Ja. Links in der Seitenleiste wählst du zwischen Hell, Dunkel und Automatisch. Automatisch richtet sich danach, was in Windows eingestellt ist. Die Wahl gilt für das Gerät, auf dem du sie triffst.",
+            ],
+            [
               "Muss ich etwas speichern?",
               "Nein. Jede Änderung speichert Projektraum sofort.",
             ],
@@ -450,14 +454,14 @@ export default function HelpPage() {
           ].map(([q, a]) => (
             <div key={q}>
               <dt className="font-bold">{q}</dt>
-              <dd className="text-[#3E4650]">{a}</dd>
+              <dd className="text-(--c-text-2)">{a}</dd>
             </div>
           ))}
         </dl>
       </Section>
 
-      <p className="text-sm text-[#5A626B] pb-4">
-        <Link href="/" className="font-semibold text-[#1F5FBF] hover:underline underline-offset-4">
+      <p className="text-sm text-(--c-muted) pb-4">
+        <Link href="/" className="font-semibold text-(--c-accent) hover:underline underline-offset-4">
           Zurück zur Übersicht
         </Link>
       </p>

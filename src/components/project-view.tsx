@@ -308,17 +308,17 @@ export function ProjectView(props: Props) {
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
-          <Link href={`/w/${props.workspace.id}`} className="self-start text-sm font-semibold text-[#5A626B] hover:text-[#16191D] hover:underline underline-offset-4">
+          <Link href={`/w/${props.workspace.id}`} className="self-start text-sm font-semibold text-(--c-muted) hover:text-(--c-ink) hover:underline underline-offset-4">
             ← {props.workspace.name}
           </Link>
           <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
             <span aria-hidden className="size-3.5 rounded" style={{ background: project.color }} />
             {project.name}
           </h1>
-          {project.description && <p className="text-[#5A626B] whitespace-pre-line max-w-3xl">{project.description}</p>}
+          {project.description && <p className="text-(--c-muted) whitespace-pre-line max-w-3xl">{project.description}</p>}
         </div>
         <div className="flex flex-col gap-1.5 min-w-56">
-          <span className="text-sm font-semibold text-[#5A626B]">
+          <span className="text-sm font-semibold text-(--c-muted)">
             {counts.done} von {topLevel.length} erledigt
           </span>
           <StatusBar counts={counts} />
@@ -326,7 +326,7 @@ export function ProjectView(props: Props) {
       </header>
 
       {error && (
-        <div role="alert" className="flex items-center gap-3 rounded-lg bg-[#FDE8E1] text-[#9A3412] px-4 py-3 text-sm font-semibold">
+        <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
           <button type="button" onClick={() => setError(null)} className="ml-auto underline min-h-11">
             Schließen
@@ -344,7 +344,7 @@ export function ProjectView(props: Props) {
       />
 
       <div ref={boardRef} className="scroll-mt-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DDE1E5]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
           <div role="group" aria-label="Ansicht" className="flex gap-1">
             {(
               [
@@ -359,7 +359,7 @@ export function ProjectView(props: Props) {
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
                 className={`min-h-11 px-3.5 font-bold text-sm -mb-px border-b-[3px] ${
-                  view === v ? "border-[#1F5FBF] text-[#16191D]" : "border-transparent text-[#5A626B] hover:text-[#16191D]"
+                  view === v ? "border-(--c-accent) text-(--c-ink)" : "border-transparent text-(--c-muted) hover:text-(--c-ink)"
                 }`}
               >
                 {label}
@@ -367,7 +367,7 @@ export function ProjectView(props: Props) {
             ))}
           </div>
           <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
-            <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-[#1F5FBF]" />
+            <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
             Nur meine Aufgaben
           </label>
         </div>
@@ -375,13 +375,13 @@ export function ProjectView(props: Props) {
         {(filterMilestone || view === "sections") && (
           <div className="flex flex-wrap items-center justify-between gap-3">
             {filterMilestone ? (
-              <div className="flex items-center gap-2 rounded-full bg-[#EEF3FB] border border-[#B9CDEB] pl-3.5 pr-1 py-1 text-sm font-semibold text-[#174A94]">
+              <div className="flex items-center gap-2 rounded-full bg-(--c-accent-soft) border border-(--c-accent-line-2) pl-3.5 pr-1 py-1 text-sm font-semibold text-(--c-accent-ink)">
                 Meilenstein: {filterMilestone.name} · {visible.length} {visible.length === 1 ? "Aufgabe" : "Aufgaben"}
                 <button
                   type="button"
                   onClick={() => setMsFilter(null)}
                   aria-label="Meilenstein-Filter aufheben"
-                  className="size-8 rounded-full hover:bg-[#D9E6F7] flex items-center justify-center"
+                  className="size-8 rounded-full hover:bg-(--c-accent-soft-2) flex items-center justify-center"
                 >
                   <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                     <path d="M6 6l12 12M18 6L6 18" />
@@ -482,10 +482,10 @@ export function TaskList({
   const sectionName = (id: string | null) => sections.find((s) => s.id === id)?.name ?? "";
 
   return (
-    <div className="relative bg-white border border-[#DDE1E5] rounded-xl overflow-x-auto">
+    <div className="relative bg-(--c-surface) border border-(--c-line) rounded-xl overflow-x-auto">
       <table className="w-full min-w-[820px] text-sm border-collapse">
         <thead>
-          <tr className="text-left text-xs uppercase tracking-wide text-[#5A626B]">
+          <tr className="text-left text-xs uppercase tracking-wide text-(--c-muted)">
             <th scope="col" className="px-4 py-3 font-bold">Aufgabe</th>
             {projectOf && <th scope="col" className="px-2 py-3 font-bold">Projekt</th>}
             <th scope="col" className="px-2 py-3 font-bold">Status</th>
@@ -501,19 +501,19 @@ export function TaskList({
             const st = STATUSES.find((s) => s.id === t.status)!;
             const subs = subtasksOf(t.id);
             return (
-              <tr key={t.id} className={`border-t border-[#EEF1F4] ${openId === t.id ? "bg-[#EEF3FB]" : ""}`}>
+              <tr key={t.id} className={`border-t border-(--c-line-soft) ${openId === t.id ? "bg-(--c-accent-soft)" : ""}`}>
                 <td className="px-2 py-1">
                   <button
                     type="button"
                     onClick={() => onOpen(t.id)}
-                    className={`min-h-11 px-2 text-left font-semibold ${t.status === "done" ? "line-through text-[#5A626B]" : ""}`}
+                    className={`min-h-11 px-2 text-left font-semibold ${t.status === "done" ? "line-through text-(--c-muted)" : ""}`}
                   >
                     {t.title}
                     {t.recurrence && <span className="sr-only"> (wiederkehrend)</span>}
                   </button>
                 </td>
                 {projectOf && (
-                  <td className="px-2 text-[#3E4650]">
+                  <td className="px-2 text-(--c-text-2)">
                     <span className="inline-flex items-center gap-1.5 font-semibold">
                       <span aria-hidden className="size-2 rounded-sm shrink-0" style={{ background: projectOf(t)?.color }} />
                       {projectOf(t)?.name}
@@ -526,18 +526,18 @@ export function TaskList({
                     {st.label}
                   </span>
                 </td>
-                <td className="px-2 text-[#3E4650]">{sectionName(t.section_id)}</td>
-                <td className="px-2 text-[#3E4650]">{milestoneName(t.milestone_id)}</td>
-                <td className={`px-2 whitespace-nowrap ${isOverdue(t.due_date, t.status) ? "text-[#9A3412] font-semibold" : "text-[#3E4650]"}`}>
+                <td className="px-2 text-(--c-text-2)">{sectionName(t.section_id)}</td>
+                <td className="px-2 text-(--c-text-2)">{milestoneName(t.milestone_id)}</td>
+                <td className={`px-2 whitespace-nowrap ${isOverdue(t.due_date, t.status) ? "text-(--c-danger) font-semibold" : "text-(--c-text-2)"}`}>
                   {formatDate(t.due_date)}
                 </td>
-                <td className="px-2 text-[#3E4650]">
+                <td className="px-2 text-(--c-text-2)">
                   {subs.length ? `${subs.filter((s) => s.status === "done").length}/${subs.length}` : ""}
                 </td>
                 <td className="px-4">
                   <span className="flex pl-1.5">
                     {peopleOf(t.id).map((p) => (
-                      <Avatar key={p.id} member={p} size={24} className="-ml-1.5 border-2 border-white" />
+                      <Avatar key={p.id} member={p} size={24} className="-ml-1.5 border-2 border-(--c-surface)" />
                     ))}
                   </span>
                 </td>
@@ -547,11 +547,11 @@ export function TaskList({
         </tbody>
       </table>
       {onAdd && (
-        <div className="border-t border-[#EEF1F4] p-2">
+        <div className="border-t border-(--c-line-soft) p-2">
           <QuickAdd onAdd={onAdd} />
         </div>
       )}
-      {sorted.length === 0 && !onAdd && <p className="px-4 py-6 text-sm text-[#5A626B]">Keine Aufgaben.</p>}
+      {sorted.length === 0 && !onAdd && <p className="px-4 py-6 text-sm text-(--c-muted)">Keine Aufgaben.</p>}
     </div>
   );
 }

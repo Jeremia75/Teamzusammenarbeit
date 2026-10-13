@@ -27,11 +27,11 @@ export function Milestones({
   return (
     <section aria-label="Meilensteine" className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#5A626B]">Ziele &amp; Meilensteine</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-(--c-muted)">Ziele &amp; Meilensteine</h2>
         <button
           type="button"
           onClick={() => setAdding(!adding)}
-          className="min-h-11 px-3 text-sm font-semibold text-[#1F5FBF]"
+          className="min-h-11 px-3 text-sm font-semibold text-(--c-accent)"
         >
           {adding ? "Abbrechen" : "+ Meilenstein"}
         </button>
@@ -47,24 +47,24 @@ export function Milestones({
             setDue("");
             setAdding(false);
           }}
-          className="flex flex-wrap gap-3 items-end bg-white border border-[#DDE1E5] rounded-xl p-4"
+          className="flex flex-wrap gap-3 items-end bg-(--c-surface) border border-(--c-line) rounded-xl p-4"
         >
           <label className="flex flex-col gap-1 text-sm font-semibold flex-[1_1_220px]">
             Name
-            <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal" />
+            <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus className="h-11 rounded-lg border border-(--c-line) px-3 font-normal" />
           </label>
           <label className="flex flex-col gap-1 text-sm font-semibold">
             Fällig am
-            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal" />
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-11 rounded-lg border border-(--c-line) px-3 font-normal" />
           </label>
-          <button type="submit" className="h-11 px-5 rounded-lg bg-[#16191D] text-white font-bold">
+          <button type="submit" className="h-11 px-5 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold">
             Anlegen
           </button>
         </form>
       )}
 
       {milestones.length === 0 && !adding ? (
-        <p className="text-sm text-[#5A626B]">
+        <p className="text-sm text-(--c-muted)">
           Noch keine Meilensteine. Lege Etappenziele an und ordne ihnen Aufgaben zu, dann siehst du hier den Fortschritt.
         </p>
       ) : (
@@ -80,8 +80,8 @@ export function Milestones({
             return (
               <div
                 key={m.id}
-                className={`relative bg-white rounded-xl border-2 transition ${
-                  active ? "border-[#1F5FBF] shadow-sm" : "border-[#DDE1E5] hover:border-[#9AA4AE]"
+                className={`relative bg-(--c-surface) rounded-xl border-2 transition ${
+                  active ? "border-(--c-accent) shadow-sm" : "border-(--c-line) hover:border-(--c-line-hover)"
                 }`}
               >
                 <button
@@ -94,17 +94,17 @@ export function Milestones({
                     <span className="font-bold flex-1">{m.name}</span>
                     <span
                       className={`text-xs font-bold px-2 py-0.5 rounded-md whitespace-nowrap ${
-                        complete ? "bg-[#DDF2EC] text-[#0B5E4E]" : "bg-[#EEF1F4] text-[#3E4650]"
+                        complete ? "bg-(--c-success-soft) text-(--c-success-ink)" : "bg-(--c-line-soft) text-(--c-text-2)"
                       }`}
                     >
                       {complete ? "Erreicht" : `${pct} %`}
                     </span>
                   </span>
                   <StatusBar counts={counts} height={6} />
-                  <span className="text-sm text-[#5A626B]">
+                  <span className="text-sm text-(--c-muted)">
                     {done} von {mt.length} Aufgaben{m.due_date ? ` · fällig ${formatDate(m.due_date)}` : ""}
                   </span>
-                  <span className="text-xs font-semibold text-[#1F5FBF]">
+                  <span className="text-xs font-semibold text-(--c-accent)">
                     {active ? "Filter aktiv – erneut klicken zum Aufheben" : "Aufgaben anzeigen"}
                   </span>
                 </button>
@@ -112,7 +112,7 @@ export function Milestones({
                   type="button"
                   onClick={() => onDelete(m.id)}
                   aria-label={`Meilenstein ${m.name} löschen`}
-                  className="absolute right-2 bottom-2 size-8 rounded-lg hover:bg-[#F2F4F5] flex items-center justify-center text-[#5A626B]"
+                  className="absolute right-2 bottom-2 size-8 rounded-lg hover:bg-(--c-bg) flex items-center justify-center text-(--c-muted)"
                 >
                   <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <path d="M6 6l12 12M18 6L6 18" />

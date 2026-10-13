@@ -22,8 +22,8 @@ type Props = {
   onToggleAssignee: (userId: string) => void;
 };
 
-const field = "h-11 rounded-lg border border-[#DDE1E5] px-3 bg-white font-normal text-sm";
-const sectionLabel = "text-xs font-bold uppercase tracking-wider text-[#5A626B]";
+const field = "h-11 rounded-lg border border-(--c-line) px-3 bg-(--c-surface) font-normal text-sm";
+const sectionLabel = "text-xs font-bold uppercase tracking-wider text-(--c-muted)";
 
 export function TaskDetail(props: Props) {
   const { task, subtasks, onUpdate } = props;
@@ -38,7 +38,7 @@ export function TaskDetail(props: Props) {
   return (
     <aside
       aria-label="Aufgabendetails"
-      className="flex-[1_1_340px] max-w-full bg-white border border-[#DDE1E5] rounded-xl p-5 flex flex-col gap-5 lg:sticky lg:top-4"
+      className="flex-[1_1_340px] max-w-full bg-(--c-surface) border border-(--c-line) rounded-xl p-5 flex flex-col gap-5 lg:sticky lg:top-4"
     >
       <div className="flex items-start gap-2">
         <label className="sr-only" htmlFor="task-title">Titel</label>
@@ -48,13 +48,13 @@ export function TaskDetail(props: Props) {
           rows={2}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => title.trim() && title !== task.title && onUpdate(task.id, { title: title.trim() })}
-          className="flex-1 resize-none text-lg font-extrabold leading-snug rounded-lg px-2 py-1 -mx-2 hover:bg-[#F6F7F8] focus:bg-white focus:outline-2 focus:outline-[#1F5FBF]"
+          className="flex-1 resize-none text-lg font-extrabold leading-snug rounded-lg px-2 py-1 -mx-2 hover:bg-(--c-hover) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
         />
         <button
           type="button"
           onClick={props.onClose}
           aria-label="Details schließen"
-          className="size-11 shrink-0 rounded-lg border border-[#DDE1E5] flex items-center justify-center hover:bg-[#F2F4F5]"
+          className="size-11 shrink-0 rounded-lg border border-(--c-line) flex items-center justify-center hover:bg-(--c-bg)"
         >
           <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <path d="M6 6l12 12M18 6L6 18" />
@@ -74,7 +74,7 @@ export function TaskDetail(props: Props) {
                 aria-pressed={active}
                 onClick={() => onUpdate(task.id, { status: s.id })}
                 className={`min-h-11 rounded-lg border text-sm font-bold flex items-center justify-center gap-1.5 ${
-                  active ? "bg-[#16191D] text-white border-[#16191D]" : "bg-white border-[#DDE1E5] hover:bg-[#F6F7F8]"
+                  active ? "bg-(--c-ink) text-(--c-on-ink) border-(--c-ink)" : "bg-(--c-surface) border-(--c-line) hover:bg-(--c-hover)"
                 }`}
               >
                 <span aria-hidden className="size-2 rounded-full" style={{ background: s.color }} />
@@ -86,21 +86,21 @@ export function TaskDetail(props: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
           Fällig am
           <input
             type="date"
             value={task.due_date ?? ""}
             onChange={(e) => onUpdate(task.id, { due_date: e.target.value || null })}
-            className={`${field} text-[#16191D]`}
+            className={`${field} text-(--c-ink)`}
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
           Priorität
           <select
             value={task.priority}
             onChange={(e) => onUpdate(task.id, { priority: e.target.value as TaskPriority })}
-            className={`${field} text-[#16191D]`}
+            className={`${field} text-(--c-ink)`}
           >
             {PRIORITIES.map((p) => (
               <option key={p.id} value={p.id}>
@@ -109,12 +109,12 @@ export function TaskDetail(props: Props) {
             ))}
           </select>
         </label>
-        <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+        <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
           Wiederholen
           <select
             value={task.recurrence ?? ""}
             onChange={(e) => onUpdate(task.id, { recurrence: (e.target.value || null) as TaskRecurrence | null, recurrence_spawned: false })}
-            className={`${field} text-[#16191D]`}
+            className={`${field} text-(--c-ink)`}
           >
             <option value="">Nicht wiederholen</option>
             {RECURRENCES.map((r) => (
@@ -124,19 +124,19 @@ export function TaskDetail(props: Props) {
             ))}
           </select>
           {task.recurrence && (
-            <span className="font-normal text-[#3E4650]">
+            <span className="font-normal text-(--c-text-2)">
               Wenn du sie erledigst, entsteht automatisch die nächste
               {task.due_date ? ` (ab ${formatDate(task.due_date)} gerechnet)` : " (ab heute gerechnet)"}.
             </span>
           )}
         </label>
         {!task.parent_id && props.sections.length > 0 && (
-          <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+          <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
             Rubrik
             <select
               value={task.section_id ?? ""}
               onChange={(e) => onUpdate(task.id, { section_id: e.target.value || null })}
-              className={`${field} text-[#16191D]`}
+              className={`${field} text-(--c-ink)`}
             >
               <option value="">Ohne Rubrik</option>
               {props.sections.map((s) => (
@@ -148,12 +148,12 @@ export function TaskDetail(props: Props) {
           </label>
         )}
         {!task.parent_id && (
-          <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-[#5A626B]">
+          <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
             Meilenstein
             <select
               value={task.milestone_id ?? ""}
               onChange={(e) => onUpdate(task.id, { milestone_id: e.target.value || null })}
-              className={`${field} text-[#16191D]`}
+              className={`${field} text-(--c-ink)`}
             >
               <option value="">Kein Meilenstein</option>
               {props.milestones.map((m) => (
@@ -178,7 +178,7 @@ export function TaskDetail(props: Props) {
                 aria-pressed={on}
                 onClick={() => props.onToggleAssignee(m.id)}
                 className={`min-h-11 rounded-full pl-1.5 pr-3.5 flex items-center gap-2 text-sm font-semibold border ${
-                  on ? "border-[#1F5FBF] bg-[#EEF3FB]" : "border-[#DDE1E5] bg-white hover:bg-[#F6F7F8]"
+                  on ? "border-(--c-accent) bg-(--c-accent-soft)" : "border-(--c-line) bg-(--c-surface) hover:bg-(--c-hover)"
                 }`}
               >
                 <Avatar member={m} size={28} />
@@ -197,7 +197,7 @@ export function TaskDetail(props: Props) {
           placeholder="Details, Links, Notizen …"
           onChange={(e) => setDescription(e.target.value)}
           onBlur={() => description !== task.description && onUpdate(task.id, { description })}
-          className="rounded-lg border border-[#DDE1E5] p-3 text-sm resize-y"
+          className="rounded-lg border border-(--c-line) p-3 text-sm resize-y"
         />
       </label>
 
@@ -205,29 +205,29 @@ export function TaskDetail(props: Props) {
         <div className="flex items-center justify-between">
           <span className={sectionLabel}>Unteraufgaben</span>
           {subtasks.length > 0 && (
-            <span className="text-sm font-bold text-[#3E4650]">
+            <span className="text-sm font-bold text-(--c-text-2)">
               {subDone}/{subtasks.length} erledigt
             </span>
           )}
         </div>
         {subtasks.length > 0 && (
-          <span className="block h-1.5 rounded bg-[#E8EBEE] overflow-hidden">
-            <span className="block h-full rounded bg-[#0E7C66] transition-all" style={{ width: `${subPct}%` }} />
+          <span className="block h-1.5 rounded bg-(--c-col) overflow-hidden">
+            <span className="block h-full rounded bg-(--c-success) transition-all" style={{ width: `${subPct}%` }} />
           </span>
         )}
         <ul className="flex flex-col">
           {subtasks.map((s) => (
-            <li key={s.id} className="flex items-center gap-3 min-h-11 border-b border-[#EEF1F4]">
+            <li key={s.id} className="flex items-center gap-3 min-h-11 border-b border-(--c-line-soft)">
               <input
                 type="checkbox"
                 id={`sub-${s.id}`}
                 checked={s.status === "done"}
                 onChange={(e) => onUpdate(s.id, { status: e.target.checked ? "done" : "todo" })}
-                className="size-[18px] accent-[#1F5FBF] cursor-pointer"
+                className="size-[18px] accent-(--c-accent) cursor-pointer"
               />
               <label
                 htmlFor={`sub-${s.id}`}
-                className={`flex-1 text-sm cursor-pointer ${s.status === "done" ? "line-through text-[#5A626B]" : ""}`}
+                className={`flex-1 text-sm cursor-pointer ${s.status === "done" ? "line-through text-(--c-muted)" : ""}`}
               >
                 {s.title}
               </label>
@@ -235,7 +235,7 @@ export function TaskDetail(props: Props) {
                 type="button"
                 onClick={() => props.onDelete(s.id)}
                 aria-label={`Unteraufgabe ${s.title} löschen`}
-                className="size-9 rounded-lg hover:bg-[#F2F4F5] flex items-center justify-center text-[#5A626B]"
+                className="size-9 rounded-lg hover:bg-(--c-bg) flex items-center justify-center text-(--c-muted)"
               >
                 <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -261,7 +261,7 @@ export function TaskDetail(props: Props) {
             placeholder="Unteraufgabe hinzufügen"
             className={`${field} flex-1 min-w-0`}
           />
-          <button type="submit" className="h-11 px-4 rounded-lg border border-[#DDE1E5] text-sm font-bold hover:bg-[#F6F7F8]">
+          <button type="submit" className="h-11 px-4 rounded-lg border border-(--c-line) text-sm font-bold hover:bg-(--c-hover)">
             +
           </button>
         </form>
@@ -269,7 +269,7 @@ export function TaskDetail(props: Props) {
 
       <Comments taskId={task.id} members={props.members} currentUserId={props.currentUserId} />
 
-      <div className="border-t border-[#EEF1F4] pt-4">
+      <div className="border-t border-(--c-line-soft) pt-4">
         {confirmDelete ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold">
@@ -278,16 +278,16 @@ export function TaskDetail(props: Props) {
             <button
               type="button"
               onClick={() => props.onDelete(task.id)}
-              className="min-h-11 px-4 rounded-lg bg-[#9A3412] text-white text-sm font-bold"
+              className="min-h-11 px-4 rounded-lg bg-(--c-danger) text-(--c-on-danger) text-sm font-bold"
             >
               Löschen
             </button>
-            <button type="button" onClick={() => setConfirmDelete(false)} className="min-h-11 px-4 rounded-lg border border-[#DDE1E5] text-sm font-bold">
+            <button type="button" onClick={() => setConfirmDelete(false)} className="min-h-11 px-4 rounded-lg border border-(--c-line) text-sm font-bold">
               Abbrechen
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => setConfirmDelete(true)} className="min-h-11 text-sm font-semibold text-[#9A3412]">
+          <button type="button" onClick={() => setConfirmDelete(true)} className="min-h-11 text-sm font-semibold text-(--c-danger)">
             Aufgabe löschen
           </button>
         )}
@@ -339,8 +339,8 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
           <div key={c.id} className="flex gap-2.5">
             <Avatar member={author} size={28} />
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-xs text-[#5A626B]">
-                <strong className="text-[#16191D]">{author.name}</strong> ·{" "}
+              <span className="text-xs text-(--c-muted)">
+                <strong className="text-(--c-ink)">{author.name}</strong> ·{" "}
                 {new Date(c.created_at).toLocaleString("de-AT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </span>
               <p className="text-sm whitespace-pre-wrap break-words">{c.body}</p>
@@ -357,7 +357,7 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
           placeholder="Kommentar schreiben"
           className={`${field} flex-1 min-w-0`}
         />
-        <button type="submit" className="h-11 px-4 rounded-lg bg-[#16191D] text-white text-sm font-bold">
+        <button type="submit" className="h-11 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold">
           Senden
         </button>
       </form>

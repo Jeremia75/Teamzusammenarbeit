@@ -42,13 +42,13 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#F2F4F5] px-4">
+    <main className="min-h-screen flex items-center justify-center bg-(--c-bg) px-4">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm bg-white border border-[#DDE1E5] rounded-2xl p-8 flex flex-col gap-4"
+        className="w-full max-w-sm bg-(--c-surface) border border-(--c-line) rounded-2xl p-8 flex flex-col gap-4"
       >
         <h1 className="text-2xl font-extrabold tracking-tight">Projektraum</h1>
-        <p className="text-sm text-[#5A626B]">
+        <p className="text-sm text-(--c-muted)">
           {mode === "login" ? "Melde dich an." : "Lege ein neues Konto an."}
         </p>
 
@@ -56,7 +56,7 @@ export default function LoginPage() {
           <label className="flex flex-col gap-1 text-sm font-semibold">
             Name
             <input
-              className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal"
+              className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -67,7 +67,7 @@ export default function LoginPage() {
           E-Mail
           <input
             type="email"
-            className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal"
+            className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -78,7 +78,7 @@ export default function LoginPage() {
           <input
             type="password"
             minLength={8}
-            className="h-11 rounded-lg border border-[#DDE1E5] px-3 font-normal"
+            className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -88,17 +88,17 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={busy}
-          className="h-11 rounded-lg bg-[#16191D] text-white font-bold disabled:opacity-60"
+          className="h-11 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold disabled:opacity-60"
         >
           {mode === "login" ? "Anmelden" : "Konto erstellen"}
         </button>
 
-        {message && <p className="text-sm text-[#3E4650]">{message}</p>}
+        {message && <p className="text-sm text-(--c-text-2)">{message}</p>}
 
         <button
           type="button"
           onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          className="text-sm text-[#1F5FBF] font-semibold min-h-11"
+          className="text-sm text-(--c-accent) font-semibold min-h-11"
         >
           {mode === "login" ? "Noch kein Konto? Registrieren" : "Schon registriert? Anmelden"}
         </button>

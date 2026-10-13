@@ -1,7 +1,181 @@
 @import "tailwindcss";
 
+/* Farben der App als Tokens. Hell ist der Standard. Dunkel gilt bei
+   data-theme="dark" (fest gewählt) oder ohne Wahl ("Wie Windows"), wenn das System dunkel ist. */
+:root {
+  color-scheme: light;
+  --c-bg: #f2f4f5;
+  --c-surface: #ffffff;
+  --c-ink: #16191d;
+  --c-on-ink: #ffffff;
+  --c-ink-2: #2a3038;
+  --c-text-2: #3e4650;
+  --c-muted: #5a626b;
+  --c-line: #dde1e5;
+  --c-line-soft: #eef1f4;
+  --c-line-strong: #c9d0d6;
+  --c-line-hover: #9aa4ae;
+  --c-hover: #f6f7f8;
+  --c-col: #e8ebee;
+  --c-col-2: #e3e7ea;
+  --c-col-drop: #dce3ea;
+  --c-col-hover: #dfe4e9;
+  --c-col-btn-hover: #dce1e6;
+  --c-track: #e8ebee;
+  --c-accent: #1f5fbf;
+  --c-accent-soft: #eef3fb;
+  --c-accent-soft-2: #d9e6f7;
+  --c-accent-line: #c9daf2;
+  --c-accent-line-2: #b9cdeb;
+  --c-accent-ink: #174a94;
+  --c-danger: #9a3412;
+  --c-on-danger: #ffffff;
+  --c-danger-soft: #fde8e1;
+  --c-success: #0e7c66;
+  --c-success-ink: #0b5e4e;
+  --c-success-soft: #ddf2ec;
+  --c-tint-review: #fdf3ec;
+  --c-tint-done: #eef7f4;
+  --c-review: #b4561c;
+  --c-todo: #8a94a0;
+
+  --st-todo: #8a94a0;
+  --st-doing: #1f5fbf;
+  --st-review: #b4561c;
+  --st-done: #0e7c66;
+  --st-todo-ink: #4f5862;
+  --st-doing-ink: #174a94;
+  --st-review-ink: #8a3f12;
+  --st-done-ink: #0b5e4e;
+  --tint-todo: #ffffff;
+  --tint-doing: #eef4fc;
+  --tint-review: #fdf3ec;
+  --tint-done: #eef7f4;
+
+  --prio-high-bg: #fde8e1;
+  --prio-high-fg: #9a3412;
+  --prio-mid-bg: #fef3c7;
+  --prio-mid-fg: #854d0e;
+  --prio-low-bg: #e6eef7;
+  --prio-low-fg: #1e4f8a;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: #0f1216;
+  --c-surface: #181c21;
+  --c-ink: #e8ebee;
+  --c-on-ink: #12161a;
+  --c-ink-2: #d5dae0;
+  --c-text-2: #bac2ca;
+  --c-muted: #969fa9;
+  --c-line: #2c333a;
+  --c-line-soft: #232930;
+  --c-line-strong: #3a424b;
+  --c-line-hover: #5a6570;
+  --c-hover: #20262c;
+  --c-col: #13171b;
+  --c-col-2: #1a1f24;
+  --c-col-drop: #1e2731;
+  --c-col-hover: #171c21;
+  --c-col-btn-hover: #29313a;
+  --c-track: #2c333a;
+  --c-accent: #6fa3f5;
+  --c-accent-soft: #16243a;
+  --c-accent-soft-2: #1d3150;
+  --c-accent-line: #2a4268;
+  --c-accent-line-2: #32507e;
+  --c-accent-ink: #a9c8fa;
+  --c-danger: #f0937a;
+  --c-on-danger: #1a0d08;
+  --c-danger-soft: #3a1f18;
+  --c-success: #2fb894;
+  --c-success-ink: #6ed6bc;
+  --c-success-soft: #11302a;
+  --c-tint-review: #2a1f17;
+  --c-tint-done: #13261f;
+  --c-review: #e0884a;
+  --c-todo: #7d8792;
+  --st-todo: #7d8792;
+  --st-doing: #4c8df0;
+  --st-review: #e0884a;
+  --st-done: #2db592;
+  --st-todo-ink: #aeb6bf;
+  --st-doing-ink: #9dc2fa;
+  --st-review-ink: #f2b48a;
+  --st-done-ink: #7eddc4;
+  --tint-todo: #181c21;
+  --tint-doing: #172233;
+  --tint-review: #2a1f17;
+  --tint-done: #13261f;
+  --prio-high-bg: #3a1f18;
+  --prio-high-fg: #f4a88f;
+  --prio-mid-bg: #352b10;
+  --prio-mid-fg: #f0cf7a;
+  --prio-low-bg: #16243a;
+  --prio-low-fg: #a9c8fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --c-bg: #0f1216;
+    --c-surface: #181c21;
+    --c-ink: #e8ebee;
+    --c-on-ink: #12161a;
+    --c-ink-2: #d5dae0;
+    --c-text-2: #bac2ca;
+    --c-muted: #969fa9;
+    --c-line: #2c333a;
+    --c-line-soft: #232930;
+    --c-line-strong: #3a424b;
+    --c-line-hover: #5a6570;
+    --c-hover: #20262c;
+    --c-col: #13171b;
+    --c-col-2: #1a1f24;
+    --c-col-drop: #1e2731;
+    --c-col-hover: #171c21;
+    --c-col-btn-hover: #29313a;
+    --c-track: #2c333a;
+    --c-accent: #6fa3f5;
+    --c-accent-soft: #16243a;
+    --c-accent-soft-2: #1d3150;
+    --c-accent-line: #2a4268;
+    --c-accent-line-2: #32507e;
+    --c-accent-ink: #a9c8fa;
+    --c-danger: #f0937a;
+    --c-on-danger: #1a0d08;
+    --c-danger-soft: #3a1f18;
+    --c-success: #2fb894;
+    --c-success-ink: #6ed6bc;
+    --c-success-soft: #11302a;
+    --c-tint-review: #2a1f17;
+    --c-tint-done: #13261f;
+    --c-review: #e0884a;
+    --c-todo: #7d8792;
+    --st-todo: #7d8792;
+    --st-doing: #4c8df0;
+    --st-review: #e0884a;
+    --st-done: #2db592;
+    --st-todo-ink: #aeb6bf;
+    --st-doing-ink: #9dc2fa;
+    --st-review-ink: #f2b48a;
+    --st-done-ink: #7eddc4;
+    --tint-todo: #181c21;
+    --tint-doing: #172233;
+    --tint-review: #2a1f17;
+    --tint-done: #13261f;
+    --prio-high-bg: #3a1f18;
+    --prio-high-fg: #f4a88f;
+    --prio-mid-bg: #352b10;
+    --prio-mid-fg: #f0cf7a;
+    --prio-low-bg: #16243a;
+    --prio-low-fg: #a9c8fa;
+  }
+}
+
 body {
-  background: #f2f4f5;
-  color: #16191d;
+  background: var(--c-bg);
+  color: var(--c-ink);
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
 }

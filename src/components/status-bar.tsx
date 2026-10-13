@@ -24,7 +24,7 @@ export function StatusBar({
       role="img"
       aria-label={text}
       title={text}
-      className="flex w-full overflow-hidden rounded-full bg-[#E8EBEE]"
+      className="flex w-full overflow-hidden rounded-full bg-(--c-track)"
       style={{ height }}
     >
       {total > 0 &&
@@ -39,7 +39,7 @@ export function StatusBar({
 
 export function StatusLegend() {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-[#3E4650]" aria-label="Farblegende">
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-(--c-text-2)" aria-label="Farblegende">
       {STATUSES.map((s) => (
         <li key={s.id} className="flex items-center gap-1.5">
           <span aria-hidden className="size-2.5 rounded-full" style={{ background: s.color }} />

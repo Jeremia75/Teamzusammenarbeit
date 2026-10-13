@@ -31,12 +31,12 @@ export function WorkspaceOverview({
           </Link>
         </h2>
         {ws.isPersonal ? (
-          <span className="text-sm font-semibold text-[#5A626B]">Nur für dich sichtbar</span>
+          <span className="text-sm font-semibold text-(--c-muted)">Nur für dich sichtbar</span>
         ) : (
-          <span className="flex items-center gap-2 text-sm font-semibold text-[#5A626B]">
+          <span className="flex items-center gap-2 text-sm font-semibold text-(--c-muted)">
             <span className="flex">
               {members.map((m) => (
-                <Avatar key={m.id} member={m} size={26} className="-ml-1.5 first:ml-0 border-2 border-[#F2F4F5]" />
+                <Avatar key={m.id} member={m} size={26} className="-ml-1.5 first:ml-0 border-2 border-(--c-bg)" />
               ))}
             </span>
             {members.length} {members.length === 1 ? "Mitglied" : "Mitglieder"}
@@ -52,7 +52,7 @@ export function WorkspaceOverview({
       />
 
       {!ws.isPersonal && canManage && (
-        <details className="bg-white border border-[#DDE1E5] rounded-xl px-4 py-3">
+        <details className="bg-(--c-surface) border border-(--c-line) rounded-xl px-4 py-3">
           <summary className="min-h-9 flex items-center cursor-pointer text-sm font-semibold">Mitglieder verwalten</summary>
           <div className="flex flex-col gap-3 pt-3">
             <ul className="flex flex-wrap gap-3">
@@ -60,7 +60,7 @@ export function WorkspaceOverview({
                 <li key={m.id} className="flex items-center gap-2 text-sm">
                   <Avatar member={m} size={26} />
                   {m.name}
-                  {m.id === currentUserId && <span className="text-[#5A626B]">(ich)</span>}
+                  {m.id === currentUserId && <span className="text-(--c-muted)">(ich)</span>}
                 </li>
               ))}
             </ul>

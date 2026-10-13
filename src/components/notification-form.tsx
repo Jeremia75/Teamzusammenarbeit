@@ -54,7 +54,7 @@ export function NotificationForm({
     onSaved?.();
   }
 
-  const radio = "mt-0.5 size-[18px] accent-[#1F5FBF] shrink-0";
+  const radio = "mt-0.5 size-[18px] accent-(--c-accent) shrink-0";
   const option = "flex items-start gap-3 rounded-lg border px-3.5 py-3 cursor-pointer";
 
   return (
@@ -68,7 +68,7 @@ export function NotificationForm({
           ].map(([v, label]) => (
             <label
               key={String(v)}
-              className={`${option} flex-[1_1_160px] items-center ${enabled === v ? "border-[#1F5FBF] bg-[#EEF3FB]" : "border-[#DDE1E5] bg-white"}`}
+              className={`${option} flex-[1_1_160px] items-center ${enabled === v ? "border-(--c-accent) bg-(--c-accent-soft)" : "border-(--c-line) bg-(--c-surface)"}`}
             >
               <input type="radio" name={`${id}-on`} checked={enabled === v} onChange={() => setEnabled(v as boolean)} className={radio} />
               <span className="font-semibold">{label as string}</span>
@@ -82,11 +82,11 @@ export function NotificationForm({
           <fieldset className="flex flex-col gap-2">
             <legend className="font-bold mb-2">Wann sollen wir dir schreiben?</legend>
             {MODES.map((m) => (
-              <label key={m.id} className={`${option} ${mode === m.id ? "border-[#1F5FBF] bg-[#EEF3FB]" : "border-[#DDE1E5] bg-white"}`}>
+              <label key={m.id} className={`${option} ${mode === m.id ? "border-(--c-accent) bg-(--c-accent-soft)" : "border-(--c-line) bg-(--c-surface)"}`}>
                 <input type="radio" name={`${id}-mode`} checked={mode === m.id} onChange={() => setMode(m.id)} className={radio} />
                 <span className="flex flex-col">
                   <span className="font-semibold">{m.label}</span>
-                  {m.hint && <span className="text-sm text-[#5A626B]">{m.hint}</span>}
+                  {m.hint && <span className="text-sm text-(--c-muted)">{m.hint}</span>}
                 </span>
               </label>
             ))}
@@ -94,29 +94,29 @@ export function NotificationForm({
 
           <fieldset className="flex flex-col gap-2">
             <legend className="font-bold mb-2">Neue Aufgaben</legend>
-            <label className={`${option} ${assigned ? "border-[#1F5FBF] bg-[#EEF3FB]" : "border-[#DDE1E5] bg-white"}`}>
+            <label className={`${option} ${assigned ? "border-(--c-accent) bg-(--c-accent-soft)" : "border-(--c-line) bg-(--c-surface)"}`}>
               <input type="checkbox" checked={assigned} onChange={(e) => setAssigned(e.target.checked)} className={radio} />
               <span className="flex flex-col">
                 <span className="font-semibold">E-Mail, wenn mir jemand eine Aufgabe zuordnet</span>
-                <span className="text-sm text-[#5A626B]">Kommt gleich, wenige Minuten nach der Zuordnung. Wenn du dich selbst einträgst, kommt keine.</span>
+                <span className="text-sm text-(--c-muted)">Kommt gleich, wenige Minuten nach der Zuordnung. Wenn du dich selbst einträgst, kommt keine.</span>
               </span>
             </label>
           </fieldset>
 
-          <p className="text-sm text-[#5A626B]">
-            Die E-Mails gehen an <strong className="text-[#16191D]">{email}</strong>.
+          <p className="text-sm text-(--c-muted)">
+            Die E-Mails gehen an <strong className="text-(--c-ink)">{email}</strong>.
           </p>
         </>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={busy} className="h-11 px-5 rounded-lg bg-[#16191D] text-white font-bold disabled:opacity-60">
+        <button type="submit" disabled={busy} className="h-11 px-5 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold disabled:opacity-60">
           {submitLabel}
         </button>
         {secondary}
       </div>
       {state && (
-        <p role="status" className={`text-sm font-semibold ${state.ok ? "text-[#0B5E4E]" : "text-[#9A3412]"}`}>
+        <p role="status" className={`text-sm font-semibold ${state.ok ? "text-(--c-success-ink)" : "text-(--c-danger)"}`}>
           {state.msg}
         </p>
       )}

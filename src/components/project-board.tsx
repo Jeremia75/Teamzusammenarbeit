@@ -114,7 +114,7 @@ export function ProjectBoard({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 border-b border-[#DDE1E5]">
+      <div className="flex flex-wrap items-center gap-3 border-b border-(--c-line)">
         <div role="group" aria-label="Ansicht der Projekte" className="flex gap-1">
           {(
             [
@@ -128,7 +128,7 @@ export function ProjectBoard({
               aria-pressed={view === v}
               onClick={() => setView(v)}
               className={`min-h-10 px-3 font-bold text-sm -mb-px border-b-[3px] ${
-                view === v ? "border-[#1F5FBF] text-[#16191D]" : "border-transparent text-[#5A626B] hover:text-[#16191D]"
+                view === v ? "border-(--c-accent) text-(--c-ink)" : "border-transparent text-(--c-muted) hover:text-(--c-ink)"
               }`}
             >
               {label}
@@ -138,7 +138,7 @@ export function ProjectBoard({
       </div>
 
       {error && (
-        <div role="alert" className="flex items-center gap-3 rounded-lg bg-[#FDE8E1] text-[#9A3412] px-4 py-2 text-sm font-semibold">
+        <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-2 text-sm font-semibold">
           {error}
           <button type="button" onClick={() => setError(null)} className="ml-auto underline min-h-10">
             Schließen
@@ -189,10 +189,10 @@ export function ProjectBoard({
                   title={col.href ? `Klicken, um alle Aufgaben in „${col.title}“ zu sehen` : undefined}
                   className={`flex-[1_0_272px] max-w-[340px] rounded-xl p-2.5 flex flex-col gap-2 transition-colors ${
                     dragId && drop?.col === col.key
-                      ? "bg-[#DCE3EA]"
+                      ? "bg-(--c-col-drop)"
                       : col.href
-                        ? "bg-[#E8EBEE] cursor-pointer hover:bg-[#DFE4E9]"
-                        : "bg-[#E8EBEE]"
+                        ? "bg-(--c-col) cursor-pointer hover:bg-(--c-col-hover)"
+                        : "bg-(--c-col)"
                   }`}
                 >
                   <ColumnHeader

@@ -192,17 +192,17 @@ export function RubricView(props: Props) {
         <div className="flex flex-col gap-1 min-w-0">
           <Link
             href={`/w/${props.workspace.id}`}
-            className="self-start text-sm font-semibold text-[#5A626B] hover:text-[#16191D] hover:underline underline-offset-4"
+            className="self-start text-sm font-semibold text-(--c-muted) hover:text-(--c-ink) hover:underline underline-offset-4"
           >
             ← {props.workspace.name}
           </Link>
           <h1 className="text-3xl font-extrabold tracking-tight">{rubric.name}</h1>
-          <p className="text-[#5A626B]">
+          <p className="text-(--c-muted)">
             Rubrik mit {projects.length} {projects.length === 1 ? "Projekt" : "Projekten"}
           </p>
         </div>
         <div className="flex flex-col gap-1.5 min-w-56">
-          <span className="text-sm font-semibold text-[#5A626B]">
+          <span className="text-sm font-semibold text-(--c-muted)">
             {counts.done} von {topLevel.length} erledigt
           </span>
           <StatusBar counts={counts} />
@@ -215,7 +215,7 @@ export function RubricView(props: Props) {
             <Link
               key={p.id}
               href={`/p/${p.id}`}
-              className="inline-flex items-center gap-2 min-h-10 rounded-full bg-white border border-[#DDE1E5] px-3.5 text-sm font-semibold hover:border-[#9AA4AE]"
+              className="inline-flex items-center gap-2 min-h-10 rounded-full bg-(--c-surface) border border-(--c-line) px-3.5 text-sm font-semibold hover:border-(--c-line-hover)"
             >
               <span aria-hidden className="size-2.5 rounded-sm" style={{ background: p.color }} />
               {p.name}
@@ -225,7 +225,7 @@ export function RubricView(props: Props) {
       )}
 
       {error && (
-        <div role="alert" className="flex items-center gap-3 rounded-lg bg-[#FDE8E1] text-[#9A3412] px-4 py-3 text-sm font-semibold">
+        <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
           <button type="button" onClick={() => setError(null)} className="ml-auto underline min-h-11">
             Schließen
@@ -234,12 +234,12 @@ export function RubricView(props: Props) {
       )}
 
       {projects.length === 0 ? (
-        <p className="rounded-xl bg-white border border-[#DDE1E5] px-5 py-8 text-[#5A626B]">
+        <p className="rounded-xl bg-(--c-surface) border border-(--c-line) px-5 py-8 text-(--c-muted)">
           In dieser Rubrik sind noch keine Projekte. Zieh in der Übersicht Projekte hierher.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#DDE1E5]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
             <div role="group" aria-label="Ansicht" className="flex gap-1">
               {(
                 [
@@ -254,7 +254,7 @@ export function RubricView(props: Props) {
                   aria-pressed={view === v}
                   onClick={() => setView(v)}
                   className={`min-h-11 px-3.5 font-bold text-sm -mb-px border-b-[3px] ${
-                    view === v ? "border-[#1F5FBF] text-[#16191D]" : "border-transparent text-[#5A626B] hover:text-[#16191D]"
+                    view === v ? "border-(--c-accent) text-(--c-ink)" : "border-transparent text-(--c-muted) hover:text-(--c-ink)"
                   }`}
                 >
                   {label}
@@ -262,7 +262,7 @@ export function RubricView(props: Props) {
               ))}
             </div>
             <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
-              <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-[#1F5FBF]" />
+              <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
               Nur meine Aufgaben
             </label>
           </div>
