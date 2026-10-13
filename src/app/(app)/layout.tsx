@@ -26,6 +26,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <SidebarProjects workspaces={workspaces} />
 
         <div className="mt-auto flex flex-col gap-2 border-t border-[#EEF1F4] pt-4">
+          <Link
+            href="/hilfe"
+            className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-[#3E4650] hover:bg-[#F2F4F5] hover:text-[#16191D]"
+          >
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9.5" />
+              <path d="M9.3 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.7 2.4-2.7 4" />
+              <circle cx="12" cy="17.6" r="0.6" fill="currentColor" />
+            </svg>
+            Hilfe
+          </Link>
           <span className="text-sm text-[#5A626B] px-1 truncate">{user?.email}</span>
           <form action={signOut}>
             <button type="submit" className="w-full min-h-11 rounded-lg border border-[#DDE1E5] text-sm font-semibold hover:bg-[#F2F4F5]">

@@ -179,8 +179,20 @@ export function ProjectBoard({
                     e.preventDefault();
                     finish(col);
                   }}
+                  onClick={(e) => {
+                    // Klick auf die farbige Fläche der Rubrik öffnet sie – nicht auf Kacheln, Knöpfe oder Eingaben
+                    if (!col.href || dragId) return;
+                    const t = e.target as HTMLElement;
+                    if (t.closest("a, button, input, textarea, select, form, label, [role=menu], [data-project]")) return;
+                    router.push(col.href);
+                  }}
+                  title={col.href ? `Klicken, um alle Aufgaben in „${col.title}“ zu sehen` : undefined}
                   className={`flex-[1_0_272px] max-w-[340px] rounded-xl p-2.5 flex flex-col gap-2 transition-colors ${
-                    dragId && drop?.col === col.key ? "bg-[#DCE3EA]" : "bg-[#E8EBEE]"
+                    dragId && drop?.col === col.key
+                      ? "bg-[#DCE3EA]"
+                      : col.href
+                        ? "bg-[#E8EBEE] cursor-pointer hover:bg-[#DFE4E9]"
+                        : "bg-[#E8EBEE]"
                   }`}
                 >
                   <ColumnHeader

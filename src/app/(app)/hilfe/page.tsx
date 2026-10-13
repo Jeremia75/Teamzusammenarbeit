@@ -1,0 +1,424 @@
+import Link from "next/link";
+import { STATUSES, PRIORITIES } from "@/lib/labels";
+
+export const metadata = { title: "Hilfe · Projektraum" };
+
+/** So heißt ein Knopf oder Feld in der App – optisch wie ein kleiner Knopf */
+function K({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-block whitespace-nowrap rounded-md border border-[#C9D0D6] bg-white px-1.5 py-px text-[0.92em] font-semibold text-[#16191D]">
+      {children}
+    </span>
+  );
+}
+
+function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-6 bg-white border border-[#DDE1E5] rounded-xl p-5 sm:p-6 flex flex-col gap-3">
+      <h2 id={`${id}-h`} className="text-xl font-extrabold tracking-tight">
+        {title}
+      </h2>
+      <div className="flex flex-col gap-3 text-[15.5px] leading-relaxed text-[#2A3038] [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Tip({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="rounded-lg bg-[#EEF3FB] border border-[#C9DAF2] px-4 py-3 text-[15px] text-[#174A94]">
+      <strong>Tipp:</strong> {children}
+    </p>
+  );
+}
+
+const TOPICS: [string, string][] = [
+  ["aufbau", "So ist Projektraum aufgebaut"],
+  ["start", "Deine ersten Schritte"],
+  ["bereiche", "Privat und Firma"],
+  ["projekte", "Projekte anlegen und ordnen"],
+  ["rubrik-oeffnen", "Eine Rubrik öffnen"],
+  ["aufgaben", "Aufgaben anlegen und bearbeiten"],
+  ["unteraufgaben", "Unteraufgaben"],
+  ["farben", "Was die Farben bedeuten"],
+  ["ansichten", "Die Ansichten im Projekt"],
+  ["projekt-rubriken", "Rubriken im Projekt"],
+  ["meilensteine", "Ziele und Meilensteine"],
+  ["wiederholen", "Wiederkehrende Aufgaben"],
+  ["team", "Im Team arbeiten"],
+  ["installieren", "Projektraum auf dem PC installieren"],
+  ["fragen", "Häufige Fragen"],
+];
+
+export default function HelpPage() {
+  return (
+    <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 max-w-4xl">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-3xl font-extrabold tracking-tight">Hilfe</h1>
+        <p className="text-[#3E4650] text-[16px] leading-relaxed max-w-2xl">
+          Hier erfährst du Schritt für Schritt, wie Projektraum funktioniert. Du brauchst keine Erfahrung mit solchen Programmen.
+          Lies am besten zuerst die ersten beiden Abschnitte. Den Rest kannst du nachschlagen, wenn du ihn brauchst.
+        </p>
+      </header>
+
+      <nav aria-label="Inhalt der Hilfe" className="bg-white border border-[#DDE1E5] rounded-xl p-5">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#5A626B] mb-2">Inhalt</h2>
+        <ol className="sm:columns-2 gap-x-10 list-decimal pl-6 text-[15px]">
+          {TOPICS.map(([id, title]) => (
+            <li key={id} className="py-1 break-inside-avoid">
+              <a href={`#${id}`} className="font-semibold text-[#1F5FBF] hover:underline underline-offset-4">
+                {title}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
+      <Section id="aufbau" title="So ist Projektraum aufgebaut">
+        <p>Projektraum ordnet deine Arbeit in vier Ebenen. Jede Ebene steckt in der nächstgrößeren.</p>
+        <div aria-hidden className="flex flex-col gap-2 text-sm font-semibold">
+          <div className="rounded-xl border-2 border-[#1F5FBF] bg-[#EEF3FB] p-3">
+            Bereich <span className="font-normal text-[#3E4650]">z. B. Privat oder Beruflich</span>
+            <div className="mt-2 rounded-lg border-2 border-[#0E7C66] bg-[#EEF7F4] p-3">
+              Projekt <span className="font-normal text-[#3E4650]">z. B. Umzug oder Firmengründung</span>
+              <div className="mt-2 rounded-lg border-2 border-[#B4561C] bg-[#FDF3EC] p-3">
+                Aufgabe <span className="font-normal text-[#3E4650]">z. B. Mietvertrag kündigen</span>
+                <div className="mt-2 rounded-lg border-2 border-[#8A94A0] bg-white p-3">
+                  Unteraufgabe <span className="font-normal text-[#3E4650]">z. B. Kündigungsfrist nachsehen</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ul>
+          <li>
+            Ein <strong>Bereich</strong> trennt große Lebensbereiche, zum Beispiel Privates und Berufliches.
+          </li>
+          <li>
+            Ein <strong>Projekt</strong> ist ein Vorhaben mit einem Ziel. Es enthält alle Aufgaben, die dafür nötig sind.
+          </li>
+          <li>
+            Eine <strong>Aufgabe</strong> ist etwas, das du erledigen kannst, zum Beispiel einen Anruf oder ein Formular.
+          </li>
+          <li>
+            Eine <strong>Unteraufgabe</strong> ist ein kleiner Schritt innerhalb einer Aufgabe.
+          </li>
+        </ul>
+        <p>
+          Zusätzlich kannst du Dinge in <strong>Rubriken</strong> sortieren. Eine Rubrik ist wie eine Spalte auf einer Pinnwand. Projekte
+          kannst du in einem Bereich in Rubriken sortieren, Aufgaben in einem Projekt ebenso.
+        </p>
+      </Section>
+
+      <Section id="start" title="Deine ersten Schritte">
+        <ol>
+          <li>
+            Klicke links oben auf <K>Projektraum</K>. Du siehst jetzt die Übersicht mit allen deinen Bereichen.
+          </li>
+          <li>
+            Klicke im Bereich <strong>Privat</strong> auf <K>+ Projekt hinzufügen</K>, gib einen Namen ein und klicke auf <K>Anlegen</K>.
+          </li>
+          <li>Das neue Projekt öffnet sich sofort. Hier stehen später alle Aufgaben dieses Projekts.</li>
+          <li>
+            Klicke in der Spalte <strong>Offen</strong> auf <K>+ Aufgabe hinzufügen</K>, schreib die Aufgabe hinein und drück die
+            Eingabetaste.
+          </li>
+          <li>
+            Klicke auf die Aufgabe. Rechts öffnen sich die Details. Dort kannst du ein Datum, eine Beschreibung und Unteraufgaben
+            eintragen.
+          </li>
+          <li>Wenn du fertig bist, klicke auf den kleinen Kreis links neben der Aufgabe. Damit ist sie erledigt.</li>
+        </ol>
+        <Tip>Alles, was du änderst, speichert Projektraum sofort. Einen Speichern-Knopf gibt es nicht und brauchst du nicht.</Tip>
+      </Section>
+
+      <Section id="bereiche" title="Privat und Firma">
+        <p>
+          Jeder bekommt automatisch den Bereich <strong>Privat</strong>. Den siehst nur du. Niemand sonst kann ihn öffnen, auch nicht
+          deine Kolleginnen und Kollegen.
+        </p>
+        <p>
+          Für die Zusammenarbeit legst du eine Firma an. Solange du noch keine Firma hast, findest du unten in der Übersicht das Feld <K>Firma anlegen</K>. Gib den
+          Namen der Firma ein und den Namen des ersten Bereichs, zum Beispiel Beruflich. Alles in der Firma kannst du mit anderen
+          teilen.
+        </p>
+        <p>Links in der Seitenleiste siehst du alle Bereiche untereinander, darunter jeweils die Projekte.</p>
+      </Section>
+
+      <Section id="projekte" title="Projekte anlegen und ordnen">
+        <p>In der Übersicht hat jeder Bereich zwei Ansichten. Oben über den Projekten schaltest du um.</p>
+        <ul>
+          <li>
+            <K>Board · Rubriken</K> zeigt deine Projekte in Spalten. Jede Spalte ist eine Rubrik, zum Beispiel Familie, Kirche oder
+            Weiterbildung.
+          </li>
+          <li>
+            <K>Kacheln</K> zeigt alle Projekte als große Karten nebeneinander.
+          </li>
+        </ul>
+        <p>So arbeitest du mit den Rubriken:</p>
+        <ul>
+          <li>
+            Eine neue Rubrik legst du mit <K>+ Rubrik hinzufügen</K> ganz rechts an.
+          </li>
+          <li>
+            Ein Projekt verschiebst du, indem du es mit der Maus festhältst und in eine andere Spalte ziehst. Innerhalb einer Spalte
+            kannst du die Reihenfolge genauso ändern.
+          </li>
+          <li>
+            Über die drei Punkte <K>…</K> neben dem Namen einer Rubrik kannst du sie umbenennen, nach links oder rechts schieben oder
+            löschen.
+          </li>
+          <li>
+            Mit <K>+ Projekt hinzufügen</K> unten in einer Spalte landet das neue Projekt direkt in dieser Rubrik.
+          </li>
+        </ul>
+        <p>
+          Jede Projektkarte zeigt einen farbigen Balken. Daran siehst du auf einen Blick, wie viel schon erledigt ist. Mehr dazu unter{" "}
+          <a href="#farben" className="font-semibold text-[#1F5FBF] underline underline-offset-4">
+            Was die Farben bedeuten
+          </a>
+          .
+        </p>
+        <Tip>Löschst du eine Rubrik, bleiben die Projekte darin erhalten. Sie wandern in die Spalte Ohne Rubrik.</Tip>
+      </Section>
+
+      <Section id="rubrik-oeffnen" title="Eine Rubrik öffnen">
+        <p>
+          Klicke auf eine freie Stelle der grauen Spalte oder auf den Namen der Rubrik. Dann siehst du alle Aufgaben aus allen Projekten
+          dieser Rubrik auf einer Seite.
+        </p>
+        <ul>
+          <li>
+            <K>Board · Projekte</K> zeigt für jedes Projekt eine eigene Spalte.
+          </li>
+          <li>
+            <K>Board · Status</K> sortiert alle Aufgaben danach, wie weit sie sind. Auf jeder Karte steht, zu welchem Projekt sie gehört.
+          </li>
+          <li>
+            <K>Liste</K> zeigt alles als Tabelle.
+          </li>
+        </ul>
+        <p>
+          Mit dem Pfeil oben links, zum Beispiel <K>← Privat</K>, kommst du zurück.
+        </p>
+      </Section>
+
+      <Section id="aufgaben" title="Aufgaben anlegen und bearbeiten">
+        <p>
+          Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Schreib den Text hinein und drück
+          die Eingabetaste. Du kannst gleich die nächste eintippen.
+        </p>
+        <p>Klickst du auf eine Aufgabe, öffnen sich rechts die Details. Dort kannst du Folgendes einstellen:</p>
+        <ul>
+          <li>
+            <strong>Titel</strong> und <strong>Beschreibung</strong>. In die Beschreibung passen Notizen, Telefonnummern oder Links.
+          </li>
+          <li>
+            <strong>Status</strong>, also wie weit die Aufgabe ist.
+          </li>
+          <li>
+            <strong>Fällig am</strong>, also bis wann sie erledigt sein soll. Ist das Datum vorbei, wird es rot.
+          </li>
+          <li>
+            <strong>Priorität</strong>: {PRIORITIES.map((p) => p.label).join(", ")}. Hohe und niedrige Priorität stehen als kleines
+            Schild auf der Karte.
+          </li>
+          <li>
+            <strong>Verantwortlich</strong>, also wer sich darum kümmert.
+          </li>
+          <li>
+            <strong>Kommentare</strong>, um dich mit anderen über die Aufgabe auszutauschen.
+          </li>
+        </ul>
+        <p>
+          Mit <K>Details schließen</K> (das Kreuz oben rechts) schließt du die Details wieder. Ganz unten in den Details findest du{" "}
+          <K>Aufgabe löschen</K>. Projektraum fragt vorher noch einmal nach.
+        </p>
+      </Section>
+
+      <Section id="unteraufgaben" title="Unteraufgaben">
+        <p>
+          Große Aufgaben teilst du am besten in kleine Schritte. Öffne dazu die Aufgabe und schreib unter <strong>Unteraufgaben</strong> in
+          das Feld <K>Unteraufgabe hinzufügen</K>. Drück die Eingabetaste.
+        </p>
+        <p>Jede Unteraufgabe hakst du einzeln ab. Auf der Karte siehst du dann zum Beispiel 2/5, also zwei von fünf erledigt.</p>
+      </Section>
+
+      <Section id="farben" title="Was die Farben bedeuten">
+        <p>Jede Aufgabe hat einen von vier Zuständen. Jeder Zustand hat eine feste Farbe:</p>
+        <ul className="!list-none !pl-0 flex flex-col gap-1.5">
+          {STATUSES.map((s, i) => (
+            <li key={s.id} className="flex items-start gap-2.5">
+              <span aria-hidden className="mt-1.5 size-3.5 rounded-full shrink-0" style={{ background: s.color }} />
+              <span>
+                <strong>{s.label}</strong>{" "}
+                {
+                  [
+                    "heißt, du hast noch nicht angefangen.",
+                    "heißt, jemand arbeitet gerade daran.",
+                    "heißt, die Arbeit ist fertig und jemand soll noch drüberschauen.",
+                    "heißt, die Aufgabe ist abgeschlossen.",
+                  ][i]
+                }
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p>
+          Die Farben findest du an drei Stellen wieder. Auf der Aufgabenkarte als Streifen links, im Balken über jeder Spalte und im
+          Balken auf jeder Projektkarte. Je mehr Grün im Balken, desto mehr ist erledigt.
+        </p>
+      </Section>
+
+      <Section id="ansichten" title="Die Ansichten im Projekt">
+        <p>In einem Projekt kannst du oben zwischen drei Ansichten wechseln. Die Aufgaben bleiben dieselben, nur die Anordnung ändert sich.</p>
+        <ul>
+          <li>
+            <K>Board · Rubriken</K> zeigt deine eigenen Spalten, zum Beispiel Recherche, Behörden und Marketing. Die Farben zeigen dir, wie
+            weit jede Aufgabe ist.
+          </li>
+          <li>
+            <K>Board · Status</K> hat vier feste Spalten, von Offen bis Erledigt. Ziehst du eine Aufgabe in eine andere Spalte, ändert
+            sich ihr Status.
+          </li>
+          <li>
+            <K>Liste</K> zeigt alle Aufgaben als Tabelle. Angefangene stehen oben, danach geht es nach Fälligkeitsdatum.
+          </li>
+        </ul>
+        <p>
+          Mit dem Häkchen <K>Nur meine Aufgaben</K> blendest du alles aus, wofür du nicht verantwortlich bist.
+        </p>
+        <Tip>Projektraum merkt sich auf deinem Gerät, welche Ansicht du zuletzt gewählt hast.</Tip>
+      </Section>
+
+      <Section id="projekt-rubriken" title="Rubriken im Projekt">
+        <p>
+          Innerhalb eines Projekts kannst du eigene Spalten anlegen. Wechsle dazu auf <K>Board · Rubriken</K> und klicke auf{" "}
+          <K>+ Rubrik hinzufügen</K>.
+        </p>
+        <ul>
+          <li>Aufgaben ziehst du mit der Maus von einer Rubrik in die andere.</li>
+          <li>Die Reihenfolge innerhalb einer Rubrik bestimmst du selbst, ebenfalls durch Ziehen.</li>
+          <li>
+            Über die drei Punkte <K>…</K> benennst du eine Rubrik um, verschiebst oder löschst sie. Die Aufgaben bleiben dabei erhalten.
+          </li>
+        </ul>
+        <p>
+          Du kannst die Rubrik auch in den Details einer Aufgabe auswählen, im Feld <strong>Rubrik</strong>.
+        </p>
+      </Section>
+
+      <Section id="meilensteine" title="Ziele und Meilensteine">
+        <p>
+          Ein Meilenstein ist ein wichtiges Zwischenziel mit einem Datum, zum Beispiel Businessplan fertig bis 30. November. Du findest
+          die Meilensteine oben im Projekt unter <strong>Ziele & Meilensteine</strong>.
+        </p>
+        <ol>
+          <li>
+            Klicke auf <K>+ Meilenstein</K>.
+          </li>
+          <li>
+            Gib einen Namen und ein Datum ein und klicke auf <K>Anlegen</K>.
+          </li>
+          <li>
+            Öffne eine Aufgabe und wähle im Feld <strong>Meilenstein</strong> aus, zu welchem Ziel sie gehört.
+          </li>
+        </ol>
+        <p>
+          Jeder Meilenstein zeigt mit einem Farbbalken, wie viele seiner Aufgaben erledigt sind. Klickst du auf einen Meilenstein, siehst
+          du darunter nur noch seine Aufgaben. Ein zweiter Klick zeigt wieder alle.
+        </p>
+        <Tip>Legst du eine Aufgabe an, während ein Meilenstein ausgewählt ist, gehört sie gleich zu diesem Meilenstein.</Tip>
+      </Section>
+
+      <Section id="wiederholen" title="Wiederkehrende Aufgaben">
+        <p>
+          Manche Aufgaben kommen immer wieder, zum Beispiel jede Woche zwei Bewerbungen schreiben. Öffne die Aufgabe und wähle im Feld{" "}
+          <strong>Wiederholen</strong>, wie oft sie wiederkommen soll: täglich, wöchentlich, alle 2 Wochen, monatlich oder jährlich.
+        </p>
+        <p>
+          Hakst du die Aufgabe ab, legt Projektraum sofort die nächste an, mit dem nächsten Fälligkeitsdatum. Die erledigte bleibt als
+          erledigt stehen. Zuständige und Unteraufgaben übernimmt die neue Aufgabe.
+        </p>
+        <p>Wiederkehrende Aufgaben erkennst du an einem kleinen Pfeil-Kreis auf der Karte.</p>
+        <Tip>Stell ein Fälligkeitsdatum ein, zum Beispiel den Freitag. Dann ist auch die nächste Aufgabe an einem Freitag fällig. Ohne Datum rechnet Projektraum ab dem Tag, an dem du abhakst.</Tip>
+      </Section>
+
+      <Section id="team" title="Im Team arbeiten">
+        <p>
+          <strong>Jemanden einladen.</strong> Die Person legt sich zuerst selbst ein Konto in Projektraum an. Danach öffnest du in der
+          Übersicht unter dem Firmenbereich <K>Mitglieder verwalten</K>, trägst ihre E-Mail-Adresse ein und klickst auf{" "}
+          <K>Hinzufügen</K>. Ab dann sieht sie alle Projekte dieses Bereichs. Deinen privaten Bereich sieht sie nie.
+        </p>
+        <p>
+          <strong>Aufgaben verteilen.</strong> Öffne eine Aufgabe und klicke unter <strong>Verantwortlich</strong> auf die Person. Ihr
+          farbiger Kreis mit den Anfangsbuchstaben erscheint dann auf der Karte. Mehrere Personen sind möglich.
+        </p>
+        <p>
+          <strong>Gleichzeitig arbeiten.</strong> Ändert jemand etwas, siehst du es nach kurzer Zeit auch bei dir, ohne die Seite neu zu
+          laden.
+        </p>
+        <p>
+          <strong>Absprechen.</strong> Nutze die Kommentare in einer Aufgabe. So bleibt alles, was zu einer Aufgabe besprochen wurde, an
+          einer Stelle.
+        </p>
+      </Section>
+
+      <Section id="installieren" title="Projektraum auf dem PC installieren">
+        <p>Du kannst Projektraum wie ein normales Programm auf deinem Windows-PC einrichten. Dann hat es ein eigenes Fenster und ein Symbol in der Taskleiste.</p>
+        <ol>
+          <li>Öffne Projektraum in Microsoft Edge oder Google Chrome.</li>
+          <li>Rechts in der Adresszeile erscheint ein kleines Symbol mit einem Bildschirm und Pfeil. Klicke darauf.</li>
+          <li>
+            Klicke auf <K>Installieren</K>.
+          </li>
+        </ol>
+        <p>
+          Findest du das Symbol nicht, öffne das Menü mit den drei Punkten oben rechts im Browser. In Edge heißt der Eintrag Apps und dann
+          Diese Website als App installieren. In Chrome heißt er Streamen, speichern und teilen und dann Seite als App installieren.
+        </p>
+      </Section>
+
+      <Section id="fragen" title="Häufige Fragen">
+        <dl className="flex flex-col gap-4">
+          {[
+            ["Wer sieht meine privaten Projekte?", "Nur du. Der Bereich Privat gehört dir allein."],
+            [
+              "Ich habe eine Aufgabe aus Versehen abgehakt.",
+              "Klicke noch einmal auf den grünen Kreis. Dann ist sie wieder offen.",
+            ],
+            [
+              "Was passiert, wenn ich eine Rubrik lösche?",
+              "Nur die Spalte verschwindet. Die Projekte oder Aufgaben darin bleiben erhalten und stehen danach unter Ohne Rubrik.",
+            ],
+            [
+              "Was passiert, wenn ich eine Aufgabe lösche?",
+              "Die Aufgabe und ihre Unteraufgaben sind endgültig weg. Deshalb fragt Projektraum vorher nach. Wenn du sie nur nicht mehr sehen willst, hake sie lieber ab.",
+            ],
+            [
+              "Muss ich etwas speichern?",
+              "Nein. Jede Änderung speichert Projektraum sofort.",
+            ],
+            [
+              "Kann ich Projektraum auch am Handy nutzen?",
+              "Ja. Öffne dieselbe Adresse im Browser deines Handys und melde dich an. Das Verschieben durch Ziehen funktioniert aber nur am PC mit der Maus. Am Handy änderst du Status und Rubrik in den Details der Aufgabe.",
+            ],
+          ].map(([q, a]) => (
+            <div key={q}>
+              <dt className="font-bold">{q}</dt>
+              <dd className="text-[#3E4650]">{a}</dd>
+            </div>
+          ))}
+        </dl>
+      </Section>
+
+      <p className="text-sm text-[#5A626B] pb-4">
+        <Link href="/" className="font-semibold text-[#1F5FBF] hover:underline underline-offset-4">
+          Zurück zur Übersicht
+        </Link>
+      </p>
+    </div>
+  );
+}
