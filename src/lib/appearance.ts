@@ -45,7 +45,7 @@ export const PRESETS: { id: string; label: string; value: Appearance }[] = [
   {
     id: "modern",
     label: "Modern",
-    value: { ...base, radius: 16, density: "luftig", colors: { bg: "#FAFAFB", side: "#FFFFFF", col: "#F3F2F8", surf: "#FFFFFF", text: "#1C1A29", muted: "#6B6880", line: "#E9E8F0", acc: "#6D5BD0", todo: "#A3A1B5", doing: "#6D5BD0", review: "#C2701F", done: "#2E9E7E" } },
+    value: { ...base, radius: 16, density: "luftig", colors: { bg: "#FAFAFB", side: "#FFFFFF", col: "#F3F2F8", surf: "#FFFFFF", text: "#1C1A29", muted: "#625F78", line: "#E9E8F0", acc: "#6D5BD0", todo: "#A3A1B5", doing: "#6D5BD0", review: "#C2701F", done: "#2E9E7E" } },
   },
   {
     id: "jung",
@@ -104,6 +104,12 @@ export function ensureContrast(fg: string, bg: string, toward: string, min = 4.6
   return toward;
 }
 
+/** Text direkt auf dem Seitenhintergrund wäre schwer lesbar → in Felder (Panels) setzen */
+export function needsPanels(a: Appearance, hasImage: boolean): boolean {
+  const c = a.colors;
+  return hasImage || contrast(c.muted, c.bg) < 4.5 || contrast(c.text, c.bg) < 7;
+}
+
 export const isDarkDesign = (a: Appearance) => luminance(a.colors.surf) < 0.2;
 
 /** Ungültige oder fehlende Werte durch Standard ersetzen – Daten aus der Datenbank sind nicht vertrauenswürdig */
@@ -156,7 +162,8 @@ export function appTokens(a: Appearance, hasImage = false): Record<string, strin
     "--c-on-ink": readableOn(c.text),
     "--c-ink-2": mix(c.text, c.surf, 0.9),
     "--c-text-2": ensureContrast(mix(c.text, c.muted, 0.45), c.col, c.text),
-    "--c-muted": c.muted,
+    // Leise Schrift steht auf Karten und Spalten: bei Bedarf minimal nachdunkeln/aufhellen
+    "--c-muted": ensureContrast(ensureContrast(c.muted, mix(c.text, c.col, 0.08), c.text), c.surf, c.text),
     "--c-line": c.line,
     "--c-line-soft": mix(c.line, c.surf, 0.5),
     "--c-line-strong": mix(c.line, c.text, 0.82),

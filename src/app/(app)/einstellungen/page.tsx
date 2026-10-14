@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 max-w-2xl">
-      <header className="flex flex-col gap-1">
+      <header data-panel className="flex flex-col gap-1">
         <h1 className="text-3xl font-extrabold tracking-tight">Benachrichtigungen</h1>
         <p className="text-(--c-text-2)">
           Lege fest, ob und wann Projektraum dir E-Mails zu deinen Aufgaben schickt. Mehr dazu in der{" "}

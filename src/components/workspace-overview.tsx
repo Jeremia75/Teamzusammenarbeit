@@ -23,7 +23,7 @@ export function WorkspaceOverview({
 }) {
   return (
     <section aria-labelledby={`ws-${ws.id}`} className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div data-panel className="flex flex-wrap items-end justify-between gap-3">
         <h2 id={`ws-${ws.id}`} className="flex items-center gap-2.5 text-xl font-extrabold tracking-tight">
           <span aria-hidden className="size-3 rounded-full" style={{ background: ws.color }} />
           <Link href={`/w/${ws.id}`} className="hover:underline underline-offset-4">

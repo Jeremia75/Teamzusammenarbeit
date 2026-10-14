@@ -12,7 +12,7 @@ export default async function WorkspacePage({ params }: { params: Promise<{ work
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-7 py-8 flex flex-col gap-6">
-      <div className="flex justify-end">
+      <div data-panel="slim" className="flex justify-end">
         <StatusLegend />
       </div>
       <WorkspaceOverview

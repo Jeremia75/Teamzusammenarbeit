@@ -306,7 +306,7 @@ export function ProjectView(props: Props) {
   // ---------------------------------------------------------------- UI
   return (
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header data-panel className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <Link href={`/w/${props.workspace.id}`} className="self-start text-sm font-semibold text-(--c-muted) hover:text-(--c-ink) hover:underline underline-offset-4">
             ← {props.workspace.name}
@@ -334,6 +334,7 @@ export function ProjectView(props: Props) {
         </div>
       )}
 
+      <div data-panel>
       <Milestones
         milestones={milestones}
         tasks={topLevel}
@@ -342,9 +343,10 @@ export function ProjectView(props: Props) {
         selectedId={msFilter}
         onSelect={selectMilestone}
       />
+      </div>
 
       <div ref={boardRef} className="scroll-mt-4 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
+        <div data-panel="bar" className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
           <div role="group" aria-label="Ansicht" className="flex gap-1">
             {(
               [
@@ -373,7 +375,7 @@ export function ProjectView(props: Props) {
         </div>
 
         {(filterMilestone || view === "sections") && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div data-panel="slim" className="flex flex-wrap items-center justify-between gap-3">
             {filterMilestone ? (
               <div className="flex items-center gap-2 rounded-full bg-(--c-accent-soft) border border-(--c-accent-line-2) pl-3.5 pr-1 py-1 text-sm font-semibold text-(--c-accent-ink)">
                 Meilenstein: {filterMilestone.name} · {visible.length} {visible.length === 1 ? "Aufgabe" : "Aufgaben"}

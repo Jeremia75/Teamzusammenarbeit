@@ -14,7 +14,7 @@ export default async function AppearancePage() {
 
   return (
     <div className="px-4 sm:px-7 pt-6 flex flex-col gap-5 max-w-4xl">
-      <header className="flex flex-col gap-1">
+      <header data-panel className="flex flex-col gap-1">
         <h1 className="text-3xl font-extrabold tracking-tight">Darstellung</h1>
         <p className="text-(--c-text-2)">
           Stell Projektraum so ein, wie es dir gefällt. Die Einstellungen gelten nur für dich, auf allen deinen Geräten. Mehr dazu in der{" "}

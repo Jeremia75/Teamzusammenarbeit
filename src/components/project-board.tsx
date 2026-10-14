@@ -114,7 +114,7 @@ export function ProjectBoard({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3 border-b border-(--c-line)">
+      <div data-panel="bar" className="flex flex-wrap items-center gap-3 border-b border-(--c-line)">
         <div role="group" aria-label="Ansicht der Projekte" className="flex gap-1">
           {(
             [

@@ -56,7 +56,7 @@ const TOPICS: [string, string][] = [
 export default function HelpPage() {
   return (
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 max-w-4xl">
-      <header className="flex flex-col gap-2">
+      <header data-panel className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold tracking-tight">Hilfe</h1>
         <p className="text-(--c-text-2) text-[16px] leading-relaxed max-w-2xl">
           Hier erfährst du Schritt für Schritt, wie Projektraum funktioniert. Du brauchst keine Erfahrung mit solchen Programmen.

@@ -267,6 +267,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
       <button
         type="button"
         onClick={() => setOpen(true)}
+        data-panel="soft"
         className="self-start sticky top-0 z-10 flex-[0_0_220px] min-h-12 rounded-xl bg-(--c-bg) border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
       >
         + Rubrik hinzufügen

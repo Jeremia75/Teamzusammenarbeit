@@ -29,6 +29,7 @@ export function NewProjectTile({
       <button
         type="button"
         onClick={() => setOpen(true)}
+        data-panel="soft"
         className="w-full h-full min-h-28 rounded-xl border-2 border-dashed border-(--c-line-strong) text-(--c-text-2) font-semibold flex items-center justify-center gap-2 hover:border-(--c-line-hover) hover:bg-(--c-surface)"
       >
         <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">

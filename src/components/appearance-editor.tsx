@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { COLOR_FIELDS, PRESETS, contrast, type Appearance, type ColorKey } from "@/lib/appearance";
+import { COLOR_FIELDS, PRESETS, contrast, needsPanels, type Appearance, type ColorKey } from "@/lib/appearance";
 import { useAppearance, type BgImage } from "@/components/appearance-provider";
 import { TaskCard } from "@/components/board";
 import { StatusBar } from "@/components/status-bar";
@@ -151,7 +151,6 @@ export function AppearanceEditor({ userId }: { userId: string }) {
           ["Leise Schrift auf Spalten", contrast(c.muted, c.col), 4.5],
           ["Leise Schrift auf Karten", contrast(c.muted, c.surf), 4.5],
         ];
-        if (!liveImage) list.push(["Überschriften auf dem Seitenhintergrund", contrast(c.text, c.bg), 4.5]);
         return list;
       })()
     : [];
@@ -295,6 +294,12 @@ export function AppearanceEditor({ userId }: { userId: string }) {
                   </li>
                 ))}
               </ul>
+            )}
+            {needsPanels(draft, !!liveImage) && (
+              <p className="text-sm text-(--c-text-2)">
+                Dein Hintergrund ist kräftig. Damit alles gut lesbar bleibt, stehen Überschriften, Reiter und Hinweise auf der Seite in eigenen
+                Feldern in der Kartenfarbe.
+              </p>
             )}
             {liveImage && <p className="text-xs text-(--c-muted)">Wie gut Text direkt auf dem Foto lesbar ist, hängt vom Bild ab. Hilft „Bild abschwächen“ nicht, wähle ein ruhigeres Foto.</p>}
           </section>

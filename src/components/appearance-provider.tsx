@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { appearanceCss, type Appearance } from "@/lib/appearance";
+import { appearanceCss, needsPanels, type Appearance } from "@/lib/appearance";
 
 export type BgImage = { path: string; url: string };
 
@@ -88,6 +88,7 @@ export function AppearanceProvider({
         className={live ? "pr-scope min-h-screen" : "min-h-screen"}
         data-border={live?.border ?? undefined}
         data-tilt={live?.tilt ? "1" : undefined}
+        data-panels={live && needsPanels(live, !!liveImage) ? "1" : undefined}
       >
         {children}
       </div>

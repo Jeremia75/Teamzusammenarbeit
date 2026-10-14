@@ -10,7 +10,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-7 py-8 flex flex-col gap-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header data-panel className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-extrabold tracking-tight">Übersicht</h1>
           <p className="text-(--c-muted)">

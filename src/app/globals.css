@@ -209,3 +209,20 @@ html:has(dialog[data-lock][open]) {
     left: 260px;
   }
 }
+
+/* Eigene Darstellung mit kräftigem Hintergrund oder Bild: Texte auf der Seite in Felder setzen */
+.pr-scope[data-panels="1"] [data-panel] {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--radius-xl);
+  padding: 0.875rem 1.125rem;
+}
+.pr-scope[data-panels="1"] [data-panel="bar"] {
+  padding: 0 0.75rem;
+}
+.pr-scope[data-panels="1"] [data-panel="slim"] {
+  padding: 0.5rem 0.875rem;
+}
+.pr-scope[data-panels="1"] [data-panel="soft"] {
+  background: var(--c-surface);
+}

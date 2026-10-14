@@ -188,7 +188,7 @@ export function RubricView(props: Props) {
   // ---------------------------------------------------------------- UI
   return (
     <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header data-panel className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <Link
             href={`/w/${props.workspace.id}`}
@@ -239,7 +239,7 @@ export function RubricView(props: Props) {
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
+          <div data-panel="bar" className="flex flex-wrap items-center justify-between gap-3 border-b border-(--c-line)">
             <div role="group" aria-label="Ansicht" className="flex gap-1">
               {(
                 [
@@ -268,7 +268,7 @@ export function RubricView(props: Props) {
           </div>
 
           {view === "projects" && (
-            <div className="flex justify-end">
+            <div data-panel="slim" className="flex justify-end">
               <StatusLegend />
             </div>
           )}
