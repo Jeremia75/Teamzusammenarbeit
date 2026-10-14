@@ -7,6 +7,7 @@ import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types"
 import { STATUSES } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { TaskDetail } from "@/components/task-detail";
+import { removeTaskFiles, useAttachmentCounts } from "@/components/attachments";
 import { Board, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
@@ -117,14 +118,18 @@ export function RubricView(props: Props) {
     [supabase, tasks, currentUserId, fail],
   );
 
+  const attachIds = useMemo(() => projectIds, [projectIds]);
+  const { counts: attachCounts, setCount: setAttachCount } = useAttachmentCounts(supabase, attachIds);
+
   const deleteTask = useCallback(
     async (id: string) => {
+      await removeTaskFiles(supabase, [id, ...tasks.filter((t) => t.parent_id === id).map((t) => t.id)]);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
-    [supabase, openId, fail],
+    [supabase, openId, fail, tasks],
   );
 
   const toggleAssignee = useCallback(
@@ -296,6 +301,7 @@ export function RubricView(props: Props) {
                   peopleOf={peopleOf}
                   milestoneName={milestoneName}
                   projectOf={view === "status" ? projectOf : undefined}
+                  attachmentsOf={(id) => attachCounts[id] ?? 0}
                   onOpen={(id) => setOpenId(openId === id ? null : id)}
                   onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                   onMove={moveTask}
@@ -319,6 +325,7 @@ export function RubricView(props: Props) {
                 onAddSubtask={(title) => addTask(openTask.project_id, title, { parent_id: openTask.id })}
                 onDelete={deleteTask}
                 onToggleAssignee={(uid) => toggleAssignee(openTask.id, uid)}
+              onAttachmentCount={setAttachCount}
               />
             )}
           </div>

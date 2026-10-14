@@ -40,6 +40,7 @@ const TOPICS: [string, string][] = [
   ["projekte", "Projekte anlegen und ordnen"],
   ["rubrik-oeffnen", "Eine Rubrik öffnen"],
   ["aufgaben", "Aufgaben anlegen und bearbeiten"],
+  ["dateien", "Dateien und Links anhängen"],
   ["unteraufgaben", "Unteraufgaben"],
   ["farben", "Was die Farben bedeuten"],
   ["ansichten", "Die Ansichten im Projekt"],
@@ -238,6 +239,33 @@ export default function HelpPage() {
           Mit dem Kreuz oben rechts, der Taste Esc oder einem Klick neben das Fenster schließt du es wieder. Ganz unten in den Details findest du{" "}
           <K>Aufgabe löschen</K>. Projektraum fragt vorher noch einmal nach.
         </p>
+      </Section>
+
+      <Section id="dateien" title="Dateien und Links anhängen">
+        <p>
+          Zu jeder Aufgabe kannst du Dokumente ablegen. Öffne die Aufgabe und scroll zu <strong>Dateien und Links</strong>.
+        </p>
+        <ul>
+          <li>
+            Mit <K>+ Datei hinzufügen</K> wählst du eine Datei von deinem Computer oder Handy aus. Du kannst Dateien auch einfach mit der
+            Maus in das Aufgabenfenster ziehen. Eine Datei darf bis zu 25 MB groß sein.
+          </li>
+          <li>
+            Mit <K>+ Link hinzufügen</K> fügst du einen Link ein, zum Beispiel zu einem Dokument in OneDrive oder Google Drive. Gib ihm
+            einen kurzen Namen, dann findest du ihn schneller.
+          </li>
+          <li>Ein Klick auf den Namen öffnet das Dokument in einem neuen Fenster.</li>
+          <li>Mit dem Kreuz daneben entfernst du es wieder. Projektraum fragt vorher noch einmal nach.</li>
+        </ul>
+        <p>
+          Auf der Karte im Board zeigt eine kleine Büroklammer mit Zahl, wie viele Dokumente an der Aufgabe hängen. Sehen können die
+          Dokumente alle, die auch das Projekt sehen.
+        </p>
+        <Tip>
+          Dokumente, an denen mehrere Leute weiterarbeiten, wie den Businessplan, hängst du am besten als Link an. Dann gibt es nur eine
+          aktuelle Fassung. Hochladen lohnt sich für fertige Dinge wie einen Scan oder ein unterschriebenes PDF.
+        </Tip>
+        <p>Bei wiederkehrenden Aufgaben nimmt die nächste Aufgabe die Links mit, die Dateien nicht.</p>
       </Section>
 
       <Section id="unteraufgaben" title="Unteraufgaben">

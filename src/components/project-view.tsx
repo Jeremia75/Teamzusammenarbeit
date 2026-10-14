@@ -8,6 +8,7 @@ import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
+import { removeTaskFiles, useAttachmentCounts } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
@@ -135,14 +136,18 @@ export function ProjectView(props: Props) {
     [supabase, tasks, project.id, currentUserId, fail, msFilter],
   );
 
+  const attachIds = useMemo(() => [project.id], [project.id]);
+  const { counts: attachCounts, setCount: setAttachCount } = useAttachmentCounts(supabase, attachIds);
+
   const deleteTask = useCallback(
     async (id: string) => {
+      await removeTaskFiles(supabase, [id, ...tasks.filter((t) => t.parent_id === id).map((t) => t.id)]);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
-    [supabase, openId, fail],
+    [supabase, openId, fail, tasks],
   );
 
   const toggleAssignee = useCallback(
@@ -419,6 +424,7 @@ export function ProjectView(props: Props) {
                 subtasksOf={subtasksOf}
                 peopleOf={peopleOf}
                 milestoneName={msFilter ? () => "" : milestoneName}
+                attachmentsOf={(id) => attachCounts[id] ?? 0}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
                 onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                 onMove={moveTask}
@@ -446,6 +452,7 @@ export function ProjectView(props: Props) {
               onAddSubtask={(title) => addTask(title, { parent_id: openTask.id })}
               onDelete={deleteTask}
               onToggleAssignee={(uid) => toggleAssignee(openTask.id, uid)}
+              onAttachmentCount={setAttachCount}
             />
           )}
         </div>

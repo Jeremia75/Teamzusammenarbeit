@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence } from "@/lib/database.types";
 import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
+import { Attachments } from "@/components/attachments";
 import type { Member } from "@/components/project-view";
 
 type Props = {
@@ -20,6 +21,8 @@ type Props = {
   onAddSubtask: (title: string) => void;
   onDelete: (id: string) => void;
   onToggleAssignee: (userId: string) => void;
+  /** Anzahl der Anhänge hat sich geändert (für die Büroklammer auf der Karte) */
+  onAttachmentCount?: (taskId: string, n: number) => void;
 };
 
 const field = "h-11 rounded-lg border border-(--c-line) px-3 bg-(--c-surface) font-normal text-sm";
@@ -198,6 +201,8 @@ export function TaskDetail(props: Props) {
           className="rounded-lg border border-(--c-line) p-3 text-sm resize-y"
         />
       </label>
+
+      <Attachments taskId={task.id} onCount={props.onAttachmentCount ? (n) => props.onAttachmentCount!(task.id, n) : undefined} />
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">

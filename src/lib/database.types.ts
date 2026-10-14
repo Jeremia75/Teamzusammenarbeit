@@ -58,6 +58,14 @@ export type Database = {
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
         Relationships: [];
       };
+      task_attachments: {
+        Row: { id: string; task_id: string; kind: "file" | "link"; name: string; url: string | null; storage_path: string | null; mime: string | null; size: number | null; created_by: string | null; created_at: string };
+        Insert: { id?: string; task_id: string; kind: "file" | "link"; name: string; url?: string | null; storage_path?: string | null; mime?: string | null; size?: number | null; created_by?: string | null; created_at?: string };
+        Update: { name?: string };
+        Relationships: [
+          { foreignKeyName: "task_attachments_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ];
+      };
       notification_settings: {
         Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; asked_at: string | null; last_daily_on: string | null; updated_at: string };
         Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
@@ -167,6 +175,7 @@ export type Comment = T["comments"]["Row"];
 export type Section = T["sections"]["Row"];
 export type ProjectSection = T["project_sections"]["Row"];
 export type NotificationSettings = T["notification_settings"]["Row"];
+export type Attachment = T["task_attachments"]["Row"];
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];

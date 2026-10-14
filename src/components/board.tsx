@@ -37,6 +37,8 @@ type Props = {
   onQuickAdd?: (col: BoardColumn, title: string) => void;
   /** Projekt der Aufgabe auf der Karte anzeigen (Ansicht über mehrere Projekte) */
   projectOf?: (task: Task) => { name: string; color: string } | undefined;
+  /** Anzahl Dateien/Links je Aufgabe (Büroklammer) */
+  attachmentsOf?: (id: string) => number;
   onAddSection?: (name: string) => void;
   onRenameSection?: (id: string, name: string) => void;
   onDeleteSection?: (id: string) => void;
@@ -123,6 +125,7 @@ export function Board(props: Props) {
                     people={props.peopleOf(t.id)}
                     milestone={props.milestoneName(t.milestone_id)}
                     project={props.projectOf?.(t)}
+                    attachments={props.attachmentsOf?.(t.id) ?? 0}
                     selected={props.openId === t.id}
                     onOpen={() => props.onOpen(t.id)}
                     onToggleDone={() => props.onToggleDone(t)}
@@ -313,6 +316,7 @@ export function TaskCard({
   people,
   milestone,
   project,
+  attachments = 0,
   selected,
   onOpen,
   onToggleDone,
@@ -326,6 +330,7 @@ export function TaskCard({
   people: Member[];
   milestone: string;
   project?: { name: string; color: string };
+  attachments?: number;
   selected: boolean;
   onOpen: () => void;
   onToggleDone: () => void;
@@ -393,7 +398,7 @@ export function TaskCard({
               <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-(--c-line-soft) text-(--c-text-2) max-w-full truncate">{milestone}</span>
             )}
           </span>
-          {(task.due_date || subtasks.length > 0 || people.length > 0 || task.recurrence) && (
+          {(task.due_date || subtasks.length > 0 || people.length > 0 || task.recurrence || attachments > 0) && (
             <span className="flex items-center gap-3 text-xs font-semibold text-(--c-muted)">
               {task.due_date && (
                 <span className={overdue ? "text-(--c-danger)" : ""}>
@@ -407,6 +412,15 @@ export function TaskCard({
                     <path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5" />
                   </svg>
                   <span className="sr-only">Wiederholt sich {recurrenceLabel(task.recurrence).toLowerCase()}</span>
+                </span>
+              )}
+              {attachments > 0 && (
+                <span className="flex items-center gap-0.5" title={`${attachments} ${attachments === 1 ? "Datei oder Link" : "Dateien oder Links"}`}>
+                  <svg aria-hidden width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m21 11.5-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9" />
+                  </svg>
+                  {attachments}
+                  <span className="sr-only"> {attachments === 1 ? "Anhang" : "Anhänge"}</span>
                 </span>
               )}
               {subtasks.length > 0 && (
