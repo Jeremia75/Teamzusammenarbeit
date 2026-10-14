@@ -44,6 +44,7 @@ const TOPICS: [string, string][] = [
   ["unteraufgaben", "Unteraufgaben"],
   ["farben", "Was die Farben bedeuten"],
   ["ansichten", "Die Ansichten im Projekt"],
+  ["zeitplan", "Der Zeitplan"],
   ["projekt-rubriken", "Rubriken im Projekt"],
   ["meilensteine", "Ziele und Meilensteine"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
@@ -315,7 +316,7 @@ export default function HelpPage() {
       </Section>
 
       <Section id="ansichten" title="Die Ansichten im Projekt">
-        <p>In einem Projekt kannst du oben zwischen drei Ansichten wechseln. Die Aufgaben bleiben dieselben, nur die Anordnung ändert sich.</p>
+        <p>In einem Projekt kannst du oben zwischen vier Ansichten wechseln. Die Aufgaben bleiben dieselben, nur die Anordnung ändert sich.</p>
         <ul>
           <li>
             <K>Board · Rubriken</K> zeigt deine eigenen Spalten, zum Beispiel Recherche, Behörden und Marketing. Die Farben zeigen dir, wie
@@ -328,11 +329,48 @@ export default function HelpPage() {
           <li>
             <K>Liste</K> zeigt alle Aufgaben als Tabelle. Angefangene stehen oben, danach geht es nach Fälligkeitsdatum.
           </li>
+          <li>
+            <K>Zeitplan</K> zeigt deine Aufgaben auf einem Kalender, siehe unten.
+          </li>
         </ul>
         <p>
           Mit dem Häkchen <K>Nur meine Aufgaben</K> blendest du alles aus, wofür du nicht verantwortlich bist.
         </p>
         <Tip>Projektraum merkt sich auf deinem Gerät, welche Ansicht du zuletzt gewählt hast.</Tip>
+      </Section>
+
+      <Section id="zeitplan" title="Der Zeitplan">
+        <p>
+          Im <K>Zeitplan</K> ist jede Aufgabe ein Balken: Er beginnt am <strong>Beginn</strong> und endet am Tag, an dem die Aufgabe{" "}
+          <strong>fällig</strong> ist. Beides trägst du im Aufgabenfenster ein. Die Aufgaben sind nach Rubriken sortiert, die Farbe zeigt den
+          Status.
+        </p>
+        <ul>
+          <li>Die rote Linie ist heute. Mit <K>Heute</K> springst du dorthin zurück.</li>
+          <li>
+            Mit <K>Wochen</K>, <K>Monate</K> und <K>Quartal</K> wählst du, wie viel Zeit du auf einmal siehst.
+          </li>
+          <li>
+            <strong>Verschieben:</strong> Halte einen Balken mit der Maus fest und zieh ihn nach links oder rechts. Beim Ziehen siehst du die neuen
+            Daten.
+          </li>
+          <li>
+            <strong>Länger oder kürzer:</strong> Fass den Balken ganz am linken oder rechten Rand an und zieh.
+          </li>
+          <li>Ein Klick auf den Balken öffnet die Aufgabe.</li>
+          <li>Meilensteine stehen ganz oben als schwarze Raute.</li>
+          <li>
+            Ein gestrichelter kleiner Balken heißt: Es gibt nur einen Fälligkeitstag, aber keinen Beginn. Rot umrandet heißt: überfällig.
+          </li>
+        </ul>
+        <p>
+          Aufgaben ganz ohne Datum stehen unter dem Zeitplan bei <K>Ohne Termin</K>. Mit <K>Ab heute einplanen</K> bekommen sie drei Tage ab
+          heute. Danach ziehst du sie an die richtige Stelle.
+        </p>
+        <Tip>
+          Ohne Maus geht es auch: Spring mit der Tab-Taste zu einem Balken, dann verschieben ihn die Pfeiltasten um einen Tag. Mit gedrückter Umschalttaste änderst du
+          stattdessen die Dauer.
+        </Tip>
       </Section>
 
       <Section id="projekt-rubriken" title="Rubriken im Projekt">
