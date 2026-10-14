@@ -4,6 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+/** Rücksprung nach der Anmeldung – nur Pfade innerhalb der App */
+function nextPath() {
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && /^\/(?![\/\\])/.test(n) ? n : "/";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -22,14 +28,14 @@ export default function LoginPage() {
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage("Anmeldung fehlgeschlagen: " + error.message);
-      else router.replace("/");
+      else router.replace(nextPath());
     } else {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { display_name: name },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback${nextPath() !== "/" ? "?next=" + encodeURIComponent(nextPath()) : ""}`,
         },
       });
       setMessage(

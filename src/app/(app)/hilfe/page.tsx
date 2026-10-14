@@ -50,6 +50,7 @@ const TOPICS: [string, string][] = [
   ["team", "Im Team arbeiten"],
   ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
   ["darstellung", "Aussehen anpassen"],
+  ["ki", "Aufgaben mit KI anlegen"],
   ["installieren", "Projektraum auf dem PC installieren"],
   ["fragen", "Häufige Fragen"],
 ];
@@ -470,6 +471,35 @@ export default function HelpPage() {
         </p>
         <Tip>
           Mit <K>Standard</K> kommst du jederzeit zur ursprünglichen Darstellung zurück. Klick danach auf Speichern.
+        </Tip>
+      </Section>
+
+      <Section id="ki" title="Aufgaben mit KI anlegen">
+        <p>
+          Du kannst Projektraum mit <strong>Claude</strong> verbinden, einem KI-Assistenten. Dann musst du Aufgaben nicht mehr einzeln eintippen. Du
+          schreibst Claude einfach, was zu tun ist, und Claude trägt es für dich ein.
+        </p>
+        <p>
+          <strong>Einmal einrichten:</strong> Klick links auf{" "}
+          <Link href="/ki" className="font-semibold text-(--c-accent) underline underline-offset-4">
+            KI-Assistent
+          </Link>
+          . Dort steht Schritt für Schritt, was du in Claude eintragen musst. Das dauert etwa zwei Minuten. Jede Person verbindet ihr eigenes Konto.
+        </p>
+        <p>Danach kannst du Claude zum Beispiel schreiben:</p>
+        <ul>
+          <li>„Leg im Projekt Firmengründung eine Aufgabe an: Termin beim Notar ausmachen, bis Freitag, für mich.“</li>
+          <li>„Hier ist das Protokoll unserer Besprechung. Mach daraus Aufgaben und teil sie den richtigen Leuten zu.“</li>
+          <li>„Was ist bei mir diese Woche fällig?“</li>
+          <li>„Hak die Aufgabe ‚Angebot schicken‘ ab und schreib als Kommentar dazu, dass es am Montag rausging.“</li>
+        </ul>
+        <p>
+          Claude sieht nur, was du auch siehst, und alles erscheint unter deinem Namen. <strong>Löschen kann Claude nichts</strong> – das machst du
+          immer selbst in der App. Unter <K>KI-Assistent</K> kannst du die Verbindung jederzeit wieder trennen.
+        </p>
+        <Tip>
+          Sag Claude dazu, in welches Projekt die Aufgaben gehören. Ist es nicht eindeutig, fragt Claude nach. Schau beim ersten Mal kurz nach, ob alles
+          so angelegt wurde, wie du es wolltest.
         </Tip>
       </Section>
 

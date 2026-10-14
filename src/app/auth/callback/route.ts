@@ -10,5 +10,6 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
-  return NextResponse.redirect(`${origin}/`);
+  const next = searchParams.get("next");
+  return NextResponse.redirect(`${origin}${next && /^\/(?![\/\\])/.test(next) ? next : "/"}`);
 }
