@@ -345,13 +345,18 @@ type TaskFile = { id: string; name: string; storage_path: string; size: number |
  * aufgelistet und lassen sich vorher herunterladen – erst dann wird gelöscht.
  */
 export function DeleteConfirm({
-  taskIds,
+  taskIds = [],
+  projectId,
   question,
+  confirmLabel = "Löschen",
   onDelete,
   onCancel,
 }: {
-  taskIds: string[];
+  taskIds?: string[];
+  /** statt einzelner Aufgaben: alle Dateien eines Projekts */
+  projectId?: string;
   question: string;
+  confirmLabel?: string;
   onDelete: () => void;
   onCancel: () => void;
 }) {
@@ -368,11 +373,10 @@ export function DeleteConfirm({
 
   useEffect(() => {
     let off = false;
-    supabase
-      .from("task_attachments")
-      .select("id, name, storage_path, size")
-      .in("task_id", key.split(","))
-      .eq("kind", "file")
+    const q = projectId
+      ? supabase.from("task_attachments").select("id, name, storage_path, size, tasks!inner(project_id)").eq("tasks.project_id", projectId)
+      : supabase.from("task_attachments").select("id, name, storage_path, size").in("task_id", key.split(","));
+    q.eq("kind", "file")
       .order("created_at")
       .then(({ data }) => {
         if (!off) setFiles((data ?? []).filter((f): f is TaskFile => !!f.storage_path));
@@ -380,7 +384,7 @@ export function DeleteConfirm({
     return () => {
       off = true;
     };
-  }, [supabase, key]);
+  }, [supabase, key, projectId]);
 
   async function download(f: TaskFile) {
     const { data, error } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(f.storage_path, 300, { download: f.name });
@@ -411,7 +415,7 @@ export function DeleteConfirm({
       <div ref={boxRef} className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold">{question}</span>
         <button type="button" onClick={onDelete} className={`${btn} bg-(--c-danger) text-(--c-on-danger)`}>
-          Löschen
+          {confirmLabel}
         </button>
         <button type="button" onClick={onCancel} className={`${btn} border border-(--c-line)`}>
           Abbrechen
@@ -465,4 +469,11 @@ export function DeleteConfirm({
 export async function hasTaskFiles(supabase: Supa, taskIds: string[]) {
   const { count } = await supabase.from("task_attachments").select("id", { count: "exact", head: true }).in("task_id", taskIds).eq("kind", "file");
   return (count ?? 0) > 0;
+}
+
+/** Vor dem Löschen eines Projekts: alle hochgeladenen Dateien seiner Aufgaben entfernen */
+export async function removeProjectFiles(supabase: Supa, projectId: string) {
+  const { data } = await supabase.from("task_attachments").select("storage_path, tasks!inner(project_id)").eq("tasks.project_id", projectId).eq("kind", "file");
+  const paths = (data ?? []).map((r) => r.storage_path).filter((p): p is string => !!p);
+  for (let i = 0; i < paths.length; i += 100) await supabase.storage.from(ATTACH_BUCKET).remove(paths.slice(i, i + 100));
 }

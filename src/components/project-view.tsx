@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
@@ -8,7 +9,7 @@ import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
-import { removeTaskFiles, useAttachmentCounts } from "@/components/attachments";
+import { removeTaskFiles, useAttachmentCounts, DeleteConfirm, removeProjectFiles } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
@@ -20,6 +21,7 @@ type Props = {
   currentUserId: string;
   workspace: { id: string; name: string };
   project: { id: string; name: string; description: string; color: string };
+  canDelete?: boolean;
   initialTasks: Task[];
   initialMilestones: Milestone[];
   initialSections: Section[];
@@ -457,6 +459,8 @@ export function ProjectView(props: Props) {
           )}
         </div>
       </div>
+
+      {props.canDelete && <DeleteProject project={project} workspaceId={props.workspace.id} taskCount={topLevel.length} />}
     </div>
   );
 }
@@ -562,5 +566,51 @@ export function TaskList({
       )}
       {sorted.length === 0 && !onAdd && <p className="px-4 py-6 text-sm text-(--c-muted)">Keine Aufgaben.</p>}
     </div>
+  );
+}
+
+/** Ganz unten auf der Projektseite: Projekt samt Aufgaben löschen (mit Rückfrage und Dateien-Sicherung) */
+function DeleteProject({ project, workspaceId, taskCount }: { project: { id: string; name: string }; workspaceId: string; taskCount: number }) {
+  const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    await removeProjectFiles(supabase, project.id);
+    const { error, count } = await supabase.from("projects").delete({ count: "exact" }).eq("id", project.id);
+    if (error || !count) {
+      setBusy(false);
+      return setError(error ? "Projekt nicht gelöscht: " + error.message : "Dieses Projekt darfst du nicht löschen.");
+    }
+    router.replace(`/w/${workspaceId}`);
+    router.refresh();
+  }
+
+  const question =
+    taskCount === 0
+      ? `Projekt „${project.name}“ wirklich löschen?`
+      : `Projekt „${project.name}“ mit ${taskCount === 1 ? "1 Aufgabe" : `${taskCount} Aufgaben`}, Meilensteinen und Kommentaren löschen? Das lässt sich nicht rückgängig machen.`;
+
+  return (
+    <section data-panel aria-label="Projekt löschen" className="mt-6 border-t border-(--c-line-soft) pt-5 flex flex-col gap-3 max-w-2xl">
+      {busy ? (
+        <p className="text-sm text-(--c-muted)">Projekt wird gelöscht …</p>
+      ) : open ? (
+        <DeleteConfirm projectId={project.id} question={question} confirmLabel="Projekt löschen" onDelete={remove} onCancel={() => setOpen(false)} />
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} className="self-start min-h-11 text-sm font-semibold text-(--c-danger)">
+          Projekt löschen
+        </button>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-(--c-danger)">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
