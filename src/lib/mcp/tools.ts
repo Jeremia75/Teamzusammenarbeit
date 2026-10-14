@@ -168,6 +168,7 @@ const link = (ctx: Ctx, projectId: string) => `${ctx.appUrl}/p/${projectId}`;
 
 const taskFields: Record<string, JsonSchema> = {
   description: { type: "string", description: "Beschreibung, Details, Notizen (optional)" },
+  start_date: { type: ["string", "null"], description: "Beginn JJJJ-MM-TT (für den Zeitplan), null entfernt das Datum. Darf nicht nach der Fälligkeit liegen." },
   due_date: { type: ["string", "null"], description: "Fälligkeitsdatum JJJJ-MM-TT, null entfernt das Datum" },
   priority: { type: "string", enum: ["low", "medium", "high"], description: "Priorität: low = Niedrig, medium = Mittel, high = Hoch" },
   status: { type: "string", enum: ["todo", "doing", "review", "done"], description: "todo = Offen, doing = In Arbeit, review = Zur Prüfung, done = Erledigt" },
@@ -252,7 +253,7 @@ export const TOOLS: Tool[] = [
 
       let q = ctx.db
         .from("tasks")
-        .select("id, title, status, priority, due_date, parent_id, recurrence, project_id, projects!inner(name, archived_at), sections(name), milestones(name), task_assignees(user_id)")
+        .select("id, title, status, priority, start_date, due_date, parent_id, recurrence, project_id, projects!inner(name, archived_at), sections(name), milestones(name), task_assignees(user_id)")
         .is("projects.archived_at", null)
         .order("due_date", { ascending: true, nullsFirst: false })
         .order("position")
@@ -283,6 +284,7 @@ export const TOOLS: Tool[] = [
           project_id: t.project_id,
           status: STATUS[t.status],
           prioritaet: PRIO[t.priority],
+          beginn: t.start_date ?? undefined,
           faellig: t.due_date ?? undefined,
           ueberfaellig: t.due_date && t.status !== "done" && t.due_date < today ? true : undefined,
           rubrik: t.sections?.name,
@@ -331,6 +333,7 @@ export const TOOLS: Tool[] = [
         link: link(ctx, t.project_id),
         status: STATUS[t.status],
         prioritaet: PRIO[t.priority],
+        beginn: t.start_date ?? undefined,
         faellig: t.due_date ?? undefined,
         rubrik: t.sections?.name,
         meilenstein: t.milestones?.name,
@@ -349,7 +352,7 @@ export const TOOLS: Tool[] = [
     name: "create_tasks",
     title: "Aufgaben anlegen",
     description:
-      "Legt eine oder mehrere Aufgaben in einem Projekt an (bis zu 50 auf einmal), auf Wunsch mit Unteraufgaben, Fälligkeit, Priorität, Rubrik, Meilenstein und Verantwortlichen. Vorher list_projects aufrufen, um die project_id und die Namen der Mitglieder zu kennen.",
+      "Legt eine oder mehrere Aufgaben in einem Projekt an (bis zu 50 auf einmal), auf Wunsch mit Unteraufgaben, Beginn und Fälligkeit, Priorität, Rubrik, Meilenstein und Verantwortlichen. Vorher list_projects aufrufen, um die project_id und die Namen der Mitglieder zu kennen.",
     inputSchema: {
       type: "object",
       properties: {
@@ -393,6 +396,7 @@ export const TOOLS: Tool[] = [
           title: text(t.title, k("title"), 300, true)!,
           description: text(t.description, k("description"), 20000) ?? "",
           due_date: date(t.due_date, k("due_date")) ?? null,
+          start_date: date(t.start_date, k("start_date")) ?? null,
           priority: oneOf(t.priority, k("priority"), ["low", "medium", "high"] as const) ?? "medium",
           status: oneOf(t.status, k("status"), ["todo", "doing", "review", "done"] as const) ?? "todo",
           recurrence: t.recurrence === null ? null : (oneOf(t.recurrence, k("recurrence"), RECUR) ?? null),
@@ -402,6 +406,9 @@ export const TOOLS: Tool[] = [
           subtasks: strList(t.subtasks, k("subtasks"), 50, 300) ?? [],
         });
       }
+      for (const t of plan)
+        if (t.start_date && t.due_date && t.start_date > t.due_date)
+          throw new ToolError(`"${t.title}": Der Beginn (${t.start_date}) liegt nach der Fälligkeit (${t.due_date}).`);
       const msIds = new Map<string, string | null>();
       for (const t of plan)
         if (t.milestoneName !== undefined && !msIds.has(t.milestoneName.toLowerCase()))
@@ -420,6 +427,7 @@ export const TOOLS: Tool[] = [
             title: t.title,
             description: t.description,
             due_date: t.due_date,
+            start_date: t.start_date,
             priority: t.priority,
             status: t.status,
             recurrence: t.recurrence,
@@ -476,6 +484,8 @@ export const TOOLS: Tool[] = [
       if (a.description !== undefined) patch.description = text(a.description, "description", 20000) ?? "";
       const due = date(a.due_date, "due_date");
       if (due !== undefined) patch.due_date = due;
+      const start = date(a.start_date, "start_date");
+      if (start !== undefined) patch.start_date = start;
       const prio = oneOf(a.priority, "priority", ["low", "medium", "high"] as const);
       if (prio) patch.priority = prio;
       const st = oneOf(a.status, "status", ["todo", "doing", "review", "done"] as const);
@@ -490,6 +500,12 @@ export const TOOLS: Tool[] = [
         assignees = resolvePeople(ctx, strList(a.assignees, "assignees", 20, 120) ?? [], members);
       }
       if (!Object.keys(patch).length && !assignees) throw new ToolError("Es wurde nichts zum Ändern angegeben.");
+      if (patch.start_date !== undefined || patch.due_date !== undefined) {
+        const { data: cur } = await ctx.db.from("tasks").select("start_date, due_date").eq("id", id).single();
+        const s0 = patch.start_date !== undefined ? patch.start_date : cur?.start_date;
+        const d0 = patch.due_date !== undefined ? patch.due_date : cur?.due_date;
+        if (s0 && d0 && s0 > d0) throw new ToolError(`Der Beginn (${s0}) liegt nach der Fälligkeit (${d0}).`);
+      }
 
       if (Object.keys(patch).length) {
         const { error: e } = await ctx.db.from("tasks").update(patch).eq("id", id);

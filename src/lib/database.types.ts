@@ -99,21 +99,21 @@ export type Database = {
       };
       tasks: {
         Row: {
-          completed_at: string | null; created_at: string; created_by: string | null; description: string; due_date: string | null;
+          completed_at: string | null; created_at: string; created_by: string | null; description: string; due_date: string | null; start_date: string | null;
           id: string; milestone_id: string | null; parent_id: string | null; position: number;
           priority: Database["public"]["Enums"]["task_priority"]; project_id: string;
           status: Database["public"]["Enums"]["task_status"]; title: string; updated_at: string;
           section_id: string | null; recurrence: Database["public"]["Enums"]["task_recurrence"] | null; recurrence_spawned: boolean;
         };
         Insert: {
-          completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null;
+          completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null; start_date?: string | null;
           id?: string; milestone_id?: string | null; parent_id?: string | null; position?: number;
           priority?: Database["public"]["Enums"]["task_priority"]; project_id: string;
           status?: Database["public"]["Enums"]["task_status"]; title: string; updated_at?: string;
           section_id?: string | null; recurrence?: Database["public"]["Enums"]["task_recurrence"] | null; recurrence_spawned?: boolean;
         };
         Update: {
-          completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null;
+          completed_at?: string | null; created_at?: string; created_by?: string | null; description?: string; due_date?: string | null; start_date?: string | null;
           id?: string; milestone_id?: string | null; parent_id?: string | null; position?: number;
           priority?: Database["public"]["Enums"]["task_priority"]; project_id?: string;
           status?: Database["public"]["Enums"]["task_status"]; title?: string; updated_at?: string;

@@ -88,15 +88,33 @@ export function TaskDetail(props: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
-          Fällig am
+          Beginn
           <input
             type="date"
-            value={task.due_date ?? ""}
-            onChange={(e) => onUpdate(task.id, { due_date: e.target.value || null })}
+            value={task.start_date ?? ""}
+            max={task.due_date ?? undefined}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              // Beginn nach der Fälligkeit: Fälligkeit mitziehen
+              onUpdate(task.id, v && task.due_date && v > task.due_date ? { start_date: v, due_date: v } : { start_date: v });
+            }}
             className={`${field} text-(--c-ink)`}
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
+          Fällig am
+          <input
+            type="date"
+            value={task.due_date ?? ""}
+            min={task.start_date ?? undefined}
+            onChange={(e) => {
+              const v = e.target.value || null;
+              onUpdate(task.id, v && task.start_date && v < task.start_date ? { due_date: v, start_date: v } : { due_date: v });
+            }}
+            className={`${field} text-(--c-ink)`}
+          />
+        </label>
+        <label className="col-span-2 flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
           Priorität
           <select
             value={task.priority}
