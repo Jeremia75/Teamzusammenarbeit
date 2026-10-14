@@ -127,7 +127,7 @@ export default function HelpPage() {
             Eingabetaste.
           </li>
           <li>
-            Klicke auf die Aufgabe. Rechts öffnen sich die Details. Dort kannst du ein Datum, eine Beschreibung und Unteraufgaben
+            Klicke auf die Aufgabe. Es öffnet sich ein Fenster mit den Details. Dort kannst du ein Datum, eine Beschreibung und Unteraufgaben
             eintragen.
           </li>
           <li>Wenn du fertig bist, klicke auf den kleinen Kreis links neben der Aufgabe. Damit ist sie erledigt.</li>
@@ -212,7 +212,7 @@ export default function HelpPage() {
           Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Schreib den Text hinein und drück
           die Eingabetaste. Du kannst gleich die nächste eintippen.
         </p>
-        <p>Klickst du auf eine Aufgabe, öffnen sich rechts die Details. Dort kannst du Folgendes einstellen:</p>
+        <p>Klickst du auf eine Aufgabe, öffnet sich ein Fenster mit den Details. Am Handy füllt es den ganzen Bildschirm. Dort kannst du Folgendes einstellen:</p>
         <ul>
           <li>
             <strong>Titel</strong> und <strong>Beschreibung</strong>. In die Beschreibung passen Notizen, Telefonnummern oder Links.
@@ -235,7 +235,7 @@ export default function HelpPage() {
           </li>
         </ul>
         <p>
-          Mit <K>Details schließen</K> (das Kreuz oben rechts) schließt du die Details wieder. Ganz unten in den Details findest du{" "}
+          Mit dem Kreuz oben rechts, der Taste Esc oder einem Klick neben das Fenster schließt du es wieder. Ganz unten in den Details findest du{" "}
           <K>Aufgabe löschen</K>. Projektraum fragt vorher noch einmal nach.
         </p>
       </Section>

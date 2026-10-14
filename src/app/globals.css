@@ -199,3 +199,13 @@ body {
 .pr-scope[data-tilt="1"] [data-card]:hover {
   transform: none;
 }
+
+/* Aufgabenfenster: Seite dahinter nicht mitscrollen; am PC mittig im Inhaltsbereich (rechts der Seitenleiste) */
+html:has(dialog[data-lock][open]) {
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  dialog.task-dialog {
+    left: 260px;
+  }
+}

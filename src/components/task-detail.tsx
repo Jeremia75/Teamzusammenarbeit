@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence } from "@/lib/database.types";
 import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
@@ -36,11 +36,9 @@ export function TaskDetail(props: Props) {
   const subPct = subtasks.length ? Math.round((subDone / subtasks.length) * 100) : 0;
 
   return (
-    <aside
-      aria-label="Aufgabendetails"
-      className="flex-[1_1_340px] max-w-full bg-(--c-surface) border border-(--c-line) rounded-xl p-5 flex flex-col gap-5 lg:sticky lg:top-4"
-    >
-      <div className="flex items-start gap-2">
+    <TaskDialog onClose={props.onClose}>
+    <aside aria-label="Aufgabendetails" className="bg-(--c-surface) p-5 sm:p-6 flex flex-col gap-5">
+      <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-2 sm:-mx-6 sm:-mt-6 sm:px-6 sm:pt-6 bg-(--c-surface) border-b border-(--c-line-soft) flex items-start gap-2">
         <label className="sr-only" htmlFor="task-title">Titel</label>
         <textarea
           id="task-title"
@@ -293,6 +291,41 @@ export function TaskDetail(props: Props) {
         )}
       </div>
     </aside>
+    </TaskDialog>
+  );
+}
+
+/**
+ * Fenster für die Aufgabendetails: am Handy über den ganzen Bildschirm,
+ * am PC mittig über dem Inhalt (neben der Seitenleiste). Esc oder Klick daneben schließt.
+ */
+function TaskDialog({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+    // Fokus auf "Schließen" statt auf das Titelfeld – sonst springt am Handy die Tastatur auf
+    d?.querySelector<HTMLButtonElement>('button[aria-label="Details schließen"]')?.focus();
+    return () => d?.close();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      aria-label="Aufgabe bearbeiten"
+      data-lock
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="task-dialog bg-(--c-surface) text-(--c-ink) p-0 overflow-y-auto overscroll-contain backdrop:bg-black/45
+        m-0 w-full h-full max-w-none max-h-none
+        md:m-auto md:h-auto md:w-[min(680px,calc(100%-260px-48px))] md:max-h-[calc(100dvh-48px)] md:rounded-2xl md:border md:border-(--c-line) md:shadow-2xl"
+    >
+      {children}
+    </dialog>
   );
 }
 
