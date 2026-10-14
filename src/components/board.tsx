@@ -267,7 +267,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="self-start flex-[0_0_220px] min-h-12 rounded-xl border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
+        className="self-start sticky top-0 z-10 flex-[0_0_220px] min-h-12 rounded-xl bg-(--c-bg) border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
       >
         + Rubrik hinzufügen
       </button>
@@ -281,7 +281,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
         setName("");
         setOpen(false);
       }}
-      className="self-start flex-[0_0_260px] rounded-xl bg-(--c-surface) border border-(--c-line) p-2.5 flex flex-col gap-2"
+      className="self-start sticky top-0 z-10 flex-[0_0_260px] rounded-xl bg-(--c-surface) border border-(--c-line) p-2.5 flex flex-col gap-2"
     >
       <input
         aria-label="Name der Rubrik"
