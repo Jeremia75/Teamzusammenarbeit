@@ -186,6 +186,12 @@ export default function HelpPage() {
           .
         </p>
         <Tip>Löschst du eine Rubrik, bleiben die Projekte darin erhalten. Sie wandern in die Spalte Ohne Rubrik.</Tip>
+        <p>
+          <strong>Ein Projekt löschen:</strong> Öffne das Projekt und scroll ganz nach unten. Dort findest du <K>Projekt löschen</K>.
+          Projektraum fragt noch einmal nach, denn dabei verschwinden auch alle Aufgaben, Meilensteine und Kommentare darin. Hängen
+          Dateien an den Aufgaben, kannst du sie vorher speichern. Löschen darf nur, wer das Projekt angelegt hat, oder wer in der
+          Firma Admin ist.
+        </p>
       </Section>
 
       <Section id="rubrik-oeffnen" title="Eine Rubrik öffnen">
