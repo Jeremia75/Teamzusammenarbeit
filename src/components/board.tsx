@@ -54,8 +54,10 @@ export function Board(props: Props) {
   }
 
   return (
-    <div className="relative overflow-x-auto pb-2">
-      <div className="flex gap-3.5 items-start">
+    // Eigener Scrollbereich (max. Fensterhöhe), damit die Spaltenköpfe beim Runterscrollen oben stehen bleiben
+    <div data-board-scroll className="relative overflow-auto overscroll-contain pb-2 max-h-[calc(100dvh-1rem)]">
+      {/* items-stretch: alle Spalten gleich hoch, damit jeder Kopf beim Scrollen stehen bleibt */}
+      <div className="flex gap-3.5 items-stretch">
         {props.columns.map((col, ci) => {
           const list = props.tasksOf(col);
           const counts = { todo: 0, doing: 0, review: 0, done: 0 } as Record<TaskStatus, number>;
@@ -73,25 +75,26 @@ export function Board(props: Props) {
                 e.preventDefault();
                 finish(col);
               }}
-              className={`flex-[1_0_272px] max-w-[340px] rounded-xl p-2.5 flex flex-col gap-2 transition-colors ${
-                dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"
-              }`}
+              className="flex-[1_0_272px] max-w-[340px] flex flex-col"
             >
-              <ColumnHeader
-                col={col}
-                count={list.length}
-                statusColor={statusColor}
-                isFirst={ci === 0 || !props.columns[ci - 1]?.editable}
-                isLast={ci === props.columns.length - 1}
-                onRename={props.onRenameSection}
-                onDelete={props.onDeleteSection}
-                onShift={props.onShiftSection}
-              />
-              {props.colorful && (
-                <div className="px-1.5 pb-1">
-                  <StatusBar counts={counts} height={6} />
-                </div>
-              )}
+              <div data-col-head className={`sticky top-0 z-10 px-2.5 pt-2.5 pb-1 rounded-t-xl backdrop-blur-sm transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
+                <ColumnHeader
+                  col={col}
+                  count={list.length}
+                  statusColor={statusColor}
+                  isFirst={ci === 0 || !props.columns[ci - 1]?.editable}
+                  isLast={ci === props.columns.length - 1}
+                  onRename={props.onRenameSection}
+                  onDelete={props.onDeleteSection}
+                  onShift={props.onShiftSection}
+                />
+                {props.colorful && (
+                  <div className="px-1.5 pt-1">
+                    <StatusBar counts={counts} height={6} />
+                  </div>
+                )}
+              </div>
+              <div className={`px-2.5 pb-2.5 pt-1 rounded-b-xl flex flex-col gap-2 transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
 
               {list.map((t) => (
                 <div
@@ -134,6 +137,9 @@ export function Board(props: Props) {
               {dragId && drop?.col === col.key && drop.before === null && <DropLine />}
 
               {props.onQuickAdd && <QuickAdd onAdd={(title) => props.onQuickAdd?.(col, title)} />}
+              </div>
+              {/* freie Fläche unter kurzen Spalten: nimmt beim Ziehen ebenfalls Aufgaben an */}
+              <div aria-hidden className={`flex-1 min-h-4 rounded-xl ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)/60" : ""}`} />
             </section>
           );
         })}
@@ -261,7 +267,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex-[0_0_220px] min-h-12 rounded-xl border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
+        className="self-start flex-[0_0_220px] min-h-12 rounded-xl border-2 border-dashed border-(--c-line-strong) text-sm font-semibold text-(--c-text-2) hover:border-(--c-line-hover) hover:bg-(--c-surface)"
       >
         + Rubrik hinzufügen
       </button>
@@ -275,7 +281,7 @@ export function AddSection({ onAdd, placeholder = "z. B. Recherche, Behörden, M
         setName("");
         setOpen(false);
       }}
-      className="flex-[0_0_260px] rounded-xl bg-(--c-surface) border border-(--c-line) p-2.5 flex flex-col gap-2"
+      className="self-start flex-[0_0_260px] rounded-xl bg-(--c-surface) border border-(--c-line) p-2.5 flex flex-col gap-2"
     >
       <input
         aria-label="Name der Rubrik"
