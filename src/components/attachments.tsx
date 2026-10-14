@@ -337,3 +337,132 @@ export async function removeTaskFiles(supabase: Supa, taskIds: string[]) {
   const paths = (data ?? []).map((r) => r.storage_path).filter((p): p is string => !!p);
   if (paths.length) await supabase.storage.from(ATTACH_BUCKET).remove(paths);
 }
+
+type TaskFile = { id: string; name: string; storage_path: string; size: number | null };
+
+/**
+ * Rückfrage vor dem Löschen einer Aufgabe. Hat sie hochgeladene Dateien, werden sie
+ * aufgelistet und lassen sich vorher herunterladen – erst dann wird gelöscht.
+ */
+export function DeleteConfirm({
+  taskIds,
+  question,
+  onDelete,
+  onCancel,
+}: {
+  taskIds: string[];
+  question: string;
+  onDelete: () => void;
+  onCancel: () => void;
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [files, setFiles] = useState<TaskFile[] | null>(null);
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  const key = taskIds.join(",");
+  const boxRef = useRef<HTMLDivElement>(null);
+  // Rückfrage sichtbar machen – sie steht ganz unten im Fenster
+  useEffect(() => {
+    boxRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [files]);
+
+  useEffect(() => {
+    let off = false;
+    supabase
+      .from("task_attachments")
+      .select("id, name, storage_path, size")
+      .in("task_id", key.split(","))
+      .eq("kind", "file")
+      .order("created_at")
+      .then(({ data }) => {
+        if (!off) setFiles((data ?? []).filter((f): f is TaskFile => !!f.storage_path));
+      });
+    return () => {
+      off = true;
+    };
+  }, [supabase, key]);
+
+  async function download(f: TaskFile) {
+    const { data, error } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(f.storage_path, 300, { download: f.name });
+    if (error || !data) return setError(`„${f.name}“ konnte nicht geladen werden.`);
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = f.name;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setSaved((s) => new Set(s).add(f.id));
+  }
+
+  async function downloadAll() {
+    setError(null);
+    for (const f of files ?? []) {
+      await download(f);
+      await new Promise((r) => setTimeout(r, 400)); // Browser lassen sonst nur die erste Datei durch
+    }
+  }
+
+  const btn = "min-h-11 px-4 rounded-lg text-sm font-bold";
+  if (files === null) return <p ref={boxRef as React.Ref<HTMLParagraphElement>} className="text-sm text-(--c-muted)">Einen Moment …</p>;
+
+  if (!files.length)
+    return (
+      <div ref={boxRef} className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold">{question}</span>
+        <button type="button" onClick={onDelete} className={`${btn} bg-(--c-danger) text-(--c-on-danger)`}>
+          Löschen
+        </button>
+        <button type="button" onClick={onCancel} className={`${btn} border border-(--c-line)`}>
+          Abbrechen
+        </button>
+      </div>
+    );
+
+  const allSaved = files.every((f) => saved.has(f.id));
+  return (
+    <div ref={boxRef} role="group" aria-label="Dateien vor dem Löschen" className="rounded-xl border border-(--c-line) p-3.5 space-y-3">
+      <p className="text-sm font-semibold">
+        {question} {files.length === 1 ? "Dazu gehört 1 hochgeladene Datei" : `Dazu gehören ${files.length} hochgeladene Dateien`}, die
+        mitgelöscht {files.length === 1 ? "wird" : "werden"}.
+      </p>
+      <p className="text-sm text-(--c-text-2)">Möchtest du sie vorher auf deinem Gerät speichern?</p>
+      <ul className="space-y-1">
+        {files.map((f) => (
+          <li key={f.id} className="flex items-center gap-2 text-sm">
+            <span className="flex-1 min-w-0 truncate">{f.name}</span>
+            <span className="text-(--c-muted) shrink-0">{sizeLabel(f.size)}</span>
+            <button
+              type="button"
+              onClick={() => download(f)}
+              aria-label={`${f.name} herunterladen`}
+              className="min-h-9 px-2.5 rounded-lg border border-(--c-line) text-xs font-semibold hover:bg-(--c-hover) shrink-0"
+            >
+              {saved.has(f.id) ? "✓ Gespeichert" : "Speichern"}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {error && <p role="alert" className="text-sm text-(--c-danger)">{error}</p>}
+      <div className="flex flex-wrap gap-2">
+        {files.length > 1 && !allSaved && (
+          <button type="button" onClick={downloadAll} className={`${btn} border border-(--c-line) hover:bg-(--c-hover)`}>
+            Alle speichern
+          </button>
+        )}
+        <button type="button" onClick={onDelete} className={`${btn} bg-(--c-danger) text-(--c-on-danger)`}>
+          {allSaved ? "Jetzt löschen" : "Mit Dateien löschen"}
+        </button>
+        <button type="button" onClick={onCancel} className={`${btn} border border-(--c-line)`}>
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Hat eine Aufgabe hochgeladene Dateien? (für das Löschen ohne Rückfrage, z. B. Unteraufgaben) */
+export async function hasTaskFiles(supabase: Supa, taskIds: string[]) {
+  const { count } = await supabase.from("task_attachments").select("id", { count: "exact", head: true }).in("task_id", taskIds).eq("kind", "file");
+  return (count ?? 0) > 0;
+}

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence } from "@/lib/database.types";
 import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
-import { Attachments } from "@/components/attachments";
+import { Attachments, DeleteConfirm } from "@/components/attachments";
 import type { Member } from "@/components/project-view";
 
 type Props = {
@@ -274,21 +274,12 @@ export function TaskDetail(props: Props) {
 
       <div className="border-t border-(--c-line-soft) pt-4">
         {confirmDelete ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold">
-              {subtasks.length ? "Aufgabe samt Unteraufgaben löschen?" : "Aufgabe wirklich löschen?"}
-            </span>
-            <button
-              type="button"
-              onClick={() => props.onDelete(task.id)}
-              className="min-h-11 px-4 rounded-lg bg-(--c-danger) text-(--c-on-danger) text-sm font-bold"
-            >
-              Löschen
-            </button>
-            <button type="button" onClick={() => setConfirmDelete(false)} className="min-h-11 px-4 rounded-lg border border-(--c-line) text-sm font-bold">
-              Abbrechen
-            </button>
-          </div>
+          <DeleteConfirm
+            taskIds={[task.id, ...subtasks.map((s) => s.id)]}
+            question={subtasks.length ? "Aufgabe samt Unteraufgaben löschen?" : "Aufgabe wirklich löschen?"}
+            onDelete={() => props.onDelete(task.id)}
+            onCancel={() => setConfirmDelete(false)}
+          />
         ) : (
           <button type="button" onClick={() => setConfirmDelete(true)} className="min-h-11 text-sm font-semibold text-(--c-danger)">
             Aufgabe löschen
@@ -319,6 +310,8 @@ function TaskDialog({ onClose, children }: { onClose: () => void; children: Reac
       aria-label="Aufgabe bearbeiten"
       data-lock
       onCancel={(e) => {
+        // Nur Esc am Fenster selbst – nicht das Abbrechen der Dateiauswahl (das "cancel" bubbelt hoch)
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         onClose();
       }}

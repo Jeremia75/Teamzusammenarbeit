@@ -266,6 +266,11 @@ export default function HelpPage() {
           aktuelle Fassung. Hochladen lohnt sich für fertige Dinge wie einen Scan oder ein unterschriebenes PDF.
         </Tip>
         <p>Bei wiederkehrenden Aufgaben nimmt die nächste Aufgabe die Links mit, die Dateien nicht.</p>
+        <p>
+          Löschst du eine Aufgabe mit hochgeladenen Dateien, zeigt dir Projektraum vorher die Dateien. Mit <K>Speichern</K> oder{" "}
+          <K>Alle speichern</K> legst du sie auf deinem Gerät ab. Erst mit <K>Mit Dateien löschen</K> ist alles weg. Den Dokumenten hinter Links passiert nichts,
+          die liegen ja woanders.
+        </p>
       </Section>
 
       <Section id="unteraufgaben" title="Unteraufgaben">
