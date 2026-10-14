@@ -11,6 +11,7 @@ import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
 import { removeTaskFiles, useAttachmentCounts, DeleteConfirm, removeProjectFiles } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
+import { Gantt } from "@/components/gantt";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 
@@ -29,7 +30,7 @@ type Props = {
   members: Member[];
 };
 
-type View = "sections" | "status" | "list";
+type View = "sections" | "status" | "list" | "timeline";
 
 export function ProjectView(props: Props) {
   const { project, members, currentUserId } = props;
@@ -51,7 +52,7 @@ export function ProjectView(props: Props) {
   useEffect(() => {
     try {
       const v = localStorage.getItem(viewKey) as View | null;
-      if (v === "sections" || v === "status" || v === "list") setViewState(v);
+      if (v === "sections" || v === "status" || v === "list" || v === "timeline") setViewState(v);
     } catch {
       /* Speicher nicht verfügbar – Standardansicht bleibt */
     }
@@ -360,6 +361,7 @@ export function ProjectView(props: Props) {
                 ["sections", "Board · Rubriken"],
                 ["status", "Board · Status"],
                 ["list", "Liste"],
+                ["timeline", "Zeitplan"],
               ] as const
             ).map(([v, label]) => (
               <button
@@ -381,7 +383,7 @@ export function ProjectView(props: Props) {
           </label>
         </div>
 
-        {(filterMilestone || view === "sections") && (
+        {(filterMilestone || view === "sections" || view === "timeline") && (
           <div data-panel="slim" className="flex flex-wrap items-center justify-between gap-3">
             {filterMilestone ? (
               <div className="flex items-center gap-2 rounded-full bg-(--c-accent-soft) border border-(--c-accent-line-2) pl-3.5 pr-1 py-1 text-sm font-semibold text-(--c-accent-ink)">
@@ -400,13 +402,22 @@ export function ProjectView(props: Props) {
             ) : (
               <span />
             )}
-            {view === "sections" && <StatusLegend />}
+            {(view === "sections" || view === "timeline") && <StatusLegend />}
           </div>
         )}
 
         <div className="flex flex-wrap gap-4 items-start">
           <div className="flex-[999_1_560px] min-w-0">
-            {view === "list" ? (
+            {view === "timeline" ? (
+              <Gantt
+                tasks={visible}
+                sections={sortedSections}
+                milestones={milestones}
+                openId={openId}
+                onOpen={(id) => setOpenId(id)}
+                onUpdate={updateTask}
+              />
+            ) : view === "list" ? (
               <TaskList
                 tasks={visible}
                 sections={sortedSections}
