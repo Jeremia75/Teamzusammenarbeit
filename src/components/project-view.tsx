@@ -387,6 +387,19 @@ export function ProjectView(props: Props) {
             {counts.done} von {topLevel.length} erledigt
           </span>
           <StatusBar counts={counts} />
+          {!readOnly && (
+            <Link
+              href={`/protokolle?projekt=${project.id}`}
+              className="self-end mt-1 min-h-9 px-3 rounded-lg border border-(--c-line) bg-(--c-surface) text-sm font-semibold hover:bg-(--c-hover) inline-flex items-center gap-1.5"
+              title="Protokoll einfügen oder hochladen – Projektraum schlägt Aufgaben vor"
+            >
+              <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z" />
+                <path d="M14 3.5v5h5M8.5 13l1.5 1.5 3-3M8.5 17.5h7" />
+              </svg>
+              Aufgaben aus Protokoll
+            </Link>
+          )}
         </div>
       </header>
 

@@ -58,6 +58,22 @@ export type Database = {
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
         Relationships: [];
       };
+      protocol_imports: {
+        Row: {
+          id: string; user_id: string; project_id: string | null; source: "text" | "file" | "mail"; title: string;
+          status: "processing" | "ready" | "done" | "failed" | "dismissed"; error: string | null; summary: string | null;
+          transcript: string | null; suggestions: Json; created_count: number; created_at: string; updated_at: string;
+        };
+        Insert: { user_id: string; source: "text" | "file" | "mail"; project_id?: string | null; title?: string };
+        Update: { project_id?: string | null; status?: "ready" | "done" | "dismissed"; suggestions?: Json; created_count?: number };
+        Relationships: [];
+      };
+      app_settings: {
+        Row: { key: string; value: string };
+        Insert: { key: string; value: string };
+        Update: { value?: string };
+        Relationships: [];
+      };
       project_members: {
         Row: { project_id: string; user_id: string; role: WorkspaceRole; added_by: string | null; created_at: string };
         Insert: { project_id: string; user_id: string; role?: WorkspaceRole };
@@ -232,6 +248,23 @@ export type ProjectSection = T["project_sections"]["Row"];
 export type NotificationSettings = T["notification_settings"]["Row"];
 export type Attachment = T["task_attachments"]["Row"];
 export type Notification = T["notifications"]["Row"];
+export type ProtocolImport = T["protocol_imports"]["Row"];
+/** Ein Aufgaben-Vorschlag aus einem Protokoll (siehe supabase/functions/protokoll/logic.ts) */
+export type Suggestion = {
+  key: string;
+  selected: boolean;
+  title: string;
+  description: string;
+  assignees: string[];
+  unknown_people: string[];
+  start_date: string | null;
+  due_date: string | null;
+  priority: TaskPriority;
+  section_id: string | null;
+  milestone_id: string | null;
+  quote: string;
+  duplicate_of: string | null;
+};
 export type HistoryEntry = T["task_history"]["Row"];
 /** Rolle in einem Bereich: Bearbeiten, Kommentieren, Nur ansehen */
 export type WorkspaceRole = "editor" | "commenter" | "viewer";

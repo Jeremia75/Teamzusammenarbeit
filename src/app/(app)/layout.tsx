@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
   const todayIso = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Vienna" }).format(new Date());
-  const [workspaces, { data: notify }, { data: look }, { count: dueCount }] = await Promise.all([
+  const [workspaces, { data: notify }, { data: look }, { count: dueCount }, { count: readyCount }] = await Promise.all([
     loadWorkspaces(),
     supabase.from("notification_settings").select("asked_at").eq("user_id", user?.id ?? "").maybeSingle(),
     supabase.from("appearance_settings").select("settings, image_path").eq("user_id", user?.id ?? "").maybeSingle(),
@@ -27,6 +27,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .eq("task_assignees.user_id", user?.id ?? "")
       .neq("status", "done")
       .lte("due_date", todayIso),
+    // Protokolle mit Vorschlägen, die noch geprüft werden wollen
+    supabase.from("protocol_imports").select("id", { count: "exact", head: true }).eq("status", "ready"),
   ]);
 
   // Eigenes Hintergrundbild: privat gespeichert, Link gilt eine Woche
@@ -68,6 +70,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             )}
           </Link>
           <NotificationBell userId={user?.id ?? ""} />
+          <Link
+            href="/protokolle"
+            className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-bold text-(--c-ink) hover:bg-(--c-bg)"
+          >
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8.5z" />
+              <path d="M14 3.5v5h5M8.5 13l1.5 1.5 3-3M8.5 17.5h7" />
+            </svg>
+            <span className="flex-1">Aus Protokollen</span>
+            {!!readyCount && (
+              <span className="min-w-6 h-6 px-1.5 rounded-full bg-(--c-accent) text-white text-xs font-bold flex items-center justify-center" title="Vorschläge warten auf dich">
+                {readyCount}
+                <span className="sr-only"> Protokolle mit Vorschlägen</span>
+              </span>
+            )}
+          </Link>
         </div>
 
         <SidebarProjects workspaces={workspaces} />

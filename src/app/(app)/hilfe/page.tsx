@@ -58,6 +58,7 @@ const TOPICS: [string, string][] = [
   ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
   ["kalender", "Termine im Kalender"],
   ["darstellung", "Aussehen anpassen"],
+  ["protokolle", "Aufgaben aus Protokollen"],
   ["ki", "Aufgaben mit KI anlegen"],
   ["papierkorb", "Gelöscht? Der Papierkorb"],
   ["installieren", "Projektraum auf dem PC installieren"],
@@ -668,6 +669,31 @@ export default function HelpPage() {
         <Tip>
           Mit <K>Standard</K> kommst du jederzeit zur ursprünglichen Darstellung zurück. Klick danach auf Speichern.
         </Tip>
+      </Section>
+
+      <Section id="protokolle" title="Aufgaben aus Protokollen">
+        <p>
+          Nach einer Besprechung musst du die Aufgaben nicht abtippen. Klick im Projekt auf <K>Aufgaben aus Protokoll</K> oder links auf{" "}
+          <K>Aus Protokollen</K>. Dann fügst du den Text ein oder lädst eine Datei hoch:
+        </p>
+        <ul>
+          <li>
+            <strong>Geschrieben:</strong> PDF, Word (.docx), Text – oder ein Foto von einem handschriftlichen Protokoll.
+          </li>
+          <li>
+            <strong>Aufgenommen:</strong> Ton (z. B. Sprachmemo vom Handy) oder Video (z. B. Teams- oder Zoom-Aufzeichnung), bis 50 MB. Projektraum
+            schreibt die Aufnahme zuerst ab. Bei langen Videos ist es besser, nur den Ton oder das fertige Transkript hochzuladen.
+          </li>
+          <li>
+            <strong>Per E-Mail:</strong> Wenn eingerichtet, steht auf der Seite <K>Aus Protokollen</K> eine Adresse. Leite das Protokoll von deiner
+            Anmelde-Adresse dorthin weiter. Du bekommst eine Antwort mit einem Link.
+          </li>
+        </ul>
+        <p>
+          Projektraum schlägt daraus Aufgaben vor – mit Verantwortlichen, Terminen und Rubrik, soweit sie im Protokoll stehen. Du siehst bei jedem
+          Vorschlag die Stelle im Protokoll. Passe an, was nicht stimmt, nimm das Häkchen weg bei allem, was du nicht willst, und klick auf{" "}
+          <K>Aufgaben anlegen</K>. Vorher wird nichts angelegt. Aufgaben, die es schon gibt, sind nicht angehakt.
+        </p>
       </Section>
 
       <Section id="ki" title="Aufgaben mit KI anlegen">

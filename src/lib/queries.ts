@@ -194,3 +194,21 @@ function boardOrder(
     );
   return { projects: list, sections: secs };
 }
+
+/** Projekte, in denen ich Aufgaben anlegen darf (Bereich mit Bearbeiten-Recht oder Gast mit Bearbeiten-Recht) */
+export async function loadEditableProjects() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const [workspaces, { data: guestOf }] = await Promise.all([
+    loadWorkspaces(),
+    supabase.from("project_members").select("project_id, role").eq("user_id", user?.id ?? "").eq("role", "editor"),
+  ]);
+  const extra = new Set((guestOf ?? []).map((g) => g.project_id));
+  return workspaces.flatMap((w) =>
+    w.projects
+      .filter((p) => w.myRole === "editor" || extra.has(p.id))
+      .map((p) => ({ id: p.id, name: p.name, group: w.isPersonal ? w.name : `${w.orgName} · ${w.name}` })),
+  );
+}
