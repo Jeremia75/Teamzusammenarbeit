@@ -9,6 +9,7 @@ import { byPosition, positionBetween } from "@/lib/ordering";
 import { TaskDetail } from "@/components/task-detail";
 import { useAttachmentCounts } from "@/components/attachments";
 import { Board, NEW_TITLE, type BoardColumn } from "@/components/board";
+import { short, useUndo } from "@/components/undo";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
 
@@ -45,6 +46,7 @@ export function RubricView(props: Props) {
   // gerade über "+ Aufgabe hinzufügen" angelegt (Titel noch offen)
   const [freshId, setFreshId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { offerUndo, undoToast } = useUndo();
 
   const viewKey = `projektraum:rview:${rubric.id}`;
   useEffect(() => {
@@ -151,14 +153,20 @@ export function RubricView(props: Props) {
 
   const deleteTask = useCallback(
     async (id: string) => {
+      const gone = tasks.find((t) => t.id === id);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
-      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar
+      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar, gleich danach mit "Rückgängig"
       const { error } = await supabase.rpc("trash_task", { t: id });
-      if (error) fail("Löschen fehlgeschlagen: " + error.message);
+      if (error) return fail("Löschen fehlgeschlagen: " + error.message);
+      offerUndo(`„${short(gone?.title ?? "Aufgabe")}“ gelöscht`, async () => {
+        const { error: e2 } = await supabase.rpc("trash_restore", { k: "task", item: id });
+        if (e2) fail("Nicht wiederhergestellt: " + e2.message);
+        else reload();
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [supabase, openId, fail],
+    [supabase, openId, fail, tasks, reload, offerUndo],
   );
 
   const toggleAssignee = useCallback(
@@ -217,6 +225,17 @@ export function RubricView(props: Props) {
     const patch: Partial<Task> = { position: positionBetween(others, beforeId) };
     if (col.status) patch.status = col.status;
     updateTask(taskId, patch);
+    if (patch.status && patch.status !== task.status && !(patch.status === "done" && task.recurrence)) {
+      offerUndo(`„${short(task.title)}“ nach „${col.title}“ verschoben`, () => updateTask(task.id, { position: task.position, status: task.status }));
+    }
+  }
+
+  // Abhaken mit "Rückgängig" (nicht bei wiederkehrenden Aufgaben – dort entsteht beim Erledigen gleich die nächste)
+  function toggleDone(t: Task) {
+    const next = t.status === "done" ? "todo" : "done";
+    updateTask(t.id, { status: next });
+    if (next === "done" && t.recurrence) return;
+    offerUndo(next === "done" ? `„${short(t.title)}“ erledigt` : `„${short(t.title)}“ wieder offen`, () => updateTask(t.id, { status: t.status }));
   }
 
   // ---------------------------------------------------------------- UI
@@ -258,6 +277,7 @@ export function RubricView(props: Props) {
         </nav>
       )}
 
+      {undoToast}
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
@@ -332,7 +352,7 @@ export function RubricView(props: Props) {
                   projectOf={view === "status" ? projectOf : undefined}
                   attachmentsOf={(id) => attachCounts[id] ?? 0}
                   onOpen={(id) => setOpenId(openId === id ? null : id)}
-                  onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
+                  onToggleDone={toggleDone}
                   onMove={moveTask}
                   readOnly={readOnly}
                   onQuickAdd={view === "projects" && !readOnly ? (col) => (col.projectId ? createAndOpen(col.projectId) : undefined) : undefined}

@@ -8,7 +8,7 @@
 //   APP_URL         – optional, Standard https://teamzusammenarbeit.vercel.app
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { assignedMail, dailyMail, viennaNow, type Assignment, type Mail, type OpenTask } from "./mails.ts";
-import { errorMail, expiredBackups, gzip, type AppError } from "./waechter.ts";
+import { backupPath, errorMail, expiredBackups, gzip, type AppError } from "./waechter.ts";
 
 const DAILY_HOUR = 7;
 
@@ -60,8 +60,46 @@ Deno.serve(async (req) => {
     }
   }
 
+  // 0c) Dateien sichern: neue Anhänge laufend in "sicherungen/anhaenge/" kopieren,
+  //     Kopien von gelöschten Dateien nach 30 Tagen entfernen
+  const files = { copied: 0, removed: 0, failed: 0 };
+  try {
+    const { data: todo, error } = await sb.rpc("file_backup_todo");
+    if (error) throw error;
+    const { copy, remove } = todo as { copy: { path: string; size: number }[]; remove: string[] };
+    const done: { path: string; size: number }[] = [];
+    const problems: string[] = [];
+    for (const f of copy) {
+      try {
+        const dl = await sb.storage.from("anhaenge").download(f.path);
+        if (dl.error) throw dl.error;
+        const up = await sb.storage.from("sicherungen").upload(backupPath(f.path), dl.data, { upsert: true, contentType: dl.data.type || undefined });
+        if (up.error) throw up.error;
+        done.push(f);
+      } catch (e) {
+        problems.push(`${f.path}: ${(e as Error)?.message ?? e}`);
+      }
+    }
+    const gone = remove.map(backupPath);
+    if (gone.length) {
+      const r = await sb.storage.from("sicherungen").remove(gone);
+      if (r.error) throw r.error;
+    }
+    if (done.length || remove.length) {
+      const { error: e2 } = await sb.rpc("file_backup_done", { copied: done, removed: remove });
+      if (e2) throw e2;
+    }
+    Object.assign(files, { copied: done.length, removed: remove.length, failed: problems.length });
+    if (problems.length) {
+      await sb.rpc("report_error", { src: "function", msg: "Dateien konnten nicht gesichert werden", detail: problems.slice(0, 10).join("\n") });
+    }
+  } catch (e) {
+    console.error("Dateisicherung", e);
+    await sb.rpc("report_error", { src: "function", msg: "Dateisicherung fehlgeschlagen", detail: String((e as Error)?.message ?? e) });
+  }
+
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) return json({ trashPurged, backup, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
+  if (!apiKey) return json({ trashPurged, backup, files, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
   const from = Deno.env.get("MAIL_FROM") ?? "Projektraum <onboarding@resend.dev>";
   const appUrl = (Deno.env.get("APP_URL") ?? "https://teamzusammenarbeit.vercel.app").replace(/\/$/, "");
 
@@ -83,7 +121,7 @@ Deno.serve(async (req) => {
     if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
   }
 
-  const report = { trashPurged, backup, errorsMailed: 0, assigned: 0, daily: 0, errors: [] as string[] };
+  const report = { trashPurged, backup, files, errorsMailed: 0, assigned: 0, daily: 0, errors: [] as string[] };
 
   // 0c) Neue Fehler per E-Mail melden
   try {

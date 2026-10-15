@@ -38,7 +38,13 @@ const cors = {
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-class Fail extends Error {}
+/** Fehler mit verständlicher Meldung für die Person. Mit `detail` wird er außerdem an die Fehlerüberwachung gemeldet
+ *  (z. B. fehlender Schlüssel, Dienst antwortet nicht) – ohne `detail` ist es ein normaler Bedienfall (zu lang, kein Recht …). */
+class Fail extends Error {
+  constructor(message: string, readonly detail?: string) {
+    super(message);
+  }
+}
 
 type Piece =
   | { type: "text"; text: string }
@@ -48,6 +54,15 @@ type Piece =
 type Input = { label: string; kind: Kind; text?: string; bytes?: Uint8Array; url?: string; mime?: string; name?: string };
 
 const admin = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
+
+/** An die Fehlerüberwachung melden (landet in app_errors und wird per E-Mail gemeldet). Darf selbst nie scheitern. */
+async function report(msg: string, detail: unknown = "") {
+  const d = detail instanceof Error ? (detail.stack ?? detail.message) : typeof detail === "string" ? detail : JSON.stringify(detail);
+  console.error("Protokolle:", msg, d);
+  try {
+    await admin().rpc("report_error", { src: "function", msg: `Protokolle: ${msg}`, detail: String(d ?? "").slice(0, 4000), page: "protokoll" });
+  } catch {}
+}
 
 function todayVienna() {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Vienna" }).format(new Date());
@@ -73,7 +88,7 @@ function termsOf(ctx: Context) {
 
 async function transcribe(url: string, terms: string[] = []): Promise<string> {
   const key = Deno.env.get("DEEPGRAM_API_KEY");
-  if (!key) throw new Fail("Ton- und Videoaufnahmen sind noch nicht eingerichtet (es fehlt der Schlüssel für das Abschreiben). Schick bitte das schriftliche Protokoll oder das Transkript.");
+  if (!key) throw new Fail("Ton- und Videoaufnahmen sind noch nicht eingerichtet (es fehlt der Schlüssel für das Abschreiben). Schick bitte das schriftliche Protokoll oder das Transkript.", "DEEPGRAM_API_KEY fehlt");
   for (const model of ["nova-3", "nova-2"]) {
     const q = new URLSearchParams({ model, language: "de", smart_format: "true", punctuate: "true", diarize: "true", paragraphs: "true" });
     // Namen vorab bekannt machen: nova-3 mit "keyterm", ältere Modelle mit "keywords"
@@ -84,7 +99,7 @@ async function transcribe(url: string, terms: string[] = []): Promise<string> {
       body: JSON.stringify({ url }),
     });
     if (r.status === 400 && model === "nova-3") continue;
-    if (!r.ok) throw new Fail(`Die Aufnahme konnte nicht abgeschrieben werden (${r.status}).`);
+    if (!r.ok) throw new Fail(`Die Aufnahme konnte nicht abgeschrieben werden (${r.status}).`, `Deepgram ${model} ${r.status}: ${(await r.text()).slice(0, 300)}`);
     const data = await r.json();
     const alt = data?.results?.channels?.[0]?.alternatives?.[0];
     const text: string = alt?.paragraphs?.transcript ?? alt?.transcript ?? "";
@@ -141,7 +156,7 @@ async function piecesOf(inputs: Input[], terms: string[] = []): Promise<{ pieces
 
 async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!key) throw new Fail("Die KI ist noch nicht eingerichtet (es fehlt der Schlüssel). Bitte den Admin, ihn einzutragen.");
+  if (!key) throw new Fail("Die KI ist noch nicht eingerichtet (es fehlt der Schlüssel). Bitte den Admin, ihn einzutragen.", "ANTHROPIC_API_KEY fehlt");
   const r = await fetch(`${ANTHROPIC}/v1/messages`, {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -166,8 +181,11 @@ async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
   });
   if (!r.ok) {
     const t = (await r.text()).slice(0, 300);
-    console.error("KI", r.status, t);
-    throw new Fail(r.status === 401 ? "Der Schlüssel für die KI stimmt nicht." : r.status === 413 ? "Das Protokoll ist zu lang." : `Die KI hat nicht geantwortet (${r.status}). Bitte später nochmal versuchen.`);
+    throw new Fail(
+      r.status === 401 ? "Der Schlüssel für die KI stimmt nicht." : r.status === 413 ? "Das Protokoll ist zu lang." : `Die KI hat nicht geantwortet (${r.status}). Bitte später nochmal versuchen.`,
+      // "zu lang" liegt am Inhalt, nicht an der App – nicht melden
+      r.status === 413 ? undefined : `KI ${r.status}: ${t}`,
+    );
   }
   const data = await r.json();
   type Out = { projekt_id?: string; neues_projekt?: unknown; titel?: string; zusammenfassung?: string; aufgaben?: unknown };
@@ -183,8 +201,7 @@ async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
       if (Array.isArray(parsed.aufgaben)) return parsed;
     } catch {}
   }
-  console.error("KI ohne Ergebnis", JSON.stringify(data).slice(0, 500));
-  throw new Fail("Die KI hat keine Aufgaben geliefert. Bitte nochmal versuchen.");
+  throw new Fail("Die KI hat keine Aufgaben geliefert. Bitte nochmal versuchen.", `KI ohne Ergebnis: ${JSON.stringify(data).slice(0, 1500)}`);
 }
 
 // ---------------------------------------------------------------- Verarbeiten
@@ -231,10 +248,15 @@ async function processImport(sb: SupabaseClient, id: string, userId: string, pro
     if (e2) throw new Error(e2.message);
   } catch (e) {
     failed = e instanceof Fail ? e.message : "Beim Lesen ist etwas schiefgegangen. Bitte später nochmal versuchen.";
-    if (!(e instanceof Fail)) console.error("Protokoll", id, e);
-    await sb.from("protocol_imports").update({ status: "failed", error: failed }).eq("id", id);
+    if (!(e instanceof Fail)) await report("Protokoll konnte nicht gelesen werden", e);
+    else if (e.detail) await report(e.message.replace(/\s*\(\d{3}\)/, ""), e.detail);
+    const { error: e3 } = await sb.from("protocol_imports").update({ status: "failed", error: failed }).eq("id", id);
+    if (e3) await report("Fehlerstand nicht gespeichert", e3.message);
   } finally {
-    if (cleanup.length) await sb.storage.from(BUCKET).remove(cleanup);
+    if (cleanup.length) {
+      const { error: e4 } = await sb.storage.from(BUCKET).remove(cleanup);
+      if (e4) await report("Hochgeladene Datei nicht gelöscht", `${cleanup.join(", ")}: ${e4.message}`);
+    }
   }
   if (mailTo) await sendReply(sb, userId, mailTo.address, { title, count, id, failed });
 }
@@ -250,7 +272,7 @@ async function sendReply(sb: SupabaseClient, userId: string, to: string, o: { ti
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({ from: Deno.env.get("MAIL_FROM") ?? "Projektraum <onboarding@resend.dev>", to, subject: mail.subject, html: mail.html, text: mail.text }),
   });
-  if (!r.ok) console.error("Antwort-Mail", r.status, (await r.text()).slice(0, 200));
+  if (!r.ok) await report("Antwort-Mail nicht verschickt", `Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
 }
 
 // ---------------------------------------------------------------- Aus der App
@@ -298,7 +320,10 @@ async function fromApp(req: Request) {
     .insert({ user_id: user.id, project_id: projectId, source, title: label })
     .select("id")
     .single();
-  if (error) return json({ error: error.message }, 500);
+  if (error) {
+    await report("Protokoll nicht angelegt (App)", error.message);
+    return json({ error: error.message }, 500);
+  }
   background(processImport(sb, row.id, user.id, projectId, inputs, cleanup));
   return json({ id: row.id });
 }
@@ -319,7 +344,10 @@ async function fromMail(req: Request) {
   if (event?.type !== "email.received" || !event.data?.email_id) return json({ ignored: true });
 
   const key = Deno.env.get("RESEND_API_KEY");
-  if (!key) return json({ error: "RESEND_API_KEY fehlt" }, 500);
+  if (!key) {
+    await report("E-Mail empfangen, aber RESEND_API_KEY fehlt");
+    return json({ error: "RESEND_API_KEY fehlt" }, 500);
+  }
   const sb = admin();
   const emailId: string = event.data.email_id;
   const from = addressOf(String(event.data.from ?? ""));
@@ -332,7 +360,10 @@ async function fromMail(req: Request) {
     fetch(`${RESEND}/emails/receiving/${emailId}`, { headers }),
     fetch(`${RESEND}/emails/receiving/${emailId}/attachments`, { headers }),
   ]);
-  if (!mailRes.ok) return json({ error: `E-Mail nicht abrufbar (${mailRes.status})` }, 502);
+  if (!mailRes.ok) {
+    await report("E-Mail nicht abrufbar", `Resend ${mailRes.status}: ${(await mailRes.text()).slice(0, 300)}`);
+    return json({ error: `E-Mail nicht abrufbar (${mailRes.status})` }, 502);
+  }
   const mail = await mailRes.json();
   const atts: { filename?: string; content_type: string; content_disposition: string; size: number; download_url: string }[] = attRes.ok ? ((await attRes.json()).data ?? []) : [];
 
@@ -360,7 +391,10 @@ async function fromMail(req: Request) {
     .insert({ user_id: uid, project_id: null, source: "mail", title: subject.slice(0, 200) })
     .select("id")
     .single();
-  if (error) return json({ error: error.message }, 500);
+  if (error) {
+    await report("Protokoll nicht angelegt (E-Mail)", error.message);
+    return json({ error: error.message }, 500);
+  }
   if (!inputs.length) {
     await sb.from("protocol_imports").update({ status: "failed", error: "Die E-Mail enthielt keinen Text und keinen lesbaren Anhang." }).eq("id", row.id);
     await sendReply(sb, uid, from, { title: subject, count: 0, id: row.id, failed: "Die E-Mail enthielt keinen Text und keinen lesbaren Anhang." });
@@ -376,7 +410,7 @@ Deno.serve(async (req) => {
   try {
     return new URL(req.url).pathname.endsWith("/mail") ? await fromMail(req) : await fromApp(req);
   } catch (e) {
-    console.error(e);
+    await report("Interner Fehler", e);
     return json({ error: "Interner Fehler" }, 500);
   }
 });

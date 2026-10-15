@@ -13,6 +13,7 @@ import { useAttachmentCounts, DeleteConfirm } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Gantt } from "@/components/gantt";
 import { Board, NEW_TITLE, QuickAdd, type BoardColumn } from "@/components/board";
+import { short, useUndo } from "@/components/undo";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
 import { SaveAsTemplate } from "@/components/project-template";
@@ -71,6 +72,7 @@ export function ProjectView(props: Props) {
     } catch {}
   };
   const [error, setError] = useState<string | null>(null);
+  const { offerUndo, undoToast } = useUndo();
   const [deps, setDeps] = useState<Dependency[]>([]);
   // Abhängigkeiten laden (nicht im Server-Teil, damit die Seite schnell bleibt)
   useEffect(() => {
@@ -204,14 +206,20 @@ export function ProjectView(props: Props) {
 
   const deleteTask = useCallback(
     async (id: string) => {
+      const gone = tasks.find((t) => t.id === id);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
-      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar
+      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar, gleich danach mit "Rückgängig"
       const { error } = await supabase.rpc("trash_task", { t: id });
-      if (error) fail("Löschen fehlgeschlagen: " + error.message);
+      if (error) return fail("Löschen fehlgeschlagen: " + error.message);
+      offerUndo(`„${short(gone?.title ?? "Aufgabe")}“ gelöscht`, async () => {
+        const { error: e2 } = await supabase.rpc("trash_restore", { k: "task", item: id });
+        if (e2) fail("Nicht wiederhergestellt: " + e2.message);
+        else reload();
+      });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [supabase, openId, fail],
+    [supabase, openId, fail, tasks, reload, offerUndo],
   );
 
   const toggleAssignee = useCallback(
@@ -351,12 +359,32 @@ export function ProjectView(props: Props) {
     );
 
   function moveTask(taskId: string, col: BoardColumn, beforeId: string | null) {
+    const task = tasks.find((t) => t.id === taskId);
     const others = tasksOf(col).filter((t) => t.id !== taskId);
     const position = positionBetween(others, beforeId);
     const patch: Partial<Task> = { position };
     if (col.status) patch.status = col.status;
     else patch.section_id = col.sectionId ?? null;
     updateTask(taskId, patch);
+    offerMoveUndo(task, patch, col);
+  }
+
+  // Abhaken mit "Rückgängig" (nicht bei wiederkehrenden Aufgaben – dort entsteht beim Erledigen gleich die nächste)
+  function toggleDone(t: Task) {
+    const next = t.status === "done" ? "todo" : "done";
+    updateTask(t.id, { status: next });
+    if (next === "done" && t.recurrence) return;
+    offerUndo(next === "done" ? `„${short(t.title)}“ erledigt` : `„${short(t.title)}“ wieder offen`, () => updateTask(t.id, { status: t.status }));
+  }
+
+  function offerMoveUndo(task: Task | undefined, patch: Partial<Task>, col: BoardColumn) {
+    if (!task) return;
+    const changed = patch.status !== undefined ? patch.status !== task.status : patch.section_id !== task.section_id;
+    if (!changed) return; // nur umsortiert – keine Meldung
+    if (patch.status === "done" && task.recurrence) return;
+    offerUndo(`„${short(task.title)}“ nach „${col.title}“ verschoben`, () =>
+      updateTask(task.id, { position: task.position, status: task.status, section_id: task.section_id }),
+    );
   }
 
   // "+ Aufgabe hinzufügen": Aufgabe gleich anlegen und ihr Fenster öffnen
@@ -436,6 +464,7 @@ export function ProjectView(props: Props) {
         </p>
       )}
 
+      {undoToast}
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
@@ -546,7 +575,7 @@ export function ProjectView(props: Props) {
                 milestoneName={msFilter ? () => "" : milestoneName}
                 attachmentsOf={(id) => attachCounts[id] ?? 0}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
-                onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
+                onToggleDone={toggleDone}
                 onMove={moveTask}
                 readOnly={readOnly}
                 onQuickAdd={readOnly ? undefined : quickAdd}

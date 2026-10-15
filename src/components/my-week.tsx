@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { TaskPriority, TaskRecurrence, TaskStatus } from "@/lib/database.types";
 import { statusOf } from "@/lib/labels";
+import { short, useUndo } from "@/components/undo";
 
 export type WeekTask = {
   id: string;
@@ -46,6 +47,7 @@ export function MyWeek({ initial }: { initial: WeekTask[] }) {
   const supabase = useMemo(() => createClient(), []);
   const [tasks, setTasks] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  const { offerUndo, undoToast } = useUndo();
   useEffect(() => setTasks(initial), [initial]);
 
   // Heute erst im Browser bestimmen (Zeitzone der Person)
@@ -79,7 +81,7 @@ export function MyWeek({ initial }: { initial: WeekTask[] }) {
   const done = tasks.filter((t) => t.status === "done");
   const count = (k: string) => buckets.find((b) => b.key === k)?.tasks.length ?? 0;
 
-  async function toggle(t: WeekTask) {
+  async function toggle(t: WeekTask, undoing = false) {
     if (t.readOnly) return;
     const next: TaskStatus = t.status === "done" ? "todo" : "done";
     setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: next } : x)));
@@ -88,8 +90,11 @@ export function MyWeek({ initial }: { initial: WeekTask[] }) {
       setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: t.status } : x)));
       return setError("Nicht gespeichert: " + error.message);
     }
-    // Wiederkehrende Aufgabe: die nächste Runde vom Server holen
-    if (next === "done" && t.recurrence) router.refresh();
+    // Wiederkehrende Aufgabe: die nächste Runde vom Server holen (dann ohne "Rückgängig")
+    if (next === "done" && t.recurrence) return router.refresh();
+    if (!undoing) {
+      offerUndo(next === "done" ? `„${short(t.title)}“ erledigt` : `„${short(t.title)}“ wieder offen`, () => toggle({ ...t, status: next }, true));
+    }
   }
 
   if (!today) return null;
@@ -105,6 +110,7 @@ export function MyWeek({ initial }: { initial: WeekTask[] }) {
         </p>
       </header>
 
+      {undoToast}
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}

@@ -798,8 +798,8 @@ export default function HelpPage() {
           {[
             ["Wer sieht meine privaten Projekte?", "Nur du. Der Bereich Privat gehört dir allein."],
             [
-              "Ich habe eine Aufgabe aus Versehen abgehakt.",
-              "Klicke noch einmal auf den grünen Kreis. Dann ist sie wieder offen.",
+              "Ich habe aus Versehen etwas abgehakt, verschoben oder gelöscht.",
+              "Gleich danach erscheint unten kurz eine Meldung mit Rückgängig. Ein Klick darauf (oder Strg+Z) macht es wieder rückgängig. Ist die Meldung schon weg: Abgehakte Aufgaben einfach nochmal anklicken, gelöschte findest du 30 Tage lang im Papierkorb.",
             ],
             [
               "Was passiert, wenn ich eine Rubrik lösche?",
@@ -823,7 +823,7 @@ export default function HelpPage() {
             ],
             [
               "Werden meine Daten gesichert?",
-              "Ja. Jede Nacht legt Projektraum eine Sicherung aller Projekte, Aufgaben und Kommentare an und bewahrt sie 30 Tage auf. Tritt bei jemandem ein Fehler auf, wird er automatisch gemeldet, damit er behoben werden kann.",
+              "Ja. Jede Nacht legt Projektraum eine Sicherung aller Projekte, Aufgaben und Kommentare an und bewahrt sie 30 Tage auf. Angehängte Dateien werden laufend mitgesichert; eine gelöschte Datei bleibt in der Sicherung noch 30 Tage erhalten. Tritt bei jemandem ein Fehler auf, wird er automatisch gemeldet, damit er behoben werden kann.",
             ],
             [
               "Muss ich etwas speichern?",
