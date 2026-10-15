@@ -20,14 +20,17 @@ Deno.serve(async (req) => {
   const { data: allowed } = await sb.rpc("notify_secret_ok", { s: req.headers.get("x-projektraum-secret") ?? "" });
   if (!allowed) return new Response("forbidden", { status: 403 });
 
-  // 0) Papierkorb: nach 30 Tagen endgültig löschen – zuerst die Dateien im Speicher, dann die Einträge
+  // 0) Papierkorb: nach 30 Tagen endgültig löschen – Dateipfade merken, Einträge löschen, dann die Dateien im Speicher
   let trashPurged = 0;
   try {
     const { data: files } = await sb.rpc("trash_expired_files");
     const paths = ((files ?? []) as { storage_path: string }[]).map((f) => f.storage_path).filter(Boolean);
-    for (let i = 0; i < paths.length; i += 100) await sb.storage.from("anhaenge").remove(paths.slice(i, i + 100));
-    const { data: n } = await sb.rpc("trash_purge_expired");
-    trashPurged = (n as number) ?? 0;
+    const { data: n, error } = await sb.rpc("trash_purge_expired");
+    // Dateien nur entfernen, wenn die Einträge wirklich gelöscht wurden
+    if (!error) {
+      trashPurged = (n as number) ?? 0;
+      for (let i = 0; i < paths.length; i += 100) await sb.storage.from("anhaenge").remove(paths.slice(i, i + 100));
+    }
   } catch (e) {
     console.error("Papierkorb", e);
   }

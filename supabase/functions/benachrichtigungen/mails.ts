@@ -75,7 +75,7 @@ ${body}
 </div>
 <p style="font-size:12px;color:${C.muted};margin:16px 4px;line-height:1.5">
 Du bekommst diese E-Mail, weil du sie in Projektraum eingeschaltet hast.
-Ändern oder abschalten kannst du das unter <a href="${appUrl}/einstellungen" style="color:${C.blue}">Benachrichtigungen</a>.
+Ändern oder abschalten kannst du das unter <a href="${appUrl}/einstellungen" style="color:${C.blue}">E-Mail &amp; Kalender</a>.
 </p></div></body></html>`;
 }
 
