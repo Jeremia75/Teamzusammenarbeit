@@ -456,8 +456,10 @@ function statusTextColor(s: TaskStatus) {
 
 export function QuickAdd({ onAdd }: { onAdd: (title: string) => void }) {
   const [value, setValue] = useState("");
+  const filled = value.trim() !== "";
   return (
     <form
+      className="flex flex-col gap-1.5"
       onSubmit={(e) => {
         e.preventDefault();
         const v = value.trim();
@@ -469,9 +471,21 @@ export function QuickAdd({ onAdd }: { onAdd: (title: string) => void }) {
         aria-label="Neue Aufgabe"
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setValue("");
+        }}
+        enterKeyHint="done"
         placeholder="+ Aufgabe hinzufügen"
         className="w-full h-11 rounded-lg bg-transparent px-3 text-sm placeholder:text-(--c-muted) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
       />
+      {filled && (
+        <div className="flex items-center gap-2 px-1">
+          <button type="submit" className="h-9 px-3 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-semibold">
+            Hinzufügen
+          </button>
+          <span className="text-xs text-(--c-muted)">oder Enter drücken</span>
+        </div>
+      )}
     </form>
   );
 }
