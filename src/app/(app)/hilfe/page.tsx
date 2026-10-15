@@ -777,11 +777,20 @@ export default function HelpPage() {
           Diese Website als App installieren. In Chrome heißt er Streamen, speichern und teilen und dann Seite als App installieren.
         </p>
         <p>
-          <strong>Links aus E-Mails in der App öffnen:</strong> Normalerweise öffnet ein Link aus einer E-Mail den Browser. Damit er in der
-          installierten App landet, schalte in deren Einstellungen <K>Unterstützte Links öffnen</K> ein. In Chrome: <K>chrome://apps</K> in
-          die Adresszeile tippen, mit der rechten Maustaste auf Projektraum klicken, <K>App-Einstellungen</K> wählen. Fehlt der Schalter,
-          kann dein Browser das noch nicht – dann öffnet sich der Link weiter im Browser.
+          <strong>Links aus E-Mails:</strong> Ein Link aus einer E-Mail öffnet sich immer in deinem Standardbrowser, nicht in der
+          installierten App. Das ist kein Fehler: Du bist dort genauso angemeldet und kannst alles erledigen. Danach den Tab einfach
+          schließen – die Änderungen siehst du sofort auch in der App.
         </p>
+        <ul>
+          <li>
+            <strong>Firefox:</strong> Hier lässt sich das nicht umstellen. Der Link öffnet sich immer in einem Firefox-Tab.
+          </li>
+          <li>
+            <strong>Chrome</strong> (nur wenn Chrome dein Standardbrowser ist): Tipp <K>chrome://apps</K> in die Adresszeile, klick mit der
+            rechten Maustaste auf Projektraum, wähl <K>App-Einstellungen</K> und schalte <K>Unterstützte Links öffnen</K> ein. Dann landen
+            Links in der App. Fehlt der Schalter, kann deine Chrome-Version das noch nicht.
+          </li>
+        </ul>
       </Section>
 
       <Section id="fragen" title="Häufige Fragen">
