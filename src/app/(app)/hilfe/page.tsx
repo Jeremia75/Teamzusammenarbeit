@@ -541,6 +541,11 @@ export default function HelpPage() {
           Namen. Das gilt sofort.
         </p>
         <p>
+          <strong>Nur ein einzelnes Projekt freigeben:</strong> Für Externe ist es oft besser, wenn sie nicht den ganzen Bereich sehen. Öffne
+          dazu das Projekt, klappe unten <K>Für Externe freigeben</K> auf, trag die E-Mail-Adresse ein, wähl die Rolle und klick auf{" "}
+          <K>Freigeben</K>. Der Gast sieht dann nur dieses Projekt. Mit <K>Entfernen</K> nimmst du die Freigabe wieder zurück.
+        </p>
+        <p>
           Rollen vergeben können nur Admins der Firma. Admins dürfen selbst immer alles bearbeiten. Wer nur ansehen oder kommentieren darf,
           sieht oben im Projekt einen kurzen Hinweis. Auch über den KI-Assistenten kann so jemand nichts ändern.
         </p>

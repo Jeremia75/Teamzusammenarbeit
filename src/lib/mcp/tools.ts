@@ -101,8 +101,21 @@ async function roleIn(ctx: Ctx, workspaceId: string): Promise<"editor" | "commen
   return wm?.role ?? "viewer";
 }
 
-async function requireRole(ctx: Ctx, workspaceId: string, need: "edit" | "comment") {
-  const r = await roleIn(ctx, workspaceId);
+/** Rolle in einem Projekt: die stärkere aus Bereich und Gast-Freigabe */
+async function roleInProject(ctx: Ctx, projectId: string, workspaceId: string) {
+  const [w, { data: g }, { data: wm }] = await Promise.all([
+    roleIn(ctx, workspaceId),
+    ctx.db.from("project_members").select("role").eq("project_id", projectId).eq("user_id", ctx.userId).maybeSingle(),
+    ctx.db.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", ctx.userId).maybeSingle(),
+  ]);
+  if (!g) return w;
+  const rank = { viewer: 0, commenter: 1, editor: 2 } as const;
+  if (!wm && w !== "editor") return g.role;
+  return rank[g.role] > rank[w] ? g.role : w;
+}
+
+async function requireRole(ctx: Ctx, workspaceId: string, need: "edit" | "comment", projectId?: string) {
+  const r = projectId ? await roleInProject(ctx, projectId, workspaceId) : await roleIn(ctx, workspaceId);
   if (r === "editor" || (need === "comment" && r === "commenter")) return;
   throw new ToolError(
     r === "commenter"
@@ -111,10 +124,10 @@ async function requireRole(ctx: Ctx, workspaceId: string, need: "edit" | "commen
   );
 }
 
-async function taskWorkspace(ctx: Ctx, taskId: string) {
-  const { data } = await ctx.db.from("tasks").select("projects(workspace_id)").eq("id", taskId).maybeSingle();
+async function requireTaskRole(ctx: Ctx, taskId: string, need: "edit" | "comment") {
+  const { data } = await ctx.db.from("tasks").select("project_id, projects(workspace_id)").eq("id", taskId).maybeSingle();
   if (!data?.projects) throw new ToolError("Diese Aufgabe gibt es nicht, oder du hast keinen Zugriff darauf.");
-  return data.projects.workspace_id;
+  await requireRole(ctx, data.projects.workspace_id, need, data.project_id);
 }
 
 async function membersOf(ctx: Ctx, workspaceIds: string[]): Promise<Map<string, Member[]>> {
@@ -229,7 +242,9 @@ export const TOOLS: Tool[] = [
       const members = await membersOf(ctx, ws.map((w) => w.id));
       const { data: me } = await ctx.db.from("profiles").select("display_name").eq("id", ctx.userId).maybeSingle();
       const roles = await Promise.all(ws.map((w) => roleIn(ctx, w.id)));
+      const { data: guestOf } = await ctx.db.from("project_members").select("project_id, role").eq("user_id", ctx.userId);
       const ROLE = { editor: "bearbeiten", commenter: "nur kommentieren", viewer: "nur ansehen" } as const;
+      const ROLE_RANK = { viewer: 0, commenter: 1, editor: 2 } as const;
       return {
         heute: todayVienna(),
         angemeldet_als: me?.display_name ?? "",
@@ -245,6 +260,10 @@ export const TOOLS: Tool[] = [
               id: p.id,
               name: p.name,
               beschreibung: p.description || undefined,
+              deine_rechte: (() => {
+                const g = guestOf?.find((x) => x.project_id === p.id)?.role;
+                return g && ROLE_RANK[g] > ROLE_RANK[roles[i]] ? ROLE[g] : undefined;
+              })(),
               rubriken: (p.sections ?? []).sort((a, b) => a.position - b.position).map((s) => s.name),
               meilensteine: (p.milestones ?? [])
                 .sort((a, b) => a.position - b.position)
@@ -417,7 +436,7 @@ export const TOOLS: Tool[] = [
       const projectId = uuid(a, "project_id");
       const p = await projectInfo(ctx, projectId);
       if (p.archived_at) throw new ToolError("Das Projekt ist archiviert.");
-      await requireRole(ctx, p.workspace_id, "edit");
+      await requireRole(ctx, p.workspace_id, "edit", projectId);
       if (!Array.isArray(a.tasks) || a.tasks.length === 0) throw new ToolError('"tasks" muss mindestens eine Aufgabe enthalten.');
       if (a.tasks.length > 50) throw new ToolError("Höchstens 50 Aufgaben auf einmal.");
       const members = (await membersOf(ctx, [p.workspace_id])).get(p.workspace_id) ?? [];
@@ -514,7 +533,7 @@ export const TOOLS: Tool[] = [
       dbError(error, "Aufgabe laden");
       if (!t) throw new ToolError("Diese Aufgabe gibt es nicht, oder du hast keinen Zugriff darauf.");
       const p = await projectInfo(ctx, t.project_id);
-      await requireRole(ctx, p.workspace_id, "edit");
+      await requireRole(ctx, p.workspace_id, "edit", t.project_id);
 
       const patch: Database["public"]["Tables"]["tasks"]["Update"] = {};
       const title = text(a.title, "title", 300);
@@ -586,7 +605,7 @@ export const TOOLS: Tool[] = [
     async run(ctx, a) {
       const id = uuid(a, "task_id");
       const body = text(a.text, "text", 5000, true)!;
-      await requireRole(ctx, await taskWorkspace(ctx, id), "comment");
+      await requireTaskRole(ctx, id, "comment");
       const { error } = await ctx.db.from("comments").insert({ task_id: id, body, author_id: ctx.userId });
       dbError(error, "Kommentar speichern");
       return { ok: true };
@@ -621,7 +640,7 @@ export const TOOLS: Tool[] = [
         throw new ToolError("Das ist kein gültiger Link.");
       }
       const name = (text(a.name, "name", 200) || host.replace(/^www\./, "")).slice(0, 200);
-      await requireRole(ctx, await taskWorkspace(ctx, id), "edit");
+      await requireTaskRole(ctx, id, "edit");
       const { error } = await ctx.db.from("task_attachments").insert({ task_id: id, kind: "link", name, url });
       dbError(error, "Link speichern");
       return { ok: true, name };

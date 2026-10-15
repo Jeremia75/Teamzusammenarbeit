@@ -14,6 +14,7 @@ import { Milestones } from "@/components/milestones";
 import { Gantt } from "@/components/gantt";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
+import { ProjectShare, type Guest } from "@/components/project-share";
 
 export type Member = { id: string; name: string; color: string };
 export type Assignee = { task_id: string; user_id: string };
@@ -25,6 +26,8 @@ type Props = {
   canDelete?: boolean;
   /** Meine Rolle im Bereich (Standard: Bearbeiten) */
   role?: WorkspaceRole;
+  /** Nur für Admins: Gäste dieses Projekts verwalten */
+  share?: { guests: Guest[] };
   initialTasks: Task[];
   initialMilestones: Milestone[];
   initialSections: Section[];
@@ -552,6 +555,12 @@ export function ProjectView(props: Props) {
           )}
         </div>
       </div>
+
+      {props.share && (
+        <div className="mt-6">
+          <ProjectShare projectId={project.id} projectName={project.name} guests={props.share.guests} />
+        </div>
+      )}
 
       {props.canDelete && !readOnly && <DeleteProject project={project} workspaceId={props.workspace.id} taskCount={topLevel.length} />}
     </div>

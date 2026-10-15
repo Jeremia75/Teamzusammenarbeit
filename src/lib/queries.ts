@@ -16,6 +16,22 @@ export async function myWorkspaceRole(supabase: Supa, workspaceId: string, organ
   return wm?.role ?? "viewer";
 }
 
+const RANK: Record<WorkspaceRole, number> = { viewer: 0, commenter: 1, editor: 2 };
+
+/** Meine Rolle in einem Projekt: die stärkere aus Bereich und Gast-Freigabe (wie in der Datenbank) */
+export async function myProjectRole(supabase: Supa, projectId: string, workspaceId: string, organizationId: string, userId: string): Promise<WorkspaceRole> {
+  const [ws, { data: guest }, { data: wm }, { data: org }] = await Promise.all([
+    myWorkspaceRole(supabase, workspaceId, organizationId, userId),
+    supabase.from("project_members").select("role").eq("project_id", projectId).eq("user_id", userId).maybeSingle(),
+    supabase.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", userId).maybeSingle(),
+    supabase.from("organization_members").select("role").eq("organization_id", organizationId).eq("user_id", userId).maybeSingle(),
+  ]);
+  const inWorkspace = !!wm || org?.role === "owner" || org?.role === "admin";
+  if (!guest) return ws;
+  if (!inWorkspace) return guest.role;
+  return RANK[guest.role] > RANK[ws] ? guest.role : ws;
+}
+
 export type SidebarWorkspace = {
   id: string;
   name: string;
@@ -25,6 +41,8 @@ export type SidebarWorkspace = {
   isPersonal: boolean;
   /** Meine Rolle hier – "viewer" und "commenter" dürfen nichts anlegen oder ändern */
   myRole: WorkspaceRole;
+  /** Nur Gast in einzelnen Projekten dieses Bereichs (sieht nur diese) */
+  isGuest: boolean;
   projects: { id: string; name: string; color: string; sectionId: string | null; position: number }[];
   sections: { id: string; name: string; position: number }[];
 };
@@ -123,6 +141,9 @@ export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
     supabase.from("workspace_members").select("workspace_id, role").eq("user_id", user?.id ?? ""),
     supabase.from("organization_members").select("organization_id, role").eq("user_id", user?.id ?? ""),
   ]);
+  const isMember = (wsId: string, orgId: string) =>
+    (myOrgs ?? []).some((o) => o.organization_id === orgId && (o.role === "owner" || o.role === "admin")) ||
+    (myWs ?? []).some((m) => m.workspace_id === wsId);
   const roleIn = (wsId: string, orgId: string): WorkspaceRole => {
     if ((myOrgs ?? []).some((o) => o.organization_id === orgId && (o.role === "owner" || o.role === "admin"))) return "editor";
     return (myWs ?? []).find((m) => m.workspace_id === wsId)?.role ?? "viewer";
@@ -143,6 +164,7 @@ export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
       orgName: w.organizations?.name ?? "",
       isPersonal: w.organizations?.is_personal ?? false,
       myRole: roleIn(w.id, w.organization_id),
+      isGuest: !isMember(w.id, w.organization_id),
       ...boardOrder(w.projects ?? [], w.project_sections ?? []),
     }))
     .sort((a, b) => Number(b.isPersonal) - Number(a.isPersonal));

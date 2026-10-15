@@ -58,6 +58,12 @@ export type Database = {
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
         Relationships: [];
       };
+      project_members: {
+        Row: { project_id: string; user_id: string; role: WorkspaceRole; added_by: string | null; created_at: string };
+        Insert: { project_id: string; user_id: string; role?: WorkspaceRole };
+        Update: { role?: WorkspaceRole };
+        Relationships: [];
+      };
       task_history: {
         Row: { id: number; task_id: string; actor_id: string | null; via_ai: boolean; field: string; old_value: string | null; new_value: string | null; created_at: string };
         Insert: { task_id: string; field: string; actor_id?: string | null; old_value?: string | null; new_value?: string | null };
@@ -184,6 +190,9 @@ export type Database = {
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
       add_member_by_email: { Args: { ws: string; member_email: string; member_role?: WorkspaceRole }; Returns: string };
+      add_project_guest: { Args: { proj: string; guest_email: string; guest_role: WorkspaceRole }; Returns: string };
+      set_project_guest_role: { Args: { proj: string; guest: string; guest_role: WorkspaceRole }; Returns: undefined };
+      remove_project_guest: { Args: { proj: string; guest: string }; Returns: undefined };
       set_member_role: { Args: { ws: string; member: string; member_role: WorkspaceRole }; Returns: undefined };
       trash_task: { Args: { t: string }; Returns: undefined };
       trash_project: { Args: { proj: string }; Returns: undefined };

@@ -41,10 +41,16 @@ export function WorkspaceOverview({
               ))}
             </span>
             {members.length} {members.length === 1 ? "Mitglied" : "Mitglieder"}
-            {ws.myRole !== "editor" && (
-              <span className="ml-1 rounded-full bg-(--c-hover) px-2.5 py-1 text-xs font-bold text-(--c-text-2)" title="Deine Rolle in diesem Bereich">
-                Du: {roleLabel(ws.myRole)}
+            {ws.isGuest ? (
+              <span className="ml-1 rounded-full bg-(--c-hover) px-2.5 py-1 text-xs font-bold text-(--c-text-2)" title="Du siehst nur die Projekte, die für dich freigegeben sind">
+                Du: Gast in einzelnen Projekten
               </span>
+            ) : (
+              ws.myRole !== "editor" && (
+                <span className="ml-1 rounded-full bg-(--c-hover) px-2.5 py-1 text-xs font-bold text-(--c-text-2)" title="Deine Rolle in diesem Bereich">
+                  Du: {roleLabel(ws.myRole)}
+                </span>
+              )
             )}
           </span>
         )}
