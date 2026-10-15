@@ -75,7 +75,7 @@ export function NotificationPrompt({ userId, email, needed }: { userId: string; 
           <p className="text-(--c-text-2)">
             Du hast deine erste Aufgabe. Damit nichts untergeht, kann Projektraum dir E-Mails schicken. Du kannst das später jederzeit unter{" "}
             <Link href="/einstellungen" onClick={later} className="font-semibold text-(--c-accent) underline underline-offset-4">
-              Benachrichtigungen
+              E-Mail &amp; Kalender
             </Link>{" "}
             ändern.
           </p>

@@ -39,6 +39,7 @@ const TOPICS: [string, string][] = [
   ["bereiche", "Privat und Firma"],
   ["projekte", "Projekte anlegen und ordnen"],
   ["rubrik-oeffnen", "Eine Rubrik öffnen"],
+  ["woche", "Meine Woche"],
   ["aufgaben", "Aufgaben anlegen und bearbeiten"],
   ["dateien", "Dateien und Links anhängen"],
   ["unteraufgaben", "Unteraufgaben"],
@@ -49,7 +50,9 @@ const TOPICS: [string, string][] = [
   ["meilensteine", "Ziele und Meilensteine"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
   ["team", "Im Team arbeiten"],
+  ["mitteilungen", "Mitteilungen und @Erwähnungen"],
   ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
+  ["kalender", "Termine im Kalender"],
   ["darstellung", "Aussehen anpassen"],
   ["ki", "Aufgaben mit KI anlegen"],
   ["installieren", "Projektraum auf dem PC installieren"],
@@ -219,6 +222,19 @@ export default function HelpPage() {
         <p>
           Mit dem Pfeil oben links, zum Beispiel <K>← Privat</K>, kommst du zurück.
         </p>
+      </Section>
+
+      <Section id="woche" title="Meine Woche">
+        <p>
+          Ganz oben links findest du <K>Meine Woche</K>. Dort stehen alle Aufgaben, für die du verantwortlich bist, aus allen Projekten auf einen Blick.
+          Aufgaben, die du angelegt und noch niemandem zugeteilt hast, sind auch dabei.
+        </p>
+        <p>
+          Sortiert ist nach Fälligkeit: <strong>Überfällig</strong>, <strong>Heute</strong>, <strong>Morgen</strong>, <strong>Diese Woche</strong>,{" "}
+          <strong>Nächste Woche</strong>, <strong>Später</strong> und <strong>Ohne Termin</strong>. Die rote Zahl neben „Meine Woche“ zeigt, wie viele
+          Aufgaben heute oder schon früher fällig waren.
+        </p>
+        <p>Mit dem Kreis hakst du eine Aufgabe direkt ab. Ein Klick auf den Namen öffnet sie in ihrem Projekt.</p>
       </Section>
 
       <Section id="aufgaben" title="Aufgaben anlegen und bearbeiten">
@@ -457,10 +473,31 @@ export default function HelpPage() {
         </p>
       </Section>
 
+      <Section id="mitteilungen" title="Mitteilungen und @Erwähnungen">
+        <p>
+          Links oben unter <K>Mitteilungen</K> siehst du, was sich bei deinen Aufgaben getan hat. Die blaue Zahl zeigt, wie viel du noch nicht gelesen hast.
+          Du bekommst eine Mitteilung, wenn
+        </p>
+        <ul>
+          <li>dir jemand eine Aufgabe zuteilt,</li>
+          <li>dich jemand in einem Kommentar erwähnt,</li>
+          <li>jemand eine Aufgabe kommentiert, für die du verantwortlich bist oder die du angelegt hast,</li>
+          <li>jemand so eine Aufgabe erledigt.</li>
+        </ul>
+        <p>
+          Was du selbst tust, löst keine Mitteilung bei dir aus. Ein Klick auf eine Mitteilung öffnet die Aufgabe. Mit <K>Alle gelesen</K> räumst du auf.
+        </p>
+        <p>
+          <strong>Jemanden erwähnen:</strong> Schreib im Kommentarfeld ein <K>@</K> und die ersten Buchstaben des Namens. Es erscheint eine Auswahl. Wähl die
+          Person mit der Maus oder mit den Pfeiltasten und der Eingabetaste. Der Name wird im Kommentar blau hervorgehoben, und die Person bekommt eine
+          Mitteilung. Erwähnen kannst du alle, die im selben Bereich mitarbeiten.
+        </p>
+      </Section>
+
       <Section id="benachrichtigungen" title="E-Mail-Benachrichtigungen">
         <p>
           Projektraum kann dich per E-Mail an deine Aufgaben erinnern. Sobald du deine erste Aufgabe hast, fragt Projektraum dich einmal,
-          ob du das möchtest. Ändern kannst du es jederzeit links in der Seitenleiste unter <K>Benachrichtigungen</K>.
+          ob du das möchtest. Ändern kannst du es jederzeit links in der Seitenleiste unter <K>E-Mail &amp; Kalender</K>.
         </p>
         <p>Du kannst zwei Dinge einstellen.</p>
         <ol>
@@ -492,6 +529,32 @@ export default function HelpPage() {
         </p>
         <p>Die E-Mails gehen an die Adresse, mit der du dich anmeldest. Sie steht links unten in der Seitenleiste.</p>
         <Tip>Damit die Erinnerung vor einem Termin funktioniert, braucht die Aufgabe ein Datum im Feld Fällig am.</Tip>
+      </Section>
+
+      <Section id="kalender" title="Termine im Kalender">
+        <p>
+          Deine Aufgaben mit Datum und die Meilensteine deiner Projekte kannst du in deinem gewohnten Kalender sehen – in Outlook, Google Kalender oder am Handy.
+        </p>
+        <ul>
+          <li>
+            Geh links auf <K>E-Mail &amp; Kalender</K> und scroll zu <strong>Termine im Kalender</strong>.
+          </li>
+          <li>
+            Klick auf <K>Kalender-Link erstellen</K>.
+          </li>
+          <li>
+            Klick auf <K>In Outlook oder Apple Kalender öffnen</K> bzw. <K>In Google Kalender hinzufügen</K>. Oder kopier den Link und füg ihn in deinem
+            Kalender bei „Kalender aus dem Internet abonnieren“ ein.
+          </li>
+        </ul>
+        <p>
+          Der Kalender zeigt Aufgaben, für die du verantwortlich bist, und Aufgaben, die du angelegt und niemandem zugeteilt hast. Hat eine Aufgabe einen
+          Beginn, geht der Termin über mehrere Tage. Erledigte Aufgaben bekommen ein Häkchen ✓, Meilensteine eine Raute ◆.
+        </p>
+        <Tip>
+          Ändern kannst du die Termine nur in Projektraum. Dein Kalender holt sich die Änderungen von selbst, das dauert aber je nach Kalender bis zu ein paar
+          Stunden. Den Link gibst du nicht weiter. Hast du ihn doch geteilt, klick auf <K>Link erneuern</K>.
+        </Tip>
       </Section>
 
       <Section id="darstellung" title="Aussehen anpassen">
