@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Script from "next/script";
 import { THEME_SCRIPT } from "@/components/theme-toggle";
+import { ErrorReporter } from "@/components/error-reporter";
 
 export const metadata: Metadata = {
   title: "Projektraum",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Script id="theme" strategy="beforeInteractive">
           {THEME_SCRIPT}
         </Script>
+        <ErrorReporter />
         {children}
       </body>
     </html>

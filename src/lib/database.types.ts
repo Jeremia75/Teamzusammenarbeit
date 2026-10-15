@@ -212,6 +212,7 @@ export type Database = {
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
       add_member_by_email: { Args: { ws: string; member_email: string; member_role?: WorkspaceRole }; Returns: string };
+      report_error: { Args: { src: string; msg: string; detail?: string; page?: string; agent?: string }; Returns: undefined };
       save_project_template: { Args: { proj: string; tpl_name: string; tpl_description?: string }; Returns: string };
       create_project_from_template: { Args: { tpl: string; ws: string; proj_name: string; start_on?: string; section?: string | null }; Returns: string };
       update_project_template: { Args: { tpl: string; tpl_name: string; tpl_description: string; remove?: boolean }; Returns: undefined };

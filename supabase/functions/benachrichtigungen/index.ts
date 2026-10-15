@@ -8,6 +8,7 @@
 //   APP_URL         – optional, Standard https://teamzusammenarbeit.vercel.app
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { assignedMail, dailyMail, viennaNow, type Assignment, type Mail, type OpenTask } from "./mails.ts";
+import { errorMail, expiredBackups, gzip, type AppError } from "./waechter.ts";
 
 const DAILY_HOUR = 7;
 
@@ -35,8 +36,32 @@ Deno.serve(async (req) => {
     console.error("Papierkorb", e);
   }
 
+  const { today, hour } = viennaNow();
+
+  // 0b) Datensicherung: jede Nacht ab 2 Uhr einmal, 30 Tage aufbewahrt
+  let backup = "";
+  if (hour >= 2) {
+    try {
+      const name = `${today}.json.gz`;
+      const { data: files } = await sb.storage.from("sicherungen").list("", { limit: 200 });
+      const names = (files ?? []).map((f) => f.name);
+      if (!names.includes(name)) {
+        const { data: snap, error } = await sb.rpc("backup_snapshot");
+        if (error) throw error;
+        const up = await sb.storage.from("sicherungen").upload(name, await gzip(JSON.stringify(snap)), { contentType: "application/gzip" });
+        if (up.error) throw up.error;
+        backup = name;
+      }
+      const old = expiredBackups(names, today);
+      if (old.length) await sb.storage.from("sicherungen").remove(old);
+    } catch (e) {
+      console.error("Sicherung", e);
+      await sb.rpc("report_error", { src: "function", msg: "Datensicherung fehlgeschlagen", detail: String((e as Error)?.message ?? e) });
+    }
+  }
+
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) return json({ trashPurged, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
+  if (!apiKey) return json({ trashPurged, backup, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
   const from = Deno.env.get("MAIL_FROM") ?? "Projektraum <onboarding@resend.dev>";
   const appUrl = (Deno.env.get("APP_URL") ?? "https://teamzusammenarbeit.vercel.app").replace(/\/$/, "");
 
@@ -58,8 +83,20 @@ Deno.serve(async (req) => {
     if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
   }
 
-  const { today, hour } = viennaNow();
-  const report = { trashPurged, assigned: 0, daily: 0, errors: [] as string[] };
+  const report = { trashPurged, backup, errorsMailed: 0, assigned: 0, daily: 0, errors: [] as string[] };
+
+  // 0c) Neue Fehler per E-Mail melden
+  try {
+    const { data: errs } = await sb.from("app_errors").select("*").is("notified_at", null).order("created_at").limit(20);
+    const { data: to } = await sb.from("app_settings").select("value").eq("key", "intern.fehler_mail").maybeSingle();
+    if (errs?.length && to?.value) {
+      await send(to.value, errorMail(errs as AppError[], appUrl));
+      await sb.from("app_errors").update({ notified_at: new Date().toISOString() }).in("id", errs.map((e) => e.id));
+      report.errorsMailed = errs.length;
+    }
+  } catch (e) {
+    report.errors.push("Fehlermeldung: " + String(e));
+  }
 
   // 1) Neue Zuordnungen – gesammelt je Person
   const { data: pending, error: pErr } = await sb.rpc("notify_pending_assignments");
