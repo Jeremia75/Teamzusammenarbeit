@@ -22,15 +22,20 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
   const dayW = DAY_W[zoom];
 
   const all = columns.flatMap((c) => c.projects);
-  const dated = (p: P) => !!stats[p.id]?.first;
+  // Zeitraum eines Projekts: Aufgaben und Meilensteine – so liegt kein Meilenstein außerhalb des Balkens
+  const spanOf = (p: P): [number, number] | null => {
+    const st = stats[p.id];
+    const days = [...(st?.first ? [toDay(st.first), toDay(st.last!)] : []), ...(st?.milestones ?? []).map((m) => toDay(m.due))];
+    return days.length ? [Math.min(...days), Math.max(...days)] : null;
+  };
+  const dated = (p: P) => !!spanOf(p);
   const undated = all.filter((p) => !dated(p));
 
   const [from, to] = useMemo(() => {
     const days: number[] = [];
     for (const p of all) {
-      const s = stats[p.id];
-      if (s?.first) days.push(toDay(s.first), toDay(s.last!));
-      for (const m of s?.milestones ?? []) days.push(toDay(m.due));
+      const sp = spanOf(p);
+      if (sp) days.push(...sp);
     }
     return rangeOf(days, today, zoom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,8 +64,7 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
             {showHeads && <TimelineGroupHead name={g.title} />}
             {g.projects.map((p) => {
               const s = stats[p.id];
-              const a = toDay(s.first!);
-              const b = toDay(s.last!);
+              const [a, b] = spanOf(p)!;
               const total = s.todo + s.doing + s.review + s.done;
               const pct = total ? Math.round((s.done / total) * 100) : 0;
               const w = Math.max(dayW * 2, (b - a + 1) * dayW);
@@ -73,7 +77,7 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
                     data-project-bar={p.id}
                     aria-label={label}
                     title={label}
-                    className={`absolute top-2 h-6 rounded-md border overflow-hidden flex items-center ${late ? "ring-2 ring-(--c-danger)" : ""}`}
+                    className={`absolute top-2 h-6 rounded-md border flex items-center ${late ? "ring-2 ring-(--c-danger)" : ""}`}
                     style={{
                       left: x(a) + 1,
                       width: w - 2,
@@ -81,8 +85,15 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
                       background: `color-mix(in srgb, ${p.color} 16%, var(--c-surface))`,
                     }}
                   >
-                    <span aria-hidden className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: `color-mix(in srgb, ${p.color} 55%, var(--c-surface))` }} />
-                    <span className="relative px-2 text-xs font-bold truncate text-(--c-ink)">{w > 90 ? `${p.name} · ${pct} %` : ""}</span>
+                    <span aria-hidden className="absolute inset-0 rounded-[5px] overflow-hidden">
+                      <span className="absolute inset-y-0 left-0" style={{ width: `${pct}%`, background: `color-mix(in srgb, ${p.color} 55%, var(--c-surface))` }} />
+                    </span>
+                    {/* Beschriftung wandert beim Scrollen mit, solange sie in den Balken passt */}
+                    {w > 90 && (
+                      <span data-bar-label className="sticky left-[124px] sm:left-[224px] px-2 text-xs font-bold whitespace-nowrap text-(--c-ink) max-w-full overflow-hidden text-ellipsis">
+                        {p.name} · {pct} %
+                      </span>
+                    )}
                   </Link>
                   {w <= 90 && (
                     <span aria-hidden className="absolute top-2 h-6 leading-6 text-xs font-semibold text-(--c-text-2) whitespace-nowrap pointer-events-none" style={{ left: x(a) + w + 4 }}>
@@ -95,8 +106,8 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
                       <span
                         key={i}
                         title={`Meilenstein ${m.name} · ${fmt(d)}`}
-                        className="absolute top-[13px] size-3.5 rotate-45 rounded-[3px] bg-(--c-ink) border-2 border-(--c-surface) z-10 pointer-events-auto"
-                        style={{ left: x(d) + dayW / 2 - 7 }}
+                        className="absolute top-[29px] size-3 rotate-45 rounded-[2px] bg-(--c-ink) border-2 border-(--c-surface) z-10 pointer-events-auto"
+                        style={{ left: x(d) + dayW / 2 - 6 }}
                       >
                         <span className="sr-only">
                           Meilenstein {m.name} am {fmt(d)}
@@ -135,7 +146,7 @@ export function ProjectTimeline({ columns, stats }: { columns: Col[]; stats: Rec
       )}
 
       <p data-panel="slim" className="text-xs text-(--c-muted)">
-        Jeder Balken reicht von der ersten bis zur letzten Aufgabe mit Datum. Der dunkle Teil zeigt, wie viel erledigt ist, Rauten sind Meilensteine, rot
+        Jeder Balken reicht vom ersten bis zum letzten Termin – Aufgaben und Meilensteine. Der dunkle Teil zeigt, wie viel erledigt ist, Rauten sind Meilensteine, rot
         umrandet heißt: Es gibt überfällige Aufgaben. Ein Klick öffnet das Projekt.
       </p>
     </div>

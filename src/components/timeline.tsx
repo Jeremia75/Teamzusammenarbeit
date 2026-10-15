@@ -171,7 +171,9 @@ export const TimelineFrame = forwardRef<
         </div>
 
         {children}
-        <div className="h-3" />
+        <div className="flex h-3">
+          <div className={`${LABEL_W} shrink-0 sticky left-0 z-20 bg-(--c-surface) border-r border-(--c-line)`} />
+        </div>
       </div>
     </div>
   );

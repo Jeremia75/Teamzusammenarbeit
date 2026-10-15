@@ -162,7 +162,7 @@ export default function HelpPage() {
             <K>Kacheln</K> zeigt alle Projekte als große Karten nebeneinander.
           </li>
           <li>
-            <K>Zeitplan</K> zeigt jedes Projekt als Balken, von der ersten bis zur letzten Aufgabe mit Datum. Der dunkle Teil des Balkens ist
+            <K>Zeitplan</K> zeigt jedes Projekt als Balken, vom ersten bis zum letzten Termin, also Aufgaben und Meilensteine. Der dunkle Teil des Balkens ist
             erledigt, die Rauten sind Meilensteine. Rot umrandet heißt, dass es im Projekt überfällige Aufgaben gibt. Ein Klick öffnet das
             Projekt. Projekte ohne Termine stehen darunter.
           </li>

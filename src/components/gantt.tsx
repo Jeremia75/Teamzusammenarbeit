@@ -303,7 +303,12 @@ export function Gantt({
                       }}
                     >
                       <span aria-hidden onPointerDown={(e) => begin(e, t, "start")} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-(--c-ink)/15" />
-                      {!narrow && <span className={`px-2 truncate ${t.status === "done" ? "line-through opacity-80" : ""}`}>{t.title}</span>}
+                      {!narrow && (
+                        // Beschriftung wandert beim Scrollen mit, solange sie in den Balken passt
+                        <span data-bar-label className={`sticky left-[124px] sm:left-[224px] px-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${t.status === "done" ? "line-through opacity-80" : ""}`}>
+                          {t.title}
+                        </span>
+                      )}
                       <span aria-hidden onPointerDown={(e) => begin(e, t, "end")} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-(--c-ink)/15" />
                     </div>
                     {narrow && (
