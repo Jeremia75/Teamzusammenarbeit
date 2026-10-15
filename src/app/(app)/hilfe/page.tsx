@@ -136,8 +136,8 @@ export default function HelpPage() {
           </li>
           <li>Das neue Projekt öffnet sich sofort. Hier stehen später alle Aufgaben dieses Projekts.</li>
           <li>
-            Klicke in der Spalte <strong>Offen</strong> auf <K>+ Aufgabe hinzufügen</K>. Im Fenster schreibst du die Aufgabe hinein und
-            klickst auf <K>Anlegen</K>.
+            Klicke in der Spalte <strong>Offen</strong> auf <K>+ Aufgabe hinzufügen</K>. Es öffnet sich gleich das Fenster der neuen
+            Aufgabe – schreib oben den Titel hinein.
           </li>
           <li>
             Klicke auf die Aufgabe. Es öffnet sich ein Fenster mit den Details. Dort kannst du ein Datum, eine Beschreibung und Unteraufgaben
@@ -253,9 +253,9 @@ export default function HelpPage() {
 
       <Section id="aufgaben" title="Aufgaben anlegen und bearbeiten">
         <p>
-          Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Es öffnet sich ein Fenster: Titel
-          eintragen, bei Bedarf Start, Fälligkeit, Priorität und Beschreibung, dann <K>Anlegen</K> (oder Eingabetaste). Mit{" "}
-          <K>Anlegen und nächste</K> bleibt das Fenster offen für die nächste Aufgabe – die Termine bleiben dabei stehen.
+          Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Es öffnet sich sofort das Fenster der neuen
+          Aufgabe: oben den Titel eintragen, darunter alles Weitere. Alles wird gleich gespeichert. Schließt du das Fenster, ohne etwas
+          einzutragen, verschwindet die leere Aufgabe wieder.
         </p>
         <p>Klickst du auf eine Aufgabe, öffnet sich ein Fenster mit den Details. Am Handy füllt es den ganzen Bildschirm. Dort kannst du Folgendes einstellen:</p>
         <ul>
@@ -775,6 +775,12 @@ export default function HelpPage() {
         <p>
           Findest du das Symbol nicht, öffne das Menü mit den drei Punkten oben rechts im Browser. In Edge heißt der Eintrag Apps und dann
           Diese Website als App installieren. In Chrome heißt er Streamen, speichern und teilen und dann Seite als App installieren.
+        </p>
+        <p>
+          <strong>Links aus E-Mails in der App öffnen:</strong> Normalerweise öffnet ein Link aus einer E-Mail den Browser. Damit er in der
+          installierten App landet, schalte in deren Einstellungen <K>Unterstützte Links öffnen</K> ein. In Chrome: <K>chrome://apps</K> in
+          die Adresszeile tippen, mit der rechten Maustaste auf Projektraum klicken, <K>App-Einstellungen</K> wählen. Fehlt der Schalter,
+          kann dein Browser das noch nicht – dann öffnet sich der Link weiter im Browser.
         </p>
       </Section>
 

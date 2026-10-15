@@ -8,7 +8,7 @@ import { STATUSES } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { TaskDetail } from "@/components/task-detail";
 import { useAttachmentCounts } from "@/components/attachments";
-import { Board, type BoardColumn } from "@/components/board";
+import { Board, NEW_TITLE, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
 
@@ -42,6 +42,8 @@ export function RubricView(props: Props) {
   const [view, setViewState] = useState<View>("projects");
   const [onlyMine, setOnlyMine] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  // gerade über "+ Aufgabe hinzufügen" angelegt (Titel noch offen)
+  const [freshId, setFreshId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const viewKey = `projektraum:rview:${rubric.id}`;
@@ -117,10 +119,32 @@ export function RubricView(props: Props) {
         .single();
       if (error) return fail("Aufgabe nicht angelegt: " + error.message);
       setTasks((prev) => (prev.some((t) => t.id === data.id) ? prev : [...prev, data]));
-      window.dispatchEvent(new Event("projektraum:task-created"));
+      // Neue Aufgabe aus "+ Aufgabe hinzufügen": erst melden, wenn sie einen Titel hat (siehe closeDetail)
+      if (title !== NEW_TITLE) window.dispatchEvent(new Event("projektraum:task-created"));
+      return data;
     },
     [supabase, tasks, currentUserId, fail],
   );
+
+  // "+ Aufgabe hinzufügen": Aufgabe gleich anlegen und ihr Fenster öffnen
+  async function createAndOpen(projectId: string) {
+    const t = await addTask(projectId, NEW_TITLE);
+    if (t) {
+      setFreshId(t.id);
+      setOpenId(t.id);
+    }
+  }
+  // Fenster einer neuen Aufgabe ohne Titel und ohne Änderungen geschlossen: wieder entfernen
+  function closeDetail(r?: { titled: boolean; touched: boolean }) {
+    const id = openId;
+    setOpenId(null);
+    setFreshId(null);
+    if (id && id === freshId && r?.titled) window.dispatchEvent(new Event("projektraum:task-created"));
+    if (id && id === freshId && r && !r.titled && !r.touched) {
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      supabase.from("tasks").delete().eq("id", id).then(({ error }) => error && fail("Leere Aufgabe nicht entfernt: " + error.message));
+    }
+  }
 
   const attachIds = useMemo(() => projectIds, [projectIds]);
   const { counts: attachCounts, setCount: setAttachCount } = useAttachmentCounts(supabase, attachIds);
@@ -311,7 +335,7 @@ export function RubricView(props: Props) {
                   onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                   onMove={moveTask}
                   readOnly={readOnly}
-                  onQuickAdd={view === "projects" && !readOnly ? (col, title, extra) => col.projectId && addTask(col.projectId, title, extra) : undefined}
+                  onQuickAdd={view === "projects" && !readOnly ? (col) => (col.projectId ? createAndOpen(col.projectId) : undefined) : undefined}
                 />
               )}
             </div>
@@ -327,7 +351,8 @@ export function RubricView(props: Props) {
                 assigned={peopleOf(openTask.id).map((m) => m.id)}
                 currentUserId={currentUserId}
                 role={role}
-                onClose={() => setOpenId(null)}
+                fresh={openTask.id === freshId}
+                onClose={closeDetail}
                 onUpdate={updateTask}
                 onAddSubtask={(title) => addTask(openTask.project_id, title, { parent_id: openTask.id })}
                 onDelete={deleteTask}

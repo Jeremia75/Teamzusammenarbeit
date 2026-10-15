@@ -12,7 +12,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { useAttachmentCounts, DeleteConfirm } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Gantt } from "@/components/gantt";
-import { Board, QuickAdd, type BoardColumn, type NewTaskExtra } from "@/components/board";
+import { Board, NEW_TITLE, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
 import { SaveAsTemplate } from "@/components/project-template";
@@ -52,6 +52,8 @@ export function ProjectView(props: Props) {
   const [onlyMine, setOnlyMine] = useState(false);
   const [msFilter, setMsFilter] = useState<string | null>(null);
   const [openId, setOpenIdState] = useState<string | null>(null);
+  // gerade über "+ Aufgabe hinzufügen" angelegt (Titel noch offen)
+  const [freshId, setFreshId] = useState<string | null>(null);
   // Link mit ?aufgabe=… (z. B. aus "Meine Woche" oder der Glocke) öffnet die Aufgabe direkt
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("aufgabe");
@@ -169,7 +171,8 @@ export function ProjectView(props: Props) {
         .single();
       if (error) return fail("Aufgabe nicht angelegt: " + error.message);
       setTasks((prev) => (prev.some((t) => t.id === data.id) ? prev : [...prev, data]));
-      window.dispatchEvent(new Event("projektraum:task-created"));
+      // Neue Aufgabe aus "+ Aufgabe hinzufügen": erst melden, wenn sie einen Titel hat (siehe closeDetail)
+      if (title !== NEW_TITLE) window.dispatchEvent(new Event("projektraum:task-created"));
       return data;
     },
     [supabase, tasks, project.id, currentUserId, fail, msFilter],
@@ -356,13 +359,31 @@ export function ProjectView(props: Props) {
     updateTask(taskId, patch);
   }
 
-  function quickAdd(col: BoardColumn, title: string, extra: NewTaskExtra = {}) {
+  // "+ Aufgabe hinzufügen": Aufgabe gleich anlegen und ihr Fenster öffnen
+  async function createAndOpen(extra: Partial<Task> = {}) {
+    const t = await addTask(NEW_TITLE, extra);
+    if (t) {
+      setFreshId(t.id);
+      setOpenId(t.id);
+    }
+  }
+  function quickAdd(col: BoardColumn) {
     const last = tasksOf(col).at(-1);
-    addTask(title, {
-      ...extra,
+    return createAndOpen({
       position: last ? last.position + 1 : 1,
       ...(col.status ? { status: col.status } : { section_id: col.sectionId ?? null }),
     });
+  }
+  // Fenster einer neuen Aufgabe ohne Titel und ohne Änderungen geschlossen: wieder entfernen
+  function closeDetail(r?: { titled: boolean; touched: boolean }) {
+    const id = openId;
+    setOpenId(null);
+    setFreshId(null);
+    if (id && id === freshId && r?.titled) window.dispatchEvent(new Event("projektraum:task-created"));
+    if (id && id === freshId && r && !r.titled && !r.touched) {
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      supabase.from("tasks").delete().eq("id", id).then(({ error }) => error && fail("Leere Aufgabe nicht entfernt: " + error.message));
+    }
   }
 
   function selectMilestone(id: string | null) {
@@ -512,7 +533,7 @@ export function ProjectView(props: Props) {
                 milestoneName={milestoneName}
                 openId={openId}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
-                onAdd={readOnly ? undefined : (title, extra) => addTask(title, extra)}
+                onAdd={readOnly ? undefined : () => createAndOpen()}
               />
             ) : (
               <Board
@@ -548,7 +569,8 @@ export function ProjectView(props: Props) {
               assigned={peopleOf(openTask.id).map((m) => m.id)}
               currentUserId={currentUserId}
               role={role}
-              onClose={() => setOpenId(null)}
+              fresh={openTask.id === freshId}
+              onClose={closeDetail}
               onUpdate={updateTask}
               onAddSubtask={(title) => addTask(title, { parent_id: openTask.id })}
               onDelete={deleteTask}
@@ -607,7 +629,7 @@ export function TaskList({
   milestoneName: (id: string | null) => string;
   openId: string | null;
   onOpen: (id: string) => void;
-  onAdd?: (title: string, extra: NewTaskExtra) => void;
+  onAdd?: () => void | Promise<unknown>;
   /** Spalte „Projekt“ zeigen (Ansicht über mehrere Projekte) */
   projectOf?: (task: Task) => { name: string; color: string } | undefined;
 }) {

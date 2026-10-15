@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import type { Task, TaskPriority, TaskStatus } from "@/lib/database.types";
-import { PRIORITIES, STATUS_TINT, formatDate, isOverdue, priorityOf, recurrenceLabel, statusOf } from "@/lib/labels";
+import { useState } from "react";
+import type { Task, TaskStatus } from "@/lib/database.types";
+import { STATUS_TINT, formatDate, isOverdue, priorityOf, recurrenceLabel, statusOf } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
 import { StatusBar } from "@/components/status-bar";
 import type { Member } from "@/components/project-view";
@@ -34,7 +34,7 @@ type Props = {
   onOpen: (id: string) => void;
   onToggleDone: (task: Task) => void;
   onMove: (taskId: string, col: BoardColumn, beforeId: string | null) => void;
-  onQuickAdd?: (col: BoardColumn, title: string, extra: NewTaskExtra) => void;
+  onQuickAdd?: (col: BoardColumn) => void | Promise<void>;
   /** Projekt der Aufgabe auf der Karte anzeigen (Ansicht über mehrere Projekte) */
   projectOf?: (task: Task) => { name: string; color: string } | undefined;
   /** Anzahl Dateien/Links je Aufgabe (Büroklammer) */
@@ -144,7 +144,7 @@ export function Board(props: Props) {
               ))}
               {dragId && drop?.col === col.key && drop.before === null && <DropLine />}
 
-              {props.onQuickAdd && <QuickAdd where={col.title} onAdd={(title, extra) => props.onQuickAdd?.(col, title, extra)} />}
+              {props.onQuickAdd && <QuickAdd onAdd={() => props.onQuickAdd?.(col)} />}
               </div>
               {/* freie Fläche unter kurzen Spalten: nimmt beim Ziehen ebenfalls Aufgaben an */}
               <div aria-hidden className={`flex-1 min-h-4 rounded-xl ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)/60" : ""}`} />
@@ -454,159 +454,28 @@ function statusTextColor(s: TaskStatus) {
   return { todo: "var(--st-todo-ink)", doing: "var(--st-doing-ink)", review: "var(--st-review-ink)", done: "var(--st-done-ink)" }[s];
 }
 
-/** Zusatzangaben aus dem Fenster "Neue Aufgabe" */
-export type NewTaskExtra = Partial<Pick<Task, "description" | "start_date" | "due_date" | "priority">>;
+/** Platzhalter-Titel, bis im Fenster ein richtiger Titel eingetragen ist */
+export const NEW_TITLE = "Neue Aufgabe";
 
-/** "+ Aufgabe hinzufügen": öffnet ein Fenster zum Anlegen der Aufgabe */
-export function QuickAdd({ onAdd, where }: { onAdd: (title: string, extra: NewTaskExtra) => void; where?: string }) {
-  const [open, setOpen] = useState(false);
+/** "+ Aufgabe hinzufügen": legt eine Aufgabe an und öffnet gleich ihr Detailfenster */
+export function QuickAdd({ onAdd }: { onAdd: () => void | Promise<unknown> }) {
+  const [busy, setBusy] = useState(false);
   return (
-    <>
-      <button
-        type="button"
-        aria-label="Neue Aufgabe"
-        onClick={() => setOpen(true)}
-        className="w-full h-11 rounded-lg px-3 text-left text-sm text-(--c-muted) hover:bg-(--c-surface) hover:text-(--c-ink) focus-visible:outline-2 focus-visible:outline-(--c-accent)"
-      >
-        + Aufgabe hinzufügen
-      </button>
-      {open && <NewTaskDialog where={where} onAdd={onAdd} onClose={() => setOpen(false)} />}
-    </>
-  );
-}
-
-const dlgField = "h-11 rounded-lg border border-(--c-line) px-3 bg-(--c-surface) font-normal text-sm";
-
-function NewTaskDialog({ onAdd, onClose, where }: { onAdd: (title: string, extra: NewTaskExtra) => void; onClose: () => void; where?: string }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [start, setStart] = useState("");
-  const [due, setDue] = useState("");
-  const [priority, setPriority] = useState<TaskPriority>("medium");
-  const [more, setMore] = useState(false);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (d && !d.open) d.showModal();
-    d?.querySelector<HTMLInputElement>("#nt-title")?.focus();
-    return () => d?.close();
-  }, []);
-
-  function submit(again: boolean) {
-    const t = title.trim();
-    if (!t) return;
-    onAdd(t, {
-      ...(description.trim() ? { description: description.trim() } : {}),
-      ...(start ? { start_date: start } : {}),
-      ...(due ? { due_date: due } : {}),
-      ...(priority !== "medium" ? { priority } : {}),
-    });
-    if (again) {
-      setTitle("");
-      setDescription("");
-      ref.current?.querySelector<HTMLInputElement>("#nt-title")?.focus();
-    } else onClose();
-  }
-
-  return (
-    <dialog
-      ref={ref}
+    <button
+      type="button"
       aria-label="Neue Aufgabe"
-      data-lock
-      onCancel={(e) => {
-        if (e.target !== e.currentTarget) return;
-        e.preventDefault();
-        onClose();
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await onAdd();
+        } finally {
+          setBusy(false);
+        }
       }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      className="bg-(--c-surface) text-(--c-ink) p-0 backdrop:bg-black/45 m-auto w-[min(520px,calc(100%-24px))] max-h-[calc(100dvh-24px)] overflow-y-auto rounded-2xl border border-(--c-line) shadow-2xl"
+      className="w-full h-11 rounded-lg px-3 text-left text-sm text-(--c-muted) hover:bg-(--c-surface) hover:text-(--c-ink) focus-visible:outline-2 focus-visible:outline-(--c-accent) disabled:opacity-60"
     >
-      <form
-        className="flex flex-col gap-4 p-5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit(false);
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-extrabold">Neue Aufgabe</h2>
-            {where && <p className="text-sm text-(--c-muted)">in „{where}“</p>}
-          </div>
-          <button type="button" aria-label="Fenster schließen" onClick={onClose} className="size-11 -mr-2 -mt-2 rounded-lg text-xl text-(--c-muted) hover:bg-(--c-hover)">
-            ×
-          </button>
-        </div>
-
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">
-          Titel
-          <input
-            id="nt-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            enterKeyHint="done"
-            placeholder="Was ist zu tun?"
-            className={dlgField}
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Start
-            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className={dlgField} />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Fällig
-            <input type="date" value={due} min={start || undefined} onChange={(e) => setDue(e.target.value)} className={dlgField} />
-          </label>
-        </div>
-
-        {more ? (
-          <>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              Priorität
-              <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className={dlgField}>
-                {PRIORITIES.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1.5 text-sm font-semibold">
-              Beschreibung
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="rounded-lg border border-(--c-line) px-3 py-2 bg-(--c-surface) font-normal text-sm"
-              />
-            </label>
-          </>
-        ) : (
-          <button type="button" onClick={() => setMore(true)} className="self-start min-h-11 text-sm font-semibold text-(--c-accent) hover:underline underline-offset-4">
-            + Priorität und Beschreibung
-          </button>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <button type="submit" disabled={!title.trim()} className="h-11 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold disabled:opacity-40">
-            Anlegen
-          </button>
-          <button
-            type="button"
-            disabled={!title.trim()}
-            onClick={() => submit(true)}
-            className="h-11 px-4 rounded-lg border border-(--c-line) text-sm font-semibold hover:bg-(--c-hover) disabled:opacity-40"
-          >
-            Anlegen und nächste
-          </button>
-          <button type="button" onClick={onClose} className="h-11 px-3 text-sm font-semibold text-(--c-muted) hover:text-(--c-ink)">
-            Abbrechen
-          </button>
-        </div>
-      </form>
-    </dialog>
+      + Aufgabe hinzufügen
+    </button>
   );
 }
