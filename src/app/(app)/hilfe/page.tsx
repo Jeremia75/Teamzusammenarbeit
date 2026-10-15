@@ -806,6 +806,10 @@ export default function HelpPage() {
               "Dann hast du in diesem Bereich die Rolle Nur ansehen oder Kommentieren. Ein Admin deiner Firma kann das unter Mitglieder verwalten ändern.",
             ],
             [
+              "Werden meine Daten gesichert?",
+              "Ja. Jede Nacht legt Projektraum eine Sicherung aller Projekte, Aufgaben und Kommentare an und bewahrt sie 30 Tage auf. Tritt bei jemandem ein Fehler auf, wird er automatisch gemeldet, damit er behoben werden kann.",
+            ],
+            [
               "Muss ich etwas speichern?",
               "Nein. Jede Änderung speichert Projektraum sofort.",
             ],
