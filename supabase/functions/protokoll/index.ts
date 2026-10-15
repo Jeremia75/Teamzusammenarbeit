@@ -61,11 +61,24 @@ function b64(bytes: Uint8Array) {
 
 // ---------------------------------------------------------------- Ton und Video abschreiben
 
-async function transcribe(url: string): Promise<string> {
+/** Namen, die beim Abschreiben besser erkannt werden sollen (Mitglieder, Projekte) */
+function termsOf(ctx: Context) {
+  const names = new Set<string>();
+  for (const p of ctx.projects) {
+    names.add(p.name);
+    for (const m of p.mitglieder) for (const part of m.name.split(/\s+/)) if (part.length > 2) names.add(part);
+  }
+  return [...names].filter((n) => n.length <= 40).slice(0, 50);
+}
+
+async function transcribe(url: string, terms: string[] = []): Promise<string> {
   const key = Deno.env.get("DEEPGRAM_API_KEY");
   if (!key) throw new Fail("Ton- und Videoaufnahmen sind noch nicht eingerichtet (es fehlt der Schlüssel für das Abschreiben). Schick bitte das schriftliche Protokoll oder das Transkript.");
   for (const model of ["nova-3", "nova-2"]) {
-    const r = await fetch(`${DEEPGRAM}/v1/listen?model=${model}&language=de&smart_format=true&punctuate=true&diarize=true&paragraphs=true`, {
+    const q = new URLSearchParams({ model, language: "de", smart_format: "true", punctuate: "true", diarize: "true", paragraphs: "true" });
+    // Namen vorab bekannt machen: nova-3 mit "keyterm", ältere Modelle mit "keywords"
+    for (const t of terms) q.append(model === "nova-3" ? "keyterm" : "keywords", t);
+    const r = await fetch(`${DEEPGRAM}/v1/listen?${q}`, {
       method: "POST",
       headers: { Authorization: `Token ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({ url }),
@@ -83,7 +96,7 @@ async function transcribe(url: string): Promise<string> {
 
 // ---------------------------------------------------------------- Inhalte für die KI
 
-async function piecesOf(inputs: Input[]): Promise<{ pieces: Piece[]; transcript: string }> {
+async function piecesOf(inputs: Input[], terms: string[] = []): Promise<{ pieces: Piece[]; transcript: string }> {
   const pieces: Piece[] = [];
   const texts: string[] = [];
   for (const it of inputs) {
@@ -113,7 +126,7 @@ async function piecesOf(inputs: Input[]): Promise<{ pieces: Piece[]; transcript:
       text = it.text ?? (it.bytes ? new TextDecoder().decode(it.bytes) : "");
     } else if (it.kind === "audio" || it.kind === "video") {
       if (!it.url) throw new Fail(`„${it.label}“ konnte nicht geladen werden.`);
-      text = await transcribe(it.url);
+      text = await transcribe(it.url, terms);
     } else {
       throw new Fail(`„${it.label}“: Dieses Dateiformat kann Projektraum nicht lesen. Möglich sind PDF, Word (.docx), Text, Fotos sowie Ton- und Videoaufnahmen.`);
     }
@@ -185,7 +198,7 @@ async function processImport(sb: SupabaseClient, id: string, userId: string, pro
     if (error) throw new Error(error.message);
     const context = ctx as Context;
     if (!context.projects.length) throw new Fail(projectId ? "Du darfst in diesem Projekt keine Aufgaben anlegen." : "Du hast kein Projekt, in dem du Aufgaben anlegen darfst.");
-    const { pieces, transcript } = await piecesOf(inputs);
+    const { pieces, transcript } = await piecesOf(inputs, termsOf(context));
     const choose = !projectId && context.projects.length > 1;
     const ai = await askAi(pieces, context, choose);
     const project = projectId
