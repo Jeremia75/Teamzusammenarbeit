@@ -416,6 +416,7 @@ export function ProjectView(props: Props) {
                 openId={openId}
                 onOpen={(id) => setOpenId(id)}
                 onUpdate={updateTask}
+                peopleOf={peopleOf}
               />
             ) : view === "list" ? (
               <TaskList

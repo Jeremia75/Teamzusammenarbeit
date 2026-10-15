@@ -1,39 +1,28 @@
 "use client";
 
-// Zeitplan (Gantt) für ein Projekt: Balken von Beginn bis Fälligkeit, gruppiert nach Rubrik.
+// Zeitplan (Gantt) für ein Projekt: Balken von Beginn bis Fälligkeit, gruppiert nach Rubrik oder Person.
 // Balken lassen sich ziehen (verschieben) und an den Rändern in der Länge ändern.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
 import { STATUSES } from "@/lib/labels";
+import {
+  DAY_W,
+  TimelineFrame,
+  TimelineGroupHead,
+  TimelineRow,
+  ZoomBar,
+  fmt,
+  rangeOf,
+  toDay,
+  toIso,
+  todayDay,
+  useZoom,
+  type Zoom,
+} from "@/components/timeline";
 
-type Zoom = "week" | "month" | "quarter";
-const DAY_W: Record<Zoom, number> = { week: 36, month: 14, quarter: 5 };
-const ZOOMS: [Zoom, string][] = [
-  ["week", "Wochen"],
-  ["month", "Monate"],
-  ["quarter", "Quartal"],
-];
-const ROW = 40;
-const MONTHS = ["Jän", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-const WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-// ---- Tage als ganze Zahlen (UTC, ohne Sommerzeit-Sprünge) ----
-const toDay = (iso: string) => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return Math.round(Date.UTC(y, m - 1, d) / 86400000);
-};
-const toIso = (day: number) => new Date(day * 86400000).toISOString().slice(0, 10);
-const dateOf = (day: number) => new Date(day * 86400000);
-const todayDay = () => {
-  const n = new Date();
-  return Math.round(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 86400000);
-};
-const fmt = (day: number) => {
-  const d = dateOf(day);
-  return `${d.getUTCDate()}. ${MONTHS[d.getUTCMonth()]}`;
-};
-const weekday = (day: number) => (dateOf(day).getUTCDay() + 6) % 7; // 0 = Montag
+const ZOOMS: Zoom[] = ["week", "month", "quarter"];
+type GroupBy = "section" | "person";
 
 type Span = { start: number; end: number; dueOnly: boolean };
 function spanOf(t: Task): Span | null {
@@ -46,6 +35,8 @@ function spanOf(t: Task): Span | null {
 const statusLabel = (s: TaskStatus) => STATUSES.find((x) => x.id === s)!.label;
 
 type Drag = { id: string; mode: "move" | "start" | "end"; x0: number; span: Span; moved: boolean };
+type Person = { id: string; name: string };
+type Group = { id: string; name: string; tasks: Task[]; person?: boolean };
 
 export function Gantt({
   tasks,
@@ -54,6 +45,7 @@ export function Gantt({
   openId,
   onOpen,
   onUpdate,
+  peopleOf,
 }: {
   tasks: Task[];
   sections: Section[];
@@ -61,47 +53,40 @@ export function Gantt({
   openId: string | null;
   onOpen: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
+  peopleOf: (taskId: string) => Person[];
 }) {
-  const [zoom, setZoomState] = useState<Zoom>("week");
+  const [zoom, setZoom] = useZoom("projektraum:gantt-zoom", ZOOMS, "month");
+  const [groupBy, setGroupByState] = useState<GroupBy>("section");
   const scroller = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<{ id: string; span: Span } | null>(null);
   const today = todayDay();
 
-  // Zoomstufe merken (nur dieser Browser); am Handy mit "Monate" beginnen
   useEffect(() => {
     try {
-      const z = localStorage.getItem("projektraum:gantt-zoom") as Zoom | null;
-      if (z && z in DAY_W) setZoomState(z);
-      else if (window.innerWidth < 640) setZoomState("month");
+      if (localStorage.getItem("projektraum:gantt-group") === "person") setGroupByState("person");
     } catch {}
   }, []);
-  const setZoom = (z: Zoom) => {
-    setZoomState(z);
+  const setGroupBy = (g: GroupBy) => {
+    setGroupByState(g);
     try {
-      localStorage.setItem("projektraum:gantt-zoom", z);
+      localStorage.setItem("projektraum:gantt-group", g);
     } catch {}
   };
-  const dayW = DAY_W[zoom];
 
+  const dayW = DAY_W[zoom];
   const scheduled = tasks.filter((t) => spanOf(t));
   const unscheduled = tasks.filter((t) => !spanOf(t));
 
-  // Sichtbarer Zeitraum: alle Termine + heute, mit Luft, ab Montag
   const [from, to] = useMemo(() => {
-    const days = [today];
+    const days: number[] = [];
     for (const t of tasks) {
       const s = spanOf(t);
       if (s) days.push(s.start, s.end);
     }
     for (const m of milestones) if (m.due_date) days.push(toDay(m.due_date));
-    let a = Math.min(...days) - 7;
-    a -= weekday(a);
-    const b = Math.max(Math.max(...days) + 21, a + (zoom === "quarter" ? 180 : zoom === "month" ? 90 : 42));
-    return [a, b];
+    return rangeOf(days, today, zoom);
   }, [tasks, milestones, today, zoom]);
-  const total = to - from + 1;
-  const width = total * dayW;
   const x = (day: number) => (day - from) * dayW;
 
   // Beim Öffnen und beim Zoomen zu "heute" springen
@@ -114,11 +99,18 @@ export function Gantt({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom]);
 
-  // Gruppen: je Rubrik, dann "Ohne Rubrik"
-  const groups = useMemo(() => {
-    const out: { id: string; name: string; tasks: Task[] }[] = [];
+  const groups = useMemo<Group[]>(() => {
+    const out: Group[] = [];
     const sorted = [...scheduled].sort((a, b) => spanOf(a)!.start - spanOf(b)!.start || a.position - b.position);
-    if (sections.length) {
+    if (groupBy === "person") {
+      // Eine Gruppe je Person; Aufgaben mit mehreren Verantwortlichen stehen bei jeder
+      const people = new Map<string, Person>();
+      for (const t of sorted) for (const p of peopleOf(t.id)) people.set(p.id, p);
+      for (const p of [...people.values()].sort((a, b) => a.name.localeCompare(b.name, "de")))
+        out.push({ id: p.id, name: p.name, tasks: sorted.filter((t) => peopleOf(t.id).some((q) => q.id === p.id)), person: true });
+      const none = sorted.filter((t) => peopleOf(t.id).length === 0);
+      if (none.length) out.push({ id: "none", name: "Niemand zugeteilt", tasks: none });
+    } else if (sections.length) {
       for (const s of sections) {
         const list = sorted.filter((t) => t.section_id === s.id);
         if (list.length) out.push({ id: s.id, name: s.name, tasks: list });
@@ -127,20 +119,7 @@ export function Gantt({
       if (rest.length) out.push({ id: "none", name: "Ohne Rubrik", tasks: rest });
     } else if (sorted.length) out.push({ id: "all", name: "", tasks: sorted });
     return out;
-  }, [scheduled, sections]);
-
-  // ---- Kopfzeilen ----
-  const months: { start: number; days: number; label: string }[] = [];
-  for (let d = from; d <= to; ) {
-    const dt = dateOf(d);
-    const next = Math.round(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth() + 1, 1) / 86400000);
-    const end = Math.min(next, to + 1);
-    months.push({ start: d, days: end - d, label: `${MONTHS[dt.getUTCMonth()]} ${dt.getUTCFullYear()}` });
-    d = end;
-  }
-  const ticks: { day: number; label: string; weekend?: boolean }[] = [];
-  if (zoom === "week") for (let d = from; d <= to; d++) ticks.push({ day: d, label: `${WD[weekday(d)]} ${dateOf(d).getUTCDate()}`, weekend: weekday(d) >= 5 });
-  else if (zoom === "month") for (let d = from; d <= to; d += 7) ticks.push({ day: d, label: fmt(d) });
+  }, [scheduled, sections, groupBy, peopleOf]);
 
   // ---- Ziehen ----
   function begin(e: React.PointerEvent, t: Task, mode: Drag["mode"]) {
@@ -185,33 +164,53 @@ export function Gantt({
     else save(t.id, { start: s.start + step, end: s.end + step, dueOnly: s.dueOnly });
   }
 
-  const labelW = "w-[120px] sm:w-[220px]";
+  /** Auslastung einer Person: Tage, an denen mehrere offene Aufgaben gleichzeitig laufen */
+  function loadStrip(list: Task[]) {
+    const open = list.filter((t) => t.status !== "done").map((t) => spanOf(t)!);
+    const count = new Map<number, number>();
+    for (const s of open) for (let d = s.start; d <= s.end; d++) count.set(d, (count.get(d) ?? 0) + 1);
+    const segs: { start: number; end: number; n: number }[] = [];
+    for (const d of [...count.keys()].sort((a, b) => a - b)) {
+      const n = Math.min(count.get(d)!, 3);
+      if (n < 2) continue;
+      const last = segs[segs.length - 1];
+      if (last && last.end === d - 1 && last.n === n) last.end = d;
+      else segs.push({ start: d, end: d, n });
+    }
+    const peak = Math.max(0, ...count.values());
+    return { segs, peak };
+  }
 
   return (
     <div className="flex flex-col gap-3">
-      <div data-panel="slim" className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Zeitraum" className="flex rounded-lg border border-(--c-line) bg-(--c-surface) p-0.5">
-          {ZOOMS.map(([z, label]) => (
+      <ZoomBar zooms={ZOOMS} zoom={zoom} onZoom={setZoom} onToday={() => scrollToToday(true)}>
+        <div role="group" aria-label="Gruppieren nach" className="flex items-center rounded-lg border border-(--c-line) bg-(--c-surface) p-0.5">
+          {(
+            [
+              ["section", "Nach Rubrik"],
+              ["person", "Nach Person"],
+            ] as const
+          ).map(([g, label]) => (
             <button
-              key={z}
+              key={g}
               type="button"
-              aria-pressed={zoom === z}
-              onClick={() => setZoom(z)}
-              className={`min-h-9 px-3 rounded-md text-sm font-semibold ${zoom === z ? "bg-(--c-ink) text-(--c-on-ink)" : "text-(--c-text-2) hover:bg-(--c-hover)"}`}
+              aria-pressed={groupBy === g}
+              onClick={() => setGroupBy(g)}
+              className={`min-h-9 px-3 rounded-md text-sm font-semibold ${groupBy === g ? "bg-(--c-ink) text-(--c-on-ink)" : "text-(--c-text-2) hover:bg-(--c-hover)"}`}
             >
               {label}
             </button>
           ))}
         </div>
-        <button type="button" onClick={() => scrollToToday(true)} className="min-h-9 px-3 rounded-lg border border-(--c-line) bg-(--c-surface) text-sm font-semibold hover:bg-(--c-hover)">
-          Heute
-        </button>
-      </div>
+      </ZoomBar>
 
-      <div
+      <TimelineFrame
         ref={scroller}
         data-gantt
-        className="relative overflow-x-auto rounded-xl border border-(--c-line) bg-(--c-surface) select-none"
+        from={from}
+        to={to}
+        zoom={zoom}
+        today={today}
         onPointerMove={move}
         onPointerUp={end}
         onPointerCancel={() => {
@@ -219,75 +218,60 @@ export function Gantt({
           setPreview(null);
         }}
       >
-        <div className="relative w-max min-w-full">
-          {/* Kopf: Monate und Tage/Wochen */}
-          <div className="flex border-b border-(--c-line)">
-            <div className={`${labelW} shrink-0 sticky left-0 z-20 bg-(--c-surface) border-r border-(--c-line)`} />
-            <div className="relative" style={{ width }}>
-              <div className="flex h-7">
-                {months.map((m) => (
-                  <div key={m.start} className="shrink-0 border-l border-(--c-line-soft) text-xs font-bold text-(--c-text-2) leading-7" style={{ width: m.days * dayW }}>
-                    {/* Monatsname bleibt beim seitlichen Scrollen sichtbar */}
-                    <span className="sticky left-[120px] sm:left-[220px] px-2 whitespace-nowrap">{m.label}</span>
+        {/* Meilensteine */}
+        {milestones.some((m) => m.due_date) && (
+          <TimelineRow label="Meilensteine" muted>
+            {milestones
+              .filter((m) => m.due_date)
+              .map((m) => {
+                const d = toDay(m.due_date!);
+                return (
+                  <div key={m.id} className="absolute top-0 h-full flex items-center gap-1.5" style={{ left: x(d) + dayW / 2 - 7 }} title={`${m.name} · ${fmt(d)}`}>
+                    <span aria-hidden className="size-3.5 rotate-45 rounded-[3px] bg-(--c-ink) shrink-0" />
+                    <span className="text-xs font-semibold whitespace-nowrap">{m.name}</span>
+                    <span className="sr-only">Meilenstein {m.name} am {fmt(d)}</span>
                   </div>
-                ))}
-              </div>
-              {ticks.length > 0 && (
-                <div className="relative h-6 border-t border-(--c-line-soft)">
-                  {ticks.map((t) => (
-                    <div
-                      key={t.day}
-                      className={`absolute top-0 h-6 text-[11px] leading-6 border-l border-(--c-line-soft) ${zoom === "week" ? "text-center" : "pl-1"} ${t.weekend ? "text-(--c-muted)" : "text-(--c-text-2)"} ${t.day === today ? "font-bold text-(--c-danger)" : ""}`}
-                      style={{ left: x(t.day), width: zoom === "week" ? dayW : 7 * dayW }}
-                    >
-                      {zoom === "week" ? t.label.split(" ")[1] : t.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+                );
+              })}
+          </TimelineRow>
+        )}
 
-          {/* Hintergrund: Wochenenden, Wochenlinien, heute */}
-          <div aria-hidden className="absolute inset-0 pointer-events-none flex">
-            <div className={`${labelW} shrink-0`} />
-            <div className="relative" style={{ width }}>
-              {zoom === "week" &&
-                ticks.filter((t) => t.weekend).map((t) => <div key={t.day} className="absolute top-0 bottom-0 bg-(--c-bg) opacity-70" style={{ left: x(t.day), width: dayW }} />)}
-              {zoom !== "quarter" &&
-                Array.from({ length: Math.ceil(total / 7) }, (_, i) => from + i * 7).map((d) => (
-                  <div key={d} className="absolute top-0 bottom-0 border-l border-(--c-line-soft)" style={{ left: x(d) }} />
-                ))}
-              {zoom === "quarter" && months.map((m) => <div key={m.start} className="absolute top-0 bottom-0 border-l border-(--c-line-soft)" style={{ left: x(m.start) }} />)}
-              <div data-today className="absolute top-0 bottom-0 border-l-2 border-(--c-danger) z-10" style={{ left: x(today) + dayW / 2 }} title={`Heute, ${fmt(today)}`} />
-            </div>
-          </div>
-
-          {/* Meilensteine */}
-          {milestones.some((m) => m.due_date) && (
-            <Row label="Meilensteine" labelW={labelW} muted>
-              {milestones
-                .filter((m) => m.due_date)
-                .map((m) => {
-                  const d = toDay(m.due_date!);
-                  return (
-                    <div key={m.id} className="absolute top-0 h-full flex items-center gap-1.5" style={{ left: x(d) + dayW / 2 - 7 }} title={`${m.name} · ${fmt(d)}`}>
-                      <span aria-hidden className="size-3.5 rotate-45 rounded-[3px] bg-(--c-ink) shrink-0" />
-                      <span className="text-xs font-semibold whitespace-nowrap">{m.name}</span>
-                      <span className="sr-only">Meilenstein {m.name} am {fmt(d)}</span>
-                    </div>
-                  );
-                })}
-            </Row>
-          )}
-
-          {groups.map((g) => (
+        {groups.map((g) => {
+          const load = g.person ? loadStrip(g.tasks) : null;
+          const open = g.tasks.filter((t) => t.status !== "done").length;
+          return (
             <div key={g.id} role="group" aria-label={g.name || "Aufgaben"}>
               {g.name && (
-                <div className="flex h-7 items-end border-b border-(--c-line-soft)">
-                  <div className={`${labelW} shrink-0 sticky left-0 z-20 bg-(--c-surface) border-r border-(--c-line) h-full flex items-end px-3 pb-1 text-[11px] font-extrabold uppercase tracking-wider text-(--c-muted)`}>
-                    <span className="truncate">{g.name}</span>
-                  </div>
+                <div className="relative">
+                  <TimelineGroupHead
+                    name={g.name}
+                    extra={
+                      groupBy === "person" ? (
+                        <span className="normal-case tracking-normal font-semibold shrink-0" data-load={load?.peak ?? 0}>
+                          · {open} offen
+                          {load && load.peak >= 3 && <span className="text-(--c-danger)"> · viel gleichzeitig</span>}
+                        </span>
+                      ) : undefined
+                    }
+                  />
+                  {/* Auslastung: gelb = 2, rot = 3 oder mehr Aufgaben gleichzeitig */}
+                  {load && load.segs.length > 0 && (
+                    <div aria-hidden className="absolute inset-y-0 left-[120px] sm:left-[220px] right-0 pointer-events-none">
+                      {load.segs.map((s) => (
+                        <div
+                          key={s.start}
+                          data-overload={s.n}
+                          className="absolute bottom-1 h-1.5 rounded-full"
+                          style={{
+                            left: x(s.start),
+                            width: (s.end - s.start + 1) * dayW,
+                            background: s.n >= 3 ? "var(--c-danger)" : "var(--prio-mid-fg)",
+                            opacity: 0.75,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {g.tasks.map((t) => {
@@ -296,14 +280,9 @@ export function Gantt({
                 const w = Math.max(dayW, (s.end - s.start + 1) * dayW);
                 const label = `${t.title}: ${s.start === s.end ? fmt(s.end) : `${fmt(s.start)} bis ${fmt(s.end)}`}, ${statusLabel(t.status)}${overdue ? ", überfällig" : ""}`;
                 const narrow = w < t.title.length * 6.5 + 16;
+                const others = groupBy === "section" ? peopleOf(t.id).map((p) => p.name.split(" ")[0]).join(", ") : undefined;
                 return (
-                  <Row
-                    key={t.id}
-                    labelW={labelW}
-                    label={t.title}
-                    onLabel={() => onOpen(t.id)}
-                    active={openId === t.id}
-                  >
+                  <TimelineRow key={`${g.id}-${t.id}`} label={t.title} sub={others || undefined} onLabel={() => onOpen(t.id)} active={openId === t.id}>
                     <div
                       role="button"
                       tabIndex={0}
@@ -323,17 +302,9 @@ export function Gantt({
                         color: `var(--st-${t.status}-ink)`,
                       }}
                     >
-                      <span
-                        aria-hidden
-                        onPointerDown={(e) => begin(e, t, "start")}
-                        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-(--c-ink)/15"
-                      />
+                      <span aria-hidden onPointerDown={(e) => begin(e, t, "start")} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-(--c-ink)/15" />
                       {!narrow && <span className={`px-2 truncate ${t.status === "done" ? "line-through opacity-80" : ""}`}>{t.title}</span>}
-                      <span
-                        aria-hidden
-                        onPointerDown={(e) => begin(e, t, "end")}
-                        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-(--c-ink)/15"
-                      />
+                      <span aria-hidden onPointerDown={(e) => begin(e, t, "end")} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-(--c-ink)/15" />
                     </div>
                     {narrow && (
                       <span aria-hidden className="absolute top-2 h-6 leading-6 text-xs font-semibold text-(--c-text-2) whitespace-nowrap pointer-events-none" style={{ left: x(s.end) + dayW + 4 }}>
@@ -345,21 +316,19 @@ export function Gantt({
                         {s.start === s.end ? fmt(s.end) : `${fmt(s.start)} – ${fmt(s.end)}`}
                       </span>
                     )}
-                  </Row>
+                  </TimelineRow>
                 );
               })}
             </div>
-          ))}
+          );
+        })}
 
-          {!groups.length && (
-            <div className="flex">
-              <div className={`${labelW} shrink-0 sticky left-0`} />
-              <p className="py-10 px-4 text-sm text-(--c-muted)">Noch keine Aufgabe hat einen Termin. Plane unten eine ein oder trag im Aufgabenfenster Beginn und Fälligkeit ein.</p>
-            </div>
-          )}
-          <div className="h-3" />
-        </div>
-      </div>
+        {!groups.length && (
+          <p className="py-10 px-4 text-sm text-(--c-muted) sticky left-0 max-w-xl">
+            Noch keine Aufgabe hat einen Termin. Plane unten eine ein oder trag im Aufgabenfenster Beginn und Fälligkeit ein.
+          </p>
+        )}
+      </TimelineFrame>
 
       {unscheduled.length > 0 && (
         <section data-panel aria-label="Ohne Termin" className="rounded-xl border border-(--c-line) bg-(--c-surface) p-4 flex flex-col gap-2">
@@ -390,43 +359,8 @@ export function Gantt({
       <p data-panel="slim" className="text-xs text-(--c-muted)">
         Tipp: Balken ziehen verschiebt die Aufgabe, die Ränder ziehen ändert Beginn oder Ende. Mit der Tastatur: Pfeiltasten verschieben, mit Umschalt die
         Dauer ändern. Gestrichelt = nur ein Fälligkeitstag, rot umrandet = überfällig.
+        {groupBy === "person" && " Die Linie unter einer Person zeigt, wo mehrere offene Aufgaben gleichzeitig laufen: gelb = 2, rot = 3 oder mehr."}
       </p>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  labelW,
-  children,
-  onLabel,
-  active,
-  muted,
-}: {
-  label: string;
-  labelW: string;
-  children: React.ReactNode;
-  onLabel?: () => void;
-  active?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <div className="flex border-b border-(--c-line-soft) last:border-b-0" style={{ height: ROW }}>
-      <div className={`${labelW} shrink-0 sticky left-0 z-20 bg-(--c-surface) border-r border-(--c-line) flex items-center`}>
-        {onLabel ? (
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={onLabel}
-            className={`w-full h-full text-left px-3 text-sm truncate hover:bg-(--c-hover) ${active ? "font-bold text-(--c-accent)" : "font-semibold"}`}
-          >
-            {label}
-          </button>
-        ) : (
-          <span className={`px-3 text-xs font-bold truncate ${muted ? "text-(--c-muted) uppercase tracking-wider" : ""}`}>{label}</span>
-        )}
-      </div>
-      <div className="relative flex-1">{children}</div>
     </div>
   );
 }
