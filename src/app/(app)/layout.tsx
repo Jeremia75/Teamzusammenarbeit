@@ -6,6 +6,7 @@ import { SidebarProjects } from "@/components/sidebar-projects";
 import { NotificationPrompt } from "@/components/notification-prompt";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
+import { SearchButton } from "@/components/search";
 import { AppearanceProvider, type BgImage } from "@/components/appearance-provider";
 import { sanitize } from "@/lib/appearance";
 
@@ -49,6 +50,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Link>
 
         <div className="flex flex-col gap-1 -mt-2">
+          <SearchButton />
           <Link
             href="/woche"
             className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-bold text-(--c-ink) hover:bg-(--c-bg)"

@@ -124,7 +124,7 @@ export const TimelineFrame = forwardRef<
   return (
     <div ref={ref} className={`relative overflow-x-auto rounded-xl border border-(--c-line) bg-(--c-surface) select-none ${className ?? ""}`} {...rest}>
       <div className="relative w-max min-w-full">
-        <div className="flex border-b border-(--c-line)">
+        <div className="relative z-[6] flex border-b border-(--c-line) bg-(--c-surface)">
           <div className={`${LABEL_W} shrink-0 sticky left-0 z-20 bg-(--c-surface) border-r border-(--c-line)`} />
           <div className="relative" style={{ width }}>
             <div className="flex h-7">
