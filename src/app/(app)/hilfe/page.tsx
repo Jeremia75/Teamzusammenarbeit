@@ -48,10 +48,12 @@ const TOPICS: [string, string][] = [
   ["ansichten", "Die Ansichten im Projekt"],
   ["zeitplan", "Der Zeitplan"],
   ["abhaengig", "Aufgaben, die aufeinander warten"],
+  ["verlauf", "Verlauf: wer hat was geändert"],
   ["projekt-rubriken", "Rubriken im Projekt"],
   ["meilensteine", "Ziele und Meilensteine"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
   ["team", "Im Team arbeiten"],
+  ["rollen", "Rollen: Bearbeiten, Kommentieren, Nur ansehen"],
   ["mitteilungen", "Mitteilungen und @Erwähnungen"],
   ["benachrichtigungen", "E-Mail-Benachrichtigungen"],
   ["kalender", "Termine im Kalender"],
@@ -430,6 +432,21 @@ export default function HelpPage() {
         <Tip>Im Kreis warten geht nicht: Wartet A auf B, kann B nicht auf A warten. Projektraum sagt dir dann Bescheid.</Tip>
       </Section>
 
+      <Section id="verlauf" title="Verlauf: wer hat was geändert">
+        <p>
+          Ganz unten im Aufgabenfenster findest du den <K>Verlauf</K>. Ein Klick darauf zeigt, wer wann was geändert hat, zum Beispiel:
+          „Werner hat den Status von Offen auf In Arbeit geändert · vor 2 Std.“
+        </p>
+        <p>
+          Festgehalten werden: Anlegen, Titel, Beschreibung, Status, Priorität, Beginn und Fälligkeit, Rubrik, Meilenstein, Wiederholung,
+          Verantwortliche, Dateien und Links, „Wartet auf“ sowie Papierkorb. Änderungen an Unteraufgaben stehen auch im Verlauf der Aufgabe.
+        </p>
+        <p>
+          Ändert jemand dasselbe innerhalb weniger Minuten mehrmals, steht es nur einmal da – etwa beim Tippen der Beschreibung. Änderungen über den
+          KI-Assistenten sind mit „über KI-Assistent“ gekennzeichnet. Den Verlauf kann niemand bearbeiten oder löschen.
+        </p>
+      </Section>
+
       <Section id="projekt-rubriken" title="Rubriken im Projekt">
         <p>
           Innerhalb eines Projekts kannst du eigene Spalten anlegen. Wechsle dazu auf <K>Board · Rubriken</K> und klicke auf{" "}
@@ -487,7 +504,8 @@ export default function HelpPage() {
         <p>
           <strong>Jemanden einladen.</strong> Die Person legt sich zuerst selbst ein Konto in Projektraum an. Danach öffnest du in der
           Übersicht unter dem Firmenbereich <K>Mitglieder verwalten</K>, trägst ihre E-Mail-Adresse ein und klickst auf{" "}
-          <K>Hinzufügen</K>. Ab dann sieht sie alle Projekte dieses Bereichs. Deinen privaten Bereich sieht sie nie.
+          <K>Hinzufügen</K>. Ab dann sieht sie alle Projekte dieses Bereichs. Deinen privaten Bereich sieht sie nie. Daneben wählst du,
+          was sie darf – mehr dazu unter <a href="#rollen">Rollen</a>.
         </p>
         <p>
           <strong>Aufgaben verteilen.</strong> Öffne eine Aufgabe und klicke unter <strong>Verantwortlich</strong> auf die Person. Ihr
@@ -500,6 +518,31 @@ export default function HelpPage() {
         <p>
           <strong>Absprechen.</strong> Nutze die Kommentare in einer Aufgabe. So bleibt alles, was zu einer Aufgabe besprochen wurde, an
           einer Stelle.
+        </p>
+      </Section>
+
+      <Section id="rollen" title="Rollen: Bearbeiten, Kommentieren, Nur ansehen">
+        <p>Für jede Person in einem Firmenbereich legst du fest, was sie darf:</p>
+        <ul>
+          <li>
+            <strong>Bearbeiten</strong> – darf alles: Projekte und Aufgaben anlegen, ändern, verschieben und löschen. So ist es, wenn du nichts
+            anderes wählst.
+          </li>
+          <li>
+            <strong>Kommentieren</strong> – sieht alles und darf Kommentare schreiben, aber nichts ändern. Gut für Personen, die nur mitreden sollen.
+          </li>
+          <li>
+            <strong>Nur ansehen</strong> – sieht alles, ändert nichts und schreibt keine Kommentare. Gut für Gäste, zum Beispiel die Steuerberatung.
+          </li>
+        </ul>
+        <p>
+          <strong>So vergibst du eine Rolle:</strong> In der Übersicht unter dem Firmenbereich auf <K>Mitglieder verwalten</K> klicken. Beim
+          Hinzufügen wählst du die Rolle neben der E-Mail-Adresse. Bei Personen, die schon dabei sind, änderst du sie in der Auswahl neben dem
+          Namen. Das gilt sofort.
+        </p>
+        <p>
+          Rollen vergeben können nur Admins der Firma. Admins dürfen selbst immer alles bearbeiten. Wer nur ansehen oder kommentieren darf,
+          sieht oben im Projekt einen kurzen Hinweis. Auch über den KI-Assistenten kann so jemand nichts ändern.
         </p>
       </Section>
 
@@ -700,15 +743,19 @@ export default function HelpPage() {
             ],
             [
               "Was passiert, wenn ich eine Aufgabe lösche?",
-              "Die Aufgabe und ihre Unteraufgaben sind endgültig weg. Deshalb fragt Projektraum vorher nach. Wenn du sie nur nicht mehr sehen willst, hake sie lieber ab.",
+              "Sie kommt mit ihren Unteraufgaben in den Papierkorb. Dort kannst du sie 30 Tage lang wiederherstellen. Wenn du sie nur nicht mehr sehen willst, hake sie lieber ab.",
             ],
             [
               "Ich bekomme zu viele oder keine E-Mails.",
-              "Öffne links in der Seitenleiste Benachrichtigungen und stell dort ein, was du möchtest. Kommt gar nichts an, schau auch im Spam-Ordner nach.",
+              "Öffne links in der Seitenleiste E-Mail & Kalender und stell dort ein, was du möchtest. Kommt gar nichts an, schau auch im Spam-Ordner nach.",
             ],
             [
               "Kann ich Projektraum dunkel einstellen?",
               "Ja. Links in der Seitenleiste wählst du zwischen Hell, Dunkel und Automatisch. Automatisch richtet sich danach, was in Windows eingestellt ist. Diese Wahl gilt für das Gerät, auf dem du sie triffst. Ein eigenes Design unter Darstellung gilt dagegen auf allen deinen Geräten.",
+            ],
+            [
+              "Ich kann in einem Projekt nichts ändern.",
+              "Dann hast du in diesem Bereich die Rolle Nur ansehen oder Kommentieren. Ein Admin deiner Firma kann das unter Mitglieder verwalten ändern.",
             ],
             [
               "Muss ich etwas speichern?",

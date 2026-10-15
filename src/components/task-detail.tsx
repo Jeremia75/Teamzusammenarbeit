@@ -236,7 +236,7 @@ export function TaskDetail(props: Props) {
         <textarea
           value={description}
           rows={3}
-          placeholder="Details, Links, Notizen …"
+          placeholder={readOnly ? "Keine Beschreibung" : "Details, Links, Notizen …"}
           onChange={(e) => setDescription(e.target.value)}
           readOnly={readOnly}
           onBlur={() => !readOnly && description !== task.description && onUpdate(task.id, { description })}
