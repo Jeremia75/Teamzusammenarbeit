@@ -18,6 +18,10 @@ export type ProjectStats = {
   done: number;
   overdue: number;
   next: { title: string; due: string } | null;
+  /** Zeitraum aller Hauptaufgaben (Beginn bzw. Fälligkeit) – für den Zeitplan */
+  first?: string | null;
+  last?: string | null;
+  milestones?: { name: string; due: string }[];
 };
 
 /** Kennzahlen je Projekt (nur Hauptaufgaben, keine Unteraufgaben). */
@@ -25,18 +29,23 @@ export async function loadProjectStats(projectIds: string[]): Promise<Map<string
   const stats = new Map<string, ProjectStats>();
   if (projectIds.length === 0) return stats;
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("project_id, title, status, due_date")
-    .in("project_id", projectIds)
-    .is("parent_id", null);
+  const [{ data, error }, { data: ms }] = await Promise.all([
+    supabase.from("tasks").select("project_id, title, status, start_date, due_date").in("project_id", projectIds).is("parent_id", null),
+    supabase.from("milestones").select("project_id, name, due_date").in("project_id", projectIds).not("due_date", "is", null),
+  ]);
   if (error) throw new Error(error.message);
 
   const today = new Date().toISOString().slice(0, 10);
-  for (const id of projectIds) stats.set(id, { todo: 0, doing: 0, review: 0, done: 0, overdue: 0, next: null });
+  for (const id of projectIds) stats.set(id, { todo: 0, doing: 0, review: 0, done: 0, overdue: 0, next: null, first: null, last: null, milestones: [] });
+  for (const m of ms ?? []) stats.get(m.project_id)?.milestones!.push({ name: m.name, due: m.due_date! });
   for (const t of data ?? []) {
     const s = stats.get(t.project_id)!;
     s[t.status] += 1;
+    for (const d of [t.start_date, t.due_date]) {
+      if (!d) continue;
+      if (!s.first || d < s.first) s.first = d;
+      if (!s.last || d > s.last) s.last = d;
+    }
     if (t.status !== "done" && t.due_date) {
       if (t.due_date < today) s.overdue += 1;
       else if (!s.next || t.due_date < s.next.due) s.next = { title: t.title, due: t.due_date };

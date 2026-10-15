@@ -265,7 +265,7 @@ export function Gantt({
                           style={{
                             left: x(s.start),
                             width: (s.end - s.start + 1) * dayW,
-                            background: s.n >= 3 ? "var(--c-danger)" : "var(--prio-mid-fg)",
+                            background: s.n >= 3 ? "var(--c-danger)" : "#e0a526",
                             opacity: 0.75,
                           }}
                         />

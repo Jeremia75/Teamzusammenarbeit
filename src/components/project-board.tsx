@@ -10,10 +10,11 @@ import { AddSection, ColumnHeader, DropLine, type BoardColumn } from "@/componen
 import { EMPTY_STATS, ProjectTile } from "@/components/project-tile";
 import { NewProjectTile } from "@/components/new-project-tile";
 import { StatusBar } from "@/components/status-bar";
+import { ProjectTimeline } from "@/components/project-timeline";
 
 type P = { id: string; name: string; color: string; sectionId: string | null; position: number };
 type S = { id: string; name: string; position: number };
-type View = "board" | "tiles";
+type View = "board" | "tiles" | "timeline";
 
 export function ProjectBoard({
   workspaceId,
@@ -43,7 +44,7 @@ export function ProjectBoard({
   useEffect(() => {
     try {
       const v = localStorage.getItem(viewKey);
-      if (v === "board" || v === "tiles") setViewState(v);
+      if (v === "board" || v === "tiles" || v === "timeline") setViewState(v);
     } catch {
       /* Speicher nicht verfügbar */
     }
@@ -120,6 +121,7 @@ export function ProjectBoard({
             [
               ["board", "Board · Rubriken"],
               ["tiles", "Kacheln"],
+              ["timeline", "Zeitplan"],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -146,7 +148,9 @@ export function ProjectBoard({
         </div>
       )}
 
-      {view === "tiles" ? (
+      {view === "timeline" ? (
+        <ProjectTimeline columns={columns.map((c) => ({ key: c.key, title: c.title, projects: projectsOf(c) }))} stats={stats} />
+      ) : view === "tiles" ? (
         <ul className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(250px,1fr))]">
           {columns.flatMap((c) => projectsOf(c)).map((p) => (
             <li key={p.id}>
