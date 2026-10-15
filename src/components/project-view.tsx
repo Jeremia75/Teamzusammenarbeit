@@ -12,7 +12,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { useAttachmentCounts, DeleteConfirm } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Gantt } from "@/components/gantt";
-import { Board, QuickAdd, type BoardColumn } from "@/components/board";
+import { Board, QuickAdd, type BoardColumn, type NewTaskExtra } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
 import { SaveAsTemplate } from "@/components/project-template";
@@ -356,9 +356,10 @@ export function ProjectView(props: Props) {
     updateTask(taskId, patch);
   }
 
-  function quickAdd(col: BoardColumn, title: string) {
+  function quickAdd(col: BoardColumn, title: string, extra: NewTaskExtra = {}) {
     const last = tasksOf(col).at(-1);
     addTask(title, {
+      ...extra,
       position: last ? last.position + 1 : 1,
       ...(col.status ? { status: col.status } : { section_id: col.sectionId ?? null }),
     });
@@ -511,7 +512,7 @@ export function ProjectView(props: Props) {
                 milestoneName={milestoneName}
                 openId={openId}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
-                onAdd={readOnly ? undefined : (title) => addTask(title)}
+                onAdd={readOnly ? undefined : (title, extra) => addTask(title, extra)}
               />
             ) : (
               <Board
@@ -606,7 +607,7 @@ export function TaskList({
   milestoneName: (id: string | null) => string;
   openId: string | null;
   onOpen: (id: string) => void;
-  onAdd?: (title: string) => void;
+  onAdd?: (title: string, extra: NewTaskExtra) => void;
   /** Spalte „Projekt“ zeigen (Ansicht über mehrere Projekte) */
   projectOf?: (task: Task) => { name: string; color: string } | undefined;
 }) {

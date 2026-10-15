@@ -311,7 +311,7 @@ export function RubricView(props: Props) {
                   onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                   onMove={moveTask}
                   readOnly={readOnly}
-                  onQuickAdd={view === "projects" && !readOnly ? (col, title) => col.projectId && addTask(col.projectId, title) : undefined}
+                  onQuickAdd={view === "projects" && !readOnly ? (col, title, extra) => col.projectId && addTask(col.projectId, title, extra) : undefined}
                 />
               )}
             </div>

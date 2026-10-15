@@ -136,8 +136,8 @@ export default function HelpPage() {
           </li>
           <li>Das neue Projekt öffnet sich sofort. Hier stehen später alle Aufgaben dieses Projekts.</li>
           <li>
-            Klicke in der Spalte <strong>Offen</strong> auf <K>+ Aufgabe hinzufügen</K>, schreib die Aufgabe hinein und drück die
-            Eingabetaste.
+            Klicke in der Spalte <strong>Offen</strong> auf <K>+ Aufgabe hinzufügen</K>. Im Fenster schreibst du die Aufgabe hinein und
+            klickst auf <K>Anlegen</K>.
           </li>
           <li>
             Klicke auf die Aufgabe. Es öffnet sich ein Fenster mit den Details. Dort kannst du ein Datum, eine Beschreibung und Unteraufgaben
@@ -253,8 +253,9 @@ export default function HelpPage() {
 
       <Section id="aufgaben" title="Aufgaben anlegen und bearbeiten">
         <p>
-          Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Schreib den Text hinein und drück
-          die Eingabetaste. Du kannst gleich die nächste eintippen.
+          Eine neue Aufgabe legst du im Projekt mit <K>+ Aufgabe hinzufügen</K> unten in einer Spalte an. Es öffnet sich ein Fenster: Titel
+          eintragen, bei Bedarf Start, Fälligkeit, Priorität und Beschreibung, dann <K>Anlegen</K> (oder Eingabetaste). Mit{" "}
+          <K>Anlegen und nächste</K> bleibt das Fenster offen für die nächste Aufgabe – die Termine bleiben dabei stehen.
         </p>
         <p>Klickst du auf eine Aufgabe, öffnet sich ein Fenster mit den Details. Am Handy füllt es den ganzen Bildschirm. Dort kannst du Folgendes einstellen:</p>
         <ul>
