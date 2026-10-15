@@ -39,6 +39,7 @@ const TOPICS: [string, string][] = [
   ["bereiche", "Privat und Firma"],
   ["projekte", "Projekte anlegen und ordnen"],
   ["rubrik-oeffnen", "Eine Rubrik öffnen"],
+  ["suche", "Suchen"],
   ["woche", "Meine Woche"],
   ["aufgaben", "Aufgaben anlegen und bearbeiten"],
   ["dateien", "Dateien und Links anhängen"],
@@ -46,6 +47,7 @@ const TOPICS: [string, string][] = [
   ["farben", "Was die Farben bedeuten"],
   ["ansichten", "Die Ansichten im Projekt"],
   ["zeitplan", "Der Zeitplan"],
+  ["abhaengig", "Aufgaben, die aufeinander warten"],
   ["projekt-rubriken", "Rubriken im Projekt"],
   ["meilensteine", "Ziele und Meilensteine"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
@@ -55,6 +57,7 @@ const TOPICS: [string, string][] = [
   ["kalender", "Termine im Kalender"],
   ["darstellung", "Aussehen anpassen"],
   ["ki", "Aufgaben mit KI anlegen"],
+  ["papierkorb", "Gelöscht? Der Papierkorb"],
   ["installieren", "Projektraum auf dem PC installieren"],
   ["fragen", "Häufige Fragen"],
 ];
@@ -197,9 +200,8 @@ export default function HelpPage() {
         <Tip>Löschst du eine Rubrik, bleiben die Projekte darin erhalten. Sie wandern in die Spalte Ohne Rubrik.</Tip>
         <p>
           <strong>Ein Projekt löschen:</strong> Öffne das Projekt und scroll ganz nach unten. Dort findest du <K>Projekt löschen</K>.
-          Projektraum fragt noch einmal nach, denn dabei verschwinden auch alle Aufgaben, Meilensteine und Kommentare darin. Hängen
-          Dateien an den Aufgaben, kannst du sie vorher speichern. Löschen darf nur, wer das Projekt angelegt hat, oder wer in der
-          Firma Admin ist.
+          Projektraum fragt noch einmal nach. Das Projekt kommt dann samt Aufgaben in den Papierkorb, wo du es 30 Tage lang
+          zurückholen kannst. Löschen darf nur, wer das Projekt angelegt hat, oder wer in der Firma Admin ist.
         </p>
       </Section>
 
@@ -222,6 +224,14 @@ export default function HelpPage() {
         <p>
           Mit dem Pfeil oben links, zum Beispiel <K>← Privat</K>, kommst du zurück.
         </p>
+      </Section>
+
+      <Section id="suche" title="Suchen">
+        <p>
+          Ganz oben links ist das Suchfeld. Du kannst es auch jederzeit mit <K>Strg</K> + <K>K</K> öffnen (am Mac <K>⌘</K> + <K>K</K>). Schon nach zwei
+          Buchstaben findet Projektraum passende Projekte, Aufgaben (auch in der Beschreibung), Kommentare sowie Dateien und Links.
+        </p>
+        <p>Mit den Pfeiltasten wählst du einen Treffer aus, mit der Eingabetaste öffnest du ihn. Mit Esc schließt du die Suche wieder.</p>
       </Section>
 
       <Section id="woche" title="Meine Woche">
@@ -296,9 +306,9 @@ export default function HelpPage() {
         </Tip>
         <p>Bei wiederkehrenden Aufgaben nimmt die nächste Aufgabe die Links mit, die Dateien nicht.</p>
         <p>
-          Löschst du eine Aufgabe mit hochgeladenen Dateien, zeigt dir Projektraum vorher die Dateien. Mit <K>Speichern</K> oder{" "}
-          <K>Alle speichern</K> legst du sie auf deinem Gerät ab. Erst mit <K>Mit Dateien löschen</K> ist alles weg. Den Dokumenten hinter Links passiert nichts,
-          die liegen ja woanders.
+          Löschst du eine Aufgabe, bleiben ihre Dateien im Papierkorb erhalten. Erst wenn du sie dort endgültig löschst, zeigt dir Projektraum
+          die Dateien noch einmal – mit <K>Speichern</K> oder <K>Alle speichern</K> legst du sie vorher auf deinem Gerät ab. Den Dokumenten hinter
+          Links passiert nichts, die liegen ja woanders.
         </p>
       </Section>
 
@@ -398,6 +408,26 @@ export default function HelpPage() {
           heißt zwei gleichzeitig, rot drei oder mehr. So erkennst du schnell, wer gerade zu viel auf dem Tisch hat. Mit <K>Nach Rubrik</K> kommst
           du zurück.
         </p>
+      </Section>
+
+      <Section id="abhaengig" title="Aufgaben, die aufeinander warten">
+        <p>
+          Manche Aufgaben können erst beginnen, wenn eine andere fertig ist. Zum Beispiel kannst du erst zum Notar, wenn der Vertrag fertig ist. Das
+          nennt man eine Abhängigkeit.
+        </p>
+        <ul>
+          <li>
+            Öffne die Aufgabe, die warten muss, und klick bei <strong>Wartet auf</strong> auf <K>+ Wartet auf …</K>. Wähl die Aufgabe aus, auf die sie
+            wartet.
+          </li>
+          <li>Unten im Fenster siehst du auch, welche Aufgaben auf diese hier warten.</li>
+          <li>Im Zeitplan verbindet ein Pfeil die beiden Balken. Ist der Pfeil rot, beginnt die wartende Aufgabe zu früh.</li>
+          <li>
+            Verschiebst du im Zeitplan eine Aufgabe nach hinten, fragt Projektraum: <K>Mitverschieben</K>? Dann rutschen alle wartenden Aufgaben so weit
+            nach, dass es wieder passt. Die Dauer bleibt dabei gleich.
+          </li>
+        </ul>
+        <Tip>Im Kreis warten geht nicht: Wartet A auf B, kann B nicht auf A warten. Projektraum sagt dir dann Bescheid.</Tip>
       </Section>
 
       <Section id="projekt-rubriken" title="Rubriken im Projekt">
@@ -618,6 +648,26 @@ export default function HelpPage() {
         <Tip>
           Sag Claude dazu, in welches Projekt die Aufgaben gehören. Ist es nicht eindeutig, fragt Claude nach. Schau beim ersten Mal kurz nach, ob alles
           so angelegt wurde, wie du es wolltest.
+        </Tip>
+      </Section>
+
+      <Section id="papierkorb" title="Gelöscht? Der Papierkorb">
+        <p>
+          Wenn du eine Aufgabe oder ein Projekt löschst, ist es nicht sofort weg. Es kommt zuerst in den <K>Papierkorb</K> (links in der Seitenleiste)
+          und bleibt dort 30 Tage.
+        </p>
+        <ul>
+          <li>
+            Mit <K>Wiederherstellen</K> holst du es zurück, mit allen Unteraufgaben, Kommentaren, Dateien und Verantwortlichen.
+          </li>
+          <li>
+            Mit <K>Endgültig löschen</K> ist es sofort weg. Hängen Dateien daran, kannst du sie vorher noch speichern.
+          </li>
+          <li>Nach 30 Tagen löscht Projektraum alles im Papierkorb automatisch endgültig.</li>
+        </ul>
+        <Tip>
+          Ein gelöschtes Projekt kann nur wiederherstellen, wer es angelegt hat, oder wer in der Firma Admin ist. Gelöschte Aufgaben kann jede Person
+          aus dem Projekt zurückholen.
         </Tip>
       </Section>
 
