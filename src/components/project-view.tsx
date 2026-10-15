@@ -15,6 +15,7 @@ import { Gantt } from "@/components/gantt";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
+import { SaveAsTemplate } from "@/components/project-template";
 
 export type Member = { id: string; name: string; color: string };
 export type Assignee = { task_id: string; user_id: string };
@@ -569,8 +570,14 @@ export function ProjectView(props: Props) {
         </div>
       </div>
 
-      {props.share && (
+      {!readOnly && (
         <div className="mt-6">
+          <SaveAsTemplate projectId={project.id} projectName={project.name} />
+        </div>
+      )}
+
+      {props.share && (
+        <div className="mt-3">
           <ProjectShare projectId={project.id} projectName={project.name} guests={props.share.guests} />
         </div>
       )}

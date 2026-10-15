@@ -51,6 +51,7 @@ const TOPICS: [string, string][] = [
   ["verlauf", "Verlauf: wer hat was geändert"],
   ["projekt-rubriken", "Rubriken im Projekt"],
   ["meilensteine", "Ziele und Meilensteine"],
+  ["vorlagen", "Vorlagen für wiederkehrende Projekte"],
   ["wiederholen", "Wiederkehrende Aufgaben"],
   ["team", "Im Team arbeiten"],
   ["rollen", "Rollen: Bearbeiten, Kommentieren, Nur ansehen"],
@@ -486,6 +487,20 @@ export default function HelpPage() {
           du darunter nur noch seine Aufgaben. Ein zweiter Klick zeigt wieder alle.
         </p>
         <Tip>Legst du eine Aufgabe an, während ein Meilenstein ausgewählt ist, gehört sie gleich zu diesem Meilenstein.</Tip>
+      </Section>
+
+      <Section id="vorlagen" title="Vorlagen für wiederkehrende Projekte">
+        <p>
+          Machst du ähnliche Projekte immer wieder – etwa eine Gemeindegründung oder ein Fest –, speichere eines als Vorlage. Öffne dazu das Projekt und
+          klappe ganz unten <K>Als Vorlage speichern</K> auf. Übernommen werden Rubriken, Meilensteine, alle Aufgaben mit Unteraufgaben und „Wartet
+          auf“. Verantwortliche, Kommentare und Dateien nicht.
+        </p>
+        <p>
+          <strong>Neues Projekt aus einer Vorlage:</strong> Beim Anlegen eines Projekts (in der Übersicht oder links mit <K>+</K>) wählst du unter{" "}
+          <K>Vorlage</K> die gewünschte und ein <K>Startdatum</K>. Alle Termine werden dann passend verschoben: Lag in der Vorlage eine Aufgabe zwei
+          Wochen nach dem ersten Termin, liegt sie im neuen Projekt zwei Wochen nach dem Startdatum.
+        </p>
+        <p>Nicht mehr gebrauchte Vorlagen entfernst du in derselben Auswahl mit <K>Diese Vorlage entfernen</K>.</p>
       </Section>
 
       <Section id="wiederholen" title="Wiederkehrende Aufgaben">

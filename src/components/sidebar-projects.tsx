@@ -5,10 +5,16 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import type { SidebarWorkspace } from "@/lib/queries";
 import { createProject } from "@/app/(app)/actions";
+import { TemplateFields, todayIso, useCreateFromTemplate, useTemplates } from "@/components/project-template";
 
 export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[] }) {
   const pathname = usePathname();
   const [adding, setAdding] = useState<string | null>(null);
+  const [templates, setTemplates] = useTemplates(adding !== null);
+  const [tpl, setTpl] = useState("");
+  const [start, setStart] = useState(todayIso());
+  const [error, setError] = useState<string | null>(null);
+  const fromTemplate = useCreateFromTemplate();
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +48,23 @@ export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[]
           </div>
 
           {adding === ws.id && (
-            <form action={createProject} className="flex gap-2 px-1 pb-2">
+            <form
+              action={createProject}
+              onSubmit={async (e) => {
+                if (!tpl) return;
+                e.preventDefault();
+                const name = String(new FormData(e.currentTarget).get("name") ?? "").trim();
+                if (!name) return;
+                setError(null);
+                const err = await fromTemplate(tpl, ws.id, name, start, null);
+                if (err) setError(err);
+                else {
+                  setAdding(null);
+                  setTpl("");
+                }
+              }}
+              className="flex flex-wrap gap-2 px-1 pb-2"
+            >
               <input type="hidden" name="workspace_id" value={ws.id} />
               <label className="sr-only" htmlFor={`new-${ws.id}`}>Projektname</label>
               <input
@@ -56,6 +78,22 @@ export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[]
               <button type="submit" className="h-10 px-3 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold">
                 Anlegen
               </button>
+              {templates && templates.length > 0 && (
+                <div className="basis-full">
+                  <TemplateFields
+                    templates={templates}
+                    value={tpl}
+                    onChange={setTpl}
+                    start={start}
+                    onStart={setStart}
+                    onRemoved={(id) => {
+                      setTemplates(templates.filter((t) => t.id !== id));
+                      setTpl("");
+                    }}
+                  />
+                </div>
+              )}
+              {error && <p role="alert" className="basis-full text-xs font-semibold text-(--c-danger)">{error}</p>}
             </form>
           )}
 

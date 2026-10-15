@@ -58,6 +58,12 @@ export type Database = {
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
         Relationships: [];
       };
+      project_templates: {
+        Row: { id: string; workspace_id: string; name: string; description: string; data: Json; task_count: number; span_days: number | null; created_by: string | null; created_at: string; archived_at: string | null };
+        Insert: { workspace_id: string; name: string; data: Json };
+        Update: { name?: string };
+        Relationships: [];
+      };
       protocol_imports: {
         Row: {
           id: string; user_id: string; project_id: string | null; source: "text" | "file" | "mail"; title: string;
@@ -206,6 +212,9 @@ export type Database = {
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
       add_member_by_email: { Args: { ws: string; member_email: string; member_role?: WorkspaceRole }; Returns: string };
+      save_project_template: { Args: { proj: string; tpl_name: string; tpl_description?: string }; Returns: string };
+      create_project_from_template: { Args: { tpl: string; ws: string; proj_name: string; start_on?: string; section?: string | null }; Returns: string };
+      update_project_template: { Args: { tpl: string; tpl_name: string; tpl_description: string; remove?: boolean }; Returns: undefined };
       add_project_guest: { Args: { proj: string; guest_email: string; guest_role: WorkspaceRole }; Returns: string };
       set_project_guest_role: { Args: { proj: string; guest: string; guest_role: WorkspaceRole }; Returns: undefined };
       remove_project_guest: { Args: { proj: string; guest: string }; Returns: undefined };
