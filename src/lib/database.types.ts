@@ -8,9 +8,9 @@ export type Database = {
   public: {
     Tables: {
       comments: {
-        Row: { author_id: string; body: string; created_at: string; id: string; task_id: string };
-        Insert: { author_id?: string; body: string; created_at?: string; id?: string; task_id: string };
-        Update: { author_id?: string; body?: string; created_at?: string; id?: string; task_id?: string };
+        Row: { author_id: string; body: string; created_at: string; id: string; task_id: string; mentions: string[] };
+        Insert: { author_id?: string; body: string; created_at?: string; id?: string; task_id: string; mentions?: string[] };
+        Update: { author_id?: string; body?: string; created_at?: string; id?: string; task_id?: string; mentions?: string[] };
         Relationships: [
           { foreignKeyName: "comments_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
         ];
@@ -56,6 +56,20 @@ export type Database = {
         Row: { user_id: string; settings: Json | null; image_path: string | null; updated_at: string };
         Insert: { user_id: string; settings?: Json | null; image_path?: string | null; updated_at?: string };
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
+        Relationships: [];
+      };
+      notifications: {
+        Row: { id: number; user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id: string | null; actor_id: string | null; body: string | null; read_at: string | null; created_at: string };
+        Insert: { user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id?: string | null; actor_id?: string | null; body?: string | null };
+        Update: { read_at?: string | null };
+        Relationships: [
+          { foreignKeyName: "notifications_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ];
+      };
+      calendar_tokens: {
+        Row: { user_id: string; token: string; created_at: string };
+        Insert: { user_id?: string; token?: string };
+        Update: { token?: string };
         Relationships: [];
       };
       task_attachments: {
@@ -155,6 +169,10 @@ export type Database = {
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
       add_member_by_email: { Args: { ws: string; member_email: string }; Returns: string };
+      calendar_feed: {
+        Args: { tok: string };
+        Returns: { kind: string; id: string; title: string; start_date: string; end_date: string; project: string; project_id: string; status: string | null; description: string | null }[];
+      };
     };
     Enums: {
       org_role: "owner" | "admin" | "member";
@@ -176,6 +194,7 @@ export type Section = T["sections"]["Row"];
 export type ProjectSection = T["project_sections"]["Row"];
 export type NotificationSettings = T["notification_settings"]["Row"];
 export type Attachment = T["task_attachments"]["Row"];
+export type Notification = T["notifications"]["Row"];
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];
