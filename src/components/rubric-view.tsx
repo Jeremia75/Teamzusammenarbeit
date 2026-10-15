@@ -129,7 +129,8 @@ export function RubricView(props: Props) {
       const { error } = await supabase.rpc("trash_task", { t: id });
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
-    [supabase, openId, fail, tasks],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [supabase, openId, fail],
   );
 
   const toggleAssignee = useCallback(

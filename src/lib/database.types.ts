@@ -66,6 +66,15 @@ export type Database = {
           { foreignKeyName: "notifications_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
         ];
       };
+      task_dependencies: {
+        Row: { task_id: string; depends_on: string; project_id: string; created_by: string | null; created_at: string };
+        Insert: { task_id: string; depends_on: string; project_id: string };
+        Update: { task_id?: string };
+        Relationships: [
+          { foreignKeyName: "task_dependencies_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+          { foreignKeyName: "task_dependencies_depends_on_fkey"; columns: ["depends_on"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
+        ];
+      };
       calendar_tokens: {
         Row: { user_id: string; token: string; created_at: string };
         Insert: { user_id?: string; token?: string };
@@ -207,6 +216,7 @@ export type ProjectSection = T["project_sections"]["Row"];
 export type NotificationSettings = T["notification_settings"]["Row"];
 export type Attachment = T["task_attachments"]["Row"];
 export type Notification = T["notifications"]["Row"];
+export type Dependency = { task_id: string; depends_on: string };
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];
 export type TaskPriority = Database["public"]["Enums"]["task_priority"];

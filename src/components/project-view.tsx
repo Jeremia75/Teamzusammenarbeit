@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
+import type { Dependency, Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
 import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
@@ -61,6 +61,15 @@ export function ProjectView(props: Props) {
     } catch {}
   };
   const [error, setError] = useState<string | null>(null);
+  const [deps, setDeps] = useState<Dependency[]>([]);
+  // Abhängigkeiten laden (nicht im Server-Teil, damit die Seite schnell bleibt)
+  useEffect(() => {
+    supabase
+      .from("task_dependencies")
+      .select("task_id, depends_on")
+      .eq("project_id", project.id)
+      .then(({ data }) => data && setDeps(data));
+  }, [supabase, project.id]);
   const boardRef = useRef<HTMLDivElement>(null);
 
   // Gewählte Ansicht pro Projekt merken (nur in diesem Browser)
@@ -85,16 +94,18 @@ export function ProjectView(props: Props) {
   // ---------------------------------------------------------------- Daten
   const reload = useCallback(async () => {
     // Alles parallel laden und gemeinsam setzen, damit Karten nicht ohne Zuständige aufblitzen
-    const [t, m, s, a] = await Promise.all([
+    const [t, m, s, a, d] = await Promise.all([
       supabase.from("tasks").select("*").eq("project_id", project.id).order("position"),
       supabase.from("milestones").select("*").eq("project_id", project.id).order("position"),
       supabase.from("sections").select("*").eq("project_id", project.id).order("position"),
       supabase.from("task_assignees").select("task_id, user_id, tasks!inner(project_id)").eq("tasks.project_id", project.id),
+      supabase.from("task_dependencies").select("task_id, depends_on").eq("project_id", project.id),
     ]);
     if (t.data) setTasks(t.data);
     if (m.data) setMilestones(m.data);
     if (s.data) setSections(s.data);
     if (a.data) setAssignees(a.data.map(({ task_id, user_id }) => ({ task_id, user_id })));
+    if (d.data) setDeps(d.data);
   }, [supabase, project.id]);
 
   // Echtzeit: Änderungen anderer Teammitglieder sofort übernehmen
@@ -106,6 +117,7 @@ export function ProjectView(props: Props) {
       .on("postgres_changes", { event: "*", schema: "public", table: "milestones", filter: f }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "sections", filter: f }, reload)
       .on("postgres_changes", { event: "*", schema: "public", table: "task_assignees" }, reload)
+      .on("postgres_changes", { event: "*", schema: "public", table: "task_dependencies", filter: f }, reload)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -155,6 +167,27 @@ export function ProjectView(props: Props) {
     [supabase, tasks, project.id, currentUserId, fail, msFilter],
   );
 
+  // ---- Abhängigkeiten ("wartet auf") ----
+  const addDep = useCallback(
+    async (taskId: string, dependsOn: string) => {
+      setDeps((prev) => [...prev, { task_id: taskId, depends_on: dependsOn }]);
+      const { error } = await supabase.from("task_dependencies").insert({ task_id: taskId, depends_on: dependsOn, project_id: project.id });
+      if (error) {
+        setDeps((prev) => prev.filter((d) => !(d.task_id === taskId && d.depends_on === dependsOn)));
+        fail(error.message.includes("Kreis") ? "Das geht nicht: Die andere Aufgabe wartet schon (über Umwege) auf diese." : "Abhängigkeit nicht gespeichert: " + error.message);
+      }
+    },
+    [supabase, project.id, fail],
+  );
+  const removeDep = useCallback(
+    async (taskId: string, dependsOn: string) => {
+      setDeps((prev) => prev.filter((d) => !(d.task_id === taskId && d.depends_on === dependsOn)));
+      const { error } = await supabase.from("task_dependencies").delete().eq("task_id", taskId).eq("depends_on", dependsOn);
+      if (error) fail("Abhängigkeit nicht entfernt: " + error.message);
+    },
+    [supabase, fail],
+  );
+
   const attachIds = useMemo(() => [project.id], [project.id]);
   const { counts: attachCounts, setCount: setAttachCount } = useAttachmentCounts(supabase, attachIds);
 
@@ -166,7 +199,8 @@ export function ProjectView(props: Props) {
       const { error } = await supabase.rpc("trash_task", { t: id });
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
-    [supabase, openId, fail, tasks],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [supabase, openId, fail],
   );
 
   const toggleAssignee = useCallback(
@@ -433,6 +467,7 @@ export function ProjectView(props: Props) {
                 onOpen={(id) => setOpenId(id)}
                 onUpdate={updateTask}
                 peopleOf={peopleOf}
+                deps={deps}
               />
             ) : view === "list" ? (
               <TaskList
@@ -483,6 +518,18 @@ export function ProjectView(props: Props) {
               onDelete={deleteTask}
               onToggleAssignee={(uid) => toggleAssignee(openTask.id, uid)}
               onAttachmentCount={setAttachCount}
+              deps={
+                openTask.parent_id
+                  ? undefined
+                  : {
+                      waitingOn: deps.filter((d) => d.task_id === openTask.id).map((d) => topLevel.find((t) => t.id === d.depends_on)).filter((t): t is Task => !!t),
+                      blocking: deps.filter((d) => d.depends_on === openTask.id).map((d) => topLevel.find((t) => t.id === d.task_id)).filter((t): t is Task => !!t),
+                      candidates: topLevel.filter((t) => t.id !== openTask.id && !deps.some((d) => d.task_id === openTask.id && d.depends_on === t.id)),
+                      onAdd: (dependsOn) => addDep(openTask.id, dependsOn),
+                      onRemove: (dependsOn) => removeDep(openTask.id, dependsOn),
+                      onOpen: (id) => setOpenId(id),
+                    }
+              }
             />
           )}
         </div>

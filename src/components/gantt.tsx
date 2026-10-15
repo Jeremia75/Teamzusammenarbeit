@@ -3,8 +3,8 @@
 // Zeitplan (Gantt) für ein Projekt: Balken von Beginn bis Fälligkeit, gruppiert nach Rubrik oder Person.
 // Balken lassen sich ziehen (verschieben) und an den Rändern in der Länge ändern.
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Dependency, Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
 import { STATUSES } from "@/lib/labels";
 import {
   DAY_W,
@@ -46,6 +46,7 @@ export function Gantt({
   onOpen,
   onUpdate,
   peopleOf,
+  deps = [],
 }: {
   tasks: Task[];
   sections: Section[];
@@ -54,12 +55,16 @@ export function Gantt({
   onOpen: (id: string) => void;
   onUpdate: (id: string, patch: Partial<Task>) => void;
   peopleOf: (taskId: string) => Person[];
+  deps?: Dependency[];
 }) {
   const [zoom, setZoom] = useZoom("projektraum:gantt-zoom", ZOOMS, "month");
   const [groupBy, setGroupByState] = useState<GroupBy>("section");
   const scroller = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<{ id: string; span: Span } | null>(null);
+  const overlay = useRef<HTMLDivElement>(null);
+  const [arrows, setArrows] = useState<{ key: string; d: string; conflict: boolean; label: string }[]>([]);
+  const [offer, setOffer] = useState<{ title: string; moves: { id: string; title: string; span: Span }[] } | null>(null);
   const today = todayDay();
 
   useEffect(() => {
@@ -154,7 +159,77 @@ export function Gantt({
     // Nur Fälligkeit und nicht in die Länge gezogen: bleibt eine reine Fälligkeit
     if (s.dueOnly && s.start === s.end) onUpdate(id, { due_date: toIso(s.end) });
     else onUpdate(id, { start_date: toIso(s.start), due_date: toIso(s.end) });
+    // Wartende Aufgaben, die jetzt zu früh beginnen würden: Mitverschieben anbieten
+    const moves = planShift(id, s);
+    setOffer(moves.length ? { title: tasks.find((t) => t.id === id)?.title ?? "", moves } : null);
   }
+
+  /** Nachfolger (auch über mehrere Stufen), die vor dem Ende ihres Vorgängers beginnen, so weit nach hinten schieben, dass es passt */
+  function planShift(id: string, s: Span) {
+    const spans = new Map<string, Span>();
+    for (const t of tasks) {
+      const sp = spanOf(t);
+      if (sp) spans.set(t.id, sp);
+    }
+    spans.set(id, s);
+    const moves = new Map<string, Span>();
+    const queue = [id];
+    let guard = 0;
+    while (queue.length && guard++ < 500) {
+      const cur = queue.shift()!;
+      const cs = spans.get(cur);
+      if (!cs) continue;
+      for (const d of deps.filter((x) => x.depends_on === cur)) {
+        const succ = tasks.find((t) => t.id === d.task_id);
+        const ss = spans.get(d.task_id);
+        if (!succ || !ss || succ.status === "done" || ss.start > cs.end) continue;
+        const delta = cs.end + 1 - ss.start;
+        const ns = { start: ss.start + delta, end: ss.end + delta, dueOnly: ss.dueOnly };
+        spans.set(d.task_id, ns);
+        moves.set(d.task_id, ns);
+        queue.push(d.task_id);
+      }
+    }
+    return [...moves.entries()].map(([tid, span]) => ({ id: tid, title: tasks.find((t) => t.id === tid)?.title ?? "", span }));
+  }
+
+  // ---- Pfeile für Abhängigkeiten (nach dem Zeichnen an den echten Balken ausgerichtet) ----
+  useLayoutEffect(() => {
+    const draw = () => {
+      const ov = overlay.current;
+      if (!ov || groupBy !== "section" || !deps.length) return setArrows([]);
+      const o = ov.getBoundingClientRect();
+      const bar = (id: string) => ov.parentElement?.querySelector<HTMLElement>(`[data-bar="${id}"]`)?.getBoundingClientRect();
+      const spanNow = (t: Task) => (preview?.id === t.id ? preview.span : spanOf(t));
+      const out: { key: string; d: string; conflict: boolean; label: string }[] = [];
+      for (const dep of deps) {
+        const a = tasks.find((t) => t.id === dep.depends_on);
+        const b = tasks.find((t) => t.id === dep.task_id);
+        const ra = bar(dep.depends_on);
+        const rb = bar(dep.task_id);
+        if (!a || !b || !ra || !rb) continue;
+        const sa = spanNow(a)!;
+        const sb = spanNow(b)!;
+        const conflict = b.status !== "done" && sb.start <= sa.end;
+        const x1 = ra.right - o.left;
+        const y1 = ra.top + ra.height / 2 - o.top;
+        const x2 = rb.left - o.left;
+        const y2 = rb.top + rb.height / 2 - o.top;
+        let d: string;
+        if (x2 - x1 >= 16) d = `M${x1} ${y1} H${x1 + 8} V${y2} H${x2 - 2}`;
+        else {
+          // Nachfolger beginnt zu früh: Pfeil läuft zwischen den Zeilen zurück
+          const yGap = y2 > y1 ? y2 - 20 : y2 + 20;
+          d = `M${x1} ${y1} H${x1 + 8} V${yGap} H${x2 - 10} V${y2} H${x2 - 2}`;
+        }
+        out.push({ key: `${dep.task_id}-${dep.depends_on}`, d, conflict, label: `${b.title} wartet auf ${a.title}` });
+      }
+      setArrows(out);
+    };
+    draw();
+    window.addEventListener("resize", draw);
+    return () => window.removeEventListener("resize", draw);
+  }, [deps, tasks, preview, zoom, groupBy, from]);
   function key(e: React.KeyboardEvent, t: Task) {
     const s = spanOf(t)!;
     const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -203,6 +278,28 @@ export function Gantt({
           ))}
         </div>
       </ZoomBar>
+
+      {offer && (
+        <div role="status" data-panel className="flex flex-wrap items-center gap-2 rounded-lg border border-(--c-accent-line) bg-(--c-accent-soft) px-4 py-2.5 text-sm">
+          <span className="flex-1 min-w-0">
+            {offer.moves.length === 1 ? `„${offer.moves[0].title}“ wartet` : `${offer.moves.length} Aufgaben warten`} auf „{offer.title}“ und würde
+            {offer.moves.length === 1 ? "" : "n"} jetzt zu früh beginnen. Mitverschieben?
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              for (const m of offer.moves) onUpdate(m.id, m.span.dueOnly ? { due_date: toIso(m.span.end) } : { start_date: toIso(m.span.start), due_date: toIso(m.span.end) });
+              setOffer(null);
+            }}
+            className="min-h-9 px-3 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold"
+          >
+            Mitverschieben
+          </button>
+          <button type="button" onClick={() => setOffer(null)} className="min-h-9 px-3 rounded-lg border border-(--c-line) bg-(--c-surface) font-semibold">
+            Nein
+          </button>
+        </div>
+      )}
 
       <TimelineFrame
         ref={scroller}
@@ -328,6 +425,35 @@ export function Gantt({
           );
         })}
 
+        {/* Pfeile: rot, wenn eine Aufgabe beginnt, bevor die vorige fertig ist */}
+        <div ref={overlay} aria-hidden className="absolute inset-0 pointer-events-none z-[5]">
+          <svg className="absolute inset-0 w-full h-full overflow-visible">
+            <defs>
+              <marker id="pr-arrow" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 0 L8 4 L0 8 z" style={{ fill: "var(--c-text-2)" }} />
+              </marker>
+              <marker id="pr-arrow-bad" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 0 L8 4 L0 8 z" style={{ fill: "var(--c-danger)" }} />
+              </marker>
+            </defs>
+            {arrows.map((a) => (
+              <path
+                key={a.key}
+                data-dep={a.key}
+                data-conflict={a.conflict ? "1" : undefined}
+                d={a.d}
+                fill="none"
+                strokeWidth={a.conflict ? 2 : 1.5}
+                strokeLinejoin="round"
+                style={{ stroke: a.conflict ? "var(--c-danger)" : "var(--c-text-2)" }}
+                markerEnd={`url(#${a.conflict ? "pr-arrow-bad" : "pr-arrow"})`}
+              >
+                <title>{a.label}</title>
+              </path>
+            ))}
+          </svg>
+        </div>
+
         {!groups.length && (
           <p className="py-10 px-4 text-sm text-(--c-muted) sticky left-0 max-w-xl">
             Noch keine Aufgabe hat einen Termin. Plane unten eine ein oder trag im Aufgabenfenster Beginn und Fälligkeit ein.
@@ -365,6 +491,7 @@ export function Gantt({
         Tipp: Balken ziehen verschiebt die Aufgabe, die Ränder ziehen ändert Beginn oder Ende. Mit der Tastatur: Pfeiltasten verschieben, mit Umschalt die
         Dauer ändern. Gestrichelt = nur ein Fälligkeitstag, rot umrandet = überfällig.
         {groupBy === "person" && " Die Linie unter einer Person zeigt, wo mehrere offene Aufgaben gleichzeitig laufen: gelb = 2, rot = 3 oder mehr."}
+        {groupBy === "section" && deps.length > 0 && " Pfeile zeigen, welche Aufgabe auf welche wartet – rot, wenn sie zu früh beginnt."}
       </p>
     </div>
   );

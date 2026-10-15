@@ -322,6 +322,10 @@ export const TOOLS: Tool[] = [
         ctx.db.from("comments").select("author_id, body, created_at").eq("task_id", id).order("created_at", { ascending: false }).limit(30),
         ctx.db.from("task_attachments").select("kind, name, url, size").eq("task_id", id).order("created_at"),
       ]);
+      const [{ data: waits }, { data: blocks }] = await Promise.all([
+        ctx.db.from("task_dependencies").select("depends_on, tasks!task_dependencies_depends_on_fkey(title, status)").eq("task_id", id),
+        ctx.db.from("task_dependencies").select("task_id, tasks!task_dependencies_task_id_fkey(title, status)").eq("depends_on", id),
+      ]);
       const ids = [...new Set([...t.task_assignees.map((x) => x.user_id), ...(comments ?? []).map((c) => c.author_id)])];
       const { data: profiles } = ids.length ? await ctx.db.from("profiles").select("id, display_name").in("id", ids) : { data: [] };
       const name = new Map((profiles ?? []).map((p) => [p.id, p.display_name]));
@@ -343,6 +347,8 @@ export const TOOLS: Tool[] = [
         unteraufgabe_von: t.parent_id ?? undefined,
         unteraufgaben: (subs ?? []).map((s) => ({ id: s.id, titel: s.title, erledigt: s.status === "done" })),
         kommentare: (comments ?? []).reverse().map((c) => ({ von: name.get(c.author_id) ?? "?", am: c.created_at.slice(0, 16).replace("T", " "), text: c.body })),
+        wartet_auf: (waits ?? []).map((w) => (w.tasks ? `${w.tasks.title} (${STATUS[w.tasks.status]})` : null)).filter(Boolean),
+        darauf_warten: (blocks ?? []).map((w) => (w.tasks ? w.tasks.title : null)).filter(Boolean),
         anhaenge: (att ?? []).map((x) => (x.kind === "link" ? { link: x.name, url: x.url } : { datei: x.name, groesse_bytes: x.size })),
       };
     },

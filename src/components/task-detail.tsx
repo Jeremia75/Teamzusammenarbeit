@@ -23,6 +23,15 @@ type Props = {
   onToggleAssignee: (userId: string) => void;
   /** Anzahl der Anhänge hat sich geändert (für die Büroklammer auf der Karte) */
   onAttachmentCount?: (taskId: string, n: number) => void;
+  /** Abhängigkeiten (nur bei Hauptaufgaben) */
+  deps?: {
+    waitingOn: Task[];
+    blocking: Task[];
+    candidates: Task[];
+    onAdd: (dependsOn: string) => void;
+    onRemove: (dependsOn: string) => void;
+    onOpen: (id: string) => void;
+  };
 };
 
 const field = "h-11 rounded-lg border border-(--c-line) px-3 bg-(--c-surface) font-normal text-sm";
@@ -288,6 +297,8 @@ export function TaskDetail(props: Props) {
         </form>
       </div>
 
+      {props.deps && <Dependencies task={task} {...props.deps} />}
+
       <Comments taskId={task.id} members={props.members} currentUserId={props.currentUserId} />
 
       <div className="border-t border-(--c-line-soft) pt-4">
@@ -513,6 +524,89 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
           )}
         </div>
       </form>
+    </div>
+  );
+}
+
+/** "Wartet auf": diese Aufgabe kann erst beginnen, wenn die anderen fertig sind */
+function Dependencies({
+  task,
+  waitingOn,
+  blocking,
+  candidates,
+  onAdd,
+  onRemove,
+  onOpen,
+}: { task: Task } & NonNullable<Props["deps"]>) {
+  const [adding, setAdding] = useState(false);
+  const late = (t: Task) => !!(t.due_date && (task.start_date ?? task.due_date) && t.due_date >= (task.start_date ?? task.due_date)!);
+  return (
+    <div className="flex flex-col gap-2" role="group" aria-label="Abhängigkeiten">
+      <span className={sectionLabel}>Wartet auf</span>
+      {waitingOn.length === 0 && !adding && <p className="text-sm text-(--c-muted)">Diese Aufgabe kann jederzeit beginnen.</p>}
+      {waitingOn.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {waitingOn.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 rounded-lg border border-(--c-line) px-3 py-1.5">
+              <span aria-hidden className="size-2 rounded-full shrink-0" style={{ background: `var(--st-${t.status})` }} />
+              <button type="button" onClick={() => onOpen(t.id)} className={`flex-1 min-w-0 text-left text-sm font-semibold truncate hover:underline ${t.status === "done" ? "line-through text-(--c-muted)" : ""}`}>
+                {t.title}
+              </button>
+              {t.due_date && <span className={`text-xs shrink-0 ${t.status !== "done" && late(t) ? "text-(--c-danger) font-bold" : "text-(--c-muted)"}`}>bis {formatDate(t.due_date)}</span>}
+              <button type="button" onClick={() => onRemove(t.id)} aria-label={`Abhängigkeit von ${t.title} entfernen`} className="size-8 rounded-lg hover:bg-(--c-hover) flex items-center justify-center text-(--c-muted) shrink-0">
+                <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {waitingOn.some((t) => t.status !== "done" && late(t)) && (
+        <p className="text-xs text-(--c-danger) font-semibold">Achtung: Eine Aufgabe, auf die diese wartet, wird erst danach fertig.</p>
+      )}
+      {adding ? (
+        <label className="flex flex-col gap-1 text-xs font-semibold text-(--c-muted)">
+          Wartet auf welche Aufgabe?
+          <select
+            autoFocus
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) onAdd(e.target.value);
+              setAdding(false);
+            }}
+            onBlur={() => setAdding(false)}
+            className={`${field} text-(--c-ink)`}
+          >
+            <option value="">Aufgabe wählen …</option>
+            {candidates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+                {t.due_date ? ` (bis ${formatDate(t.due_date)})` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        candidates.length > 0 && (
+          <button type="button" onClick={() => setAdding(true)} className="self-start min-h-10 px-3 rounded-lg border border-(--c-line) text-sm font-semibold hover:bg-(--c-hover)">
+            + Wartet auf …
+          </button>
+        )
+      )}
+      {blocking.length > 0 && (
+        <p className="text-sm text-(--c-text-2)">
+          Darauf warten:{" "}
+          {blocking.map((t, i) => (
+            <span key={t.id}>
+              {i > 0 && ", "}
+              <button type="button" onClick={() => onOpen(t.id)} className="font-semibold hover:underline">
+                {t.title}
+              </button>
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   );
 }
