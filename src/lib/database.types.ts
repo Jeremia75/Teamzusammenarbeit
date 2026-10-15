@@ -169,6 +169,18 @@ export type Database = {
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
       add_member_by_email: { Args: { ws: string; member_email: string }; Returns: string };
+      trash_task: { Args: { t: string }; Returns: undefined };
+      trash_project: { Args: { proj: string }; Returns: undefined };
+      trash_restore: { Args: { k: string; item: string }; Returns: undefined };
+      trash_purge: { Args: { k: string; item: string }; Returns: undefined };
+      trash_files: { Args: { k: string; item: string }; Returns: { id: string; name: string; storage_path: string; size: number | null }[] };
+      trash_list: {
+        Args: Record<string, never>;
+        Returns: {
+          kind: "task" | "project"; id: string; title: string; project_id: string; project: string; workspace: string;
+          deleted_at: string; deleted_by: string; task_count: number; file_count: number; can_purge: boolean;
+        }[];
+      };
       calendar_feed: {
         Args: { tok: string };
         Returns: { kind: string; id: string; title: string; start_date: string; end_date: string; project: string; project_id: string; status: string | null; description: string | null }[];

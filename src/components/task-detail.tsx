@@ -293,8 +293,9 @@ export function TaskDetail(props: Props) {
       <div className="border-t border-(--c-line-soft) pt-4">
         {confirmDelete ? (
           <DeleteConfirm
-            taskIds={[task.id, ...subtasks.map((s) => s.id)]}
             question={subtasks.length ? "Aufgabe samt Unteraufgaben löschen?" : "Aufgabe wirklich löschen?"}
+            note="Sie kommt in den Papierkorb. Dort kannst du sie 30 Tage lang wiederherstellen."
+            confirmLabel="In den Papierkorb"
             onDelete={() => props.onDelete(task.id)}
             onCancel={() => setConfirmDelete(false)}
           />

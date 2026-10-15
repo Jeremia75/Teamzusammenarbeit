@@ -93,6 +93,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             E-Mail &amp; Kalender
           </Link>
           <Link
+            href="/papierkorb"
+            className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-(--c-text-2) hover:bg-(--c-bg) hover:text-(--c-ink)"
+          >
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2l1-12M9 7V4.5h6V7" />
+            </svg>
+            Papierkorb
+          </Link>
+          <Link
             href="/ki"
             className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-(--c-text-2) hover:bg-(--c-bg) hover:text-(--c-ink)"
           >

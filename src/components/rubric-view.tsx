@@ -7,7 +7,7 @@ import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types"
 import { STATUSES } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { TaskDetail } from "@/components/task-detail";
-import { removeTaskFiles, useAttachmentCounts } from "@/components/attachments";
+import { useAttachmentCounts } from "@/components/attachments";
 import { Board, type BoardColumn } from "@/components/board";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
@@ -123,10 +123,10 @@ export function RubricView(props: Props) {
 
   const deleteTask = useCallback(
     async (id: string) => {
-      await removeTaskFiles(supabase, [id, ...tasks.filter((t) => t.parent_id === id).map((t) => t.id)]);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
-      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar
+      const { error } = await supabase.rpc("trash_task", { t: id });
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
     [supabase, openId, fail, tasks],

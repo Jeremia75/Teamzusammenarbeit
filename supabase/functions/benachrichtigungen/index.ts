@@ -1,6 +1,6 @@
 // Supabase Edge Function: verschickt die E-Mails von Projektraum.
 // Wird alle 5 Minuten vom Zeitplan in der Datenbank aufgerufen (siehe Migration
-// 20261013020100_benachrichtigungen_zeitplan.sql).
+// 20261013020100_benachrichtigungen_zeitplan.sql). Leert außerdem den Papierkorb nach 30 Tagen.
 //
 // Benötigte Secrets (Supabase → Edge Functions → Secrets):
 //   RESEND_API_KEY  – Schlüssel von resend.com
@@ -20,8 +20,20 @@ Deno.serve(async (req) => {
   const { data: allowed } = await sb.rpc("notify_secret_ok", { s: req.headers.get("x-projektraum-secret") ?? "" });
   if (!allowed) return new Response("forbidden", { status: 403 });
 
+  // 0) Papierkorb: nach 30 Tagen endgültig löschen – zuerst die Dateien im Speicher, dann die Einträge
+  let trashPurged = 0;
+  try {
+    const { data: files } = await sb.rpc("trash_expired_files");
+    const paths = ((files ?? []) as { storage_path: string }[]).map((f) => f.storage_path).filter(Boolean);
+    for (let i = 0; i < paths.length; i += 100) await sb.storage.from("anhaenge").remove(paths.slice(i, i + 100));
+    const { data: n } = await sb.rpc("trash_purge_expired");
+    trashPurged = (n as number) ?? 0;
+  } catch (e) {
+    console.error("Papierkorb", e);
+  }
+
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  if (!apiKey) return json({ skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
+  if (!apiKey) return json({ trashPurged, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
   const from = Deno.env.get("MAIL_FROM") ?? "Projektraum <onboarding@resend.dev>";
   const appUrl = (Deno.env.get("APP_URL") ?? "https://teamzusammenarbeit.vercel.app").replace(/\/$/, "");
 
@@ -44,7 +56,7 @@ Deno.serve(async (req) => {
   }
 
   const { today, hour } = viennaNow();
-  const report = { assigned: 0, daily: 0, errors: [] as string[] };
+  const report = { trashPurged, assigned: 0, daily: 0, errors: [] as string[] };
 
   // 1) Neue Zuordnungen – gesammelt je Person
   const { data: pending, error: pErr } = await sb.rpc("notify_pending_assignments");

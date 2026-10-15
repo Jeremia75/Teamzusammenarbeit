@@ -9,7 +9,7 @@ import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
-import { removeTaskFiles, useAttachmentCounts, DeleteConfirm, removeProjectFiles } from "@/components/attachments";
+import { useAttachmentCounts, DeleteConfirm } from "@/components/attachments";
 import { Milestones } from "@/components/milestones";
 import { Gantt } from "@/components/gantt";
 import { Board, QuickAdd, type BoardColumn } from "@/components/board";
@@ -160,10 +160,10 @@ export function ProjectView(props: Props) {
 
   const deleteTask = useCallback(
     async (id: string) => {
-      await removeTaskFiles(supabase, [id, ...tasks.filter((t) => t.parent_id === id).map((t) => t.id)]);
       setTasks((prev) => prev.filter((t) => t.id !== id && t.parent_id !== id));
       if (openId === id) setOpenId(null);
-      const { error } = await supabase.from("tasks").delete().eq("id", id);
+      // In den Papierkorb (samt Unteraufgaben) – 30 Tage wiederherstellbar
+      const { error } = await supabase.rpc("trash_task", { t: id });
       if (error) fail("Löschen fehlgeschlagen: " + error.message);
     },
     [supabase, openId, fail, tasks],
@@ -608,11 +608,10 @@ function DeleteProject({ project, workspaceId, taskCount }: { project: { id: str
   async function remove() {
     setBusy(true);
     setError(null);
-    await removeProjectFiles(supabase, project.id);
-    const { error, count } = await supabase.from("projects").delete({ count: "exact" }).eq("id", project.id);
-    if (error || !count) {
+    const { error } = await supabase.rpc("trash_project", { proj: project.id });
+    if (error) {
       setBusy(false);
-      return setError(error ? "Projekt nicht gelöscht: " + error.message : "Dieses Projekt darfst du nicht löschen.");
+      return setError("Projekt nicht gelöscht: " + error.message);
     }
     router.replace(`/w/${workspaceId}`);
     router.refresh();
@@ -621,14 +620,20 @@ function DeleteProject({ project, workspaceId, taskCount }: { project: { id: str
   const question =
     taskCount === 0
       ? `Projekt „${project.name}“ wirklich löschen?`
-      : `Projekt „${project.name}“ mit ${taskCount === 1 ? "1 Aufgabe" : `${taskCount} Aufgaben`}, Meilensteinen und Kommentaren löschen? Das lässt sich nicht rückgängig machen.`;
+      : `Projekt „${project.name}“ mit ${taskCount === 1 ? "1 Aufgabe" : `${taskCount} Aufgaben`} löschen?`;
 
   return (
     <section data-panel aria-label="Projekt löschen" className="mt-6 border-t border-(--c-line-soft) pt-5 flex flex-col gap-3 max-w-2xl">
       {busy ? (
         <p className="text-sm text-(--c-muted)">Projekt wird gelöscht …</p>
       ) : open ? (
-        <DeleteConfirm projectId={project.id} question={question} confirmLabel="Projekt löschen" onDelete={remove} onCancel={() => setOpen(false)} />
+        <DeleteConfirm
+          question={question}
+          note="Es kommt in den Papierkorb. Dort kannst du es 30 Tage lang samt Aufgaben und Dateien wiederherstellen."
+          confirmLabel="In den Papierkorb"
+          onDelete={remove}
+          onCancel={() => setOpen(false)}
+        />
       ) : (
         <button type="button" onClick={() => setOpen(true)} className="self-start min-h-11 text-sm font-semibold text-(--c-danger)">
           Projekt löschen

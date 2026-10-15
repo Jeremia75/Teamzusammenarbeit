@@ -345,17 +345,17 @@ type TaskFile = { id: string; name: string; storage_path: string; size: number |
  * aufgelistet und lassen sich vorher herunterladen – erst dann wird gelöscht.
  */
 export function DeleteConfirm({
-  taskIds = [],
-  projectId,
+  trashItem,
   question,
+  note,
   confirmLabel = "Löschen",
   onDelete,
   onCancel,
 }: {
-  taskIds?: string[];
-  /** statt einzelner Aufgaben: alle Dateien eines Projekts */
-  projectId?: string;
+  /** Endgültig löschen aus dem Papierkorb: dessen Dateien werden zum Sichern angeboten */
+  trashItem?: { kind: "task" | "project"; id: string };
   question: string;
+  note?: string;
   confirmLabel?: string;
   onDelete: () => void;
   onCancel: () => void;
@@ -364,7 +364,7 @@ export function DeleteConfirm({
   const [files, setFiles] = useState<TaskFile[] | null>(null);
   const [saved, setSaved] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const key = taskIds.join(",");
+  const key = trashItem ? `${trashItem.kind}:${trashItem.id}` : "";
   const boxRef = useRef<HTMLDivElement>(null);
   // Rückfrage sichtbar machen – sie steht ganz unten im Fenster
   useEffect(() => {
@@ -373,18 +373,18 @@ export function DeleteConfirm({
 
   useEffect(() => {
     let off = false;
-    const q = projectId
-      ? supabase.from("task_attachments").select("id, name, storage_path, size, tasks!inner(project_id)").eq("tasks.project_id", projectId)
-      : supabase.from("task_attachments").select("id, name, storage_path, size").in("task_id", key.split(","));
-    q.eq("kind", "file")
-      .order("created_at")
-      .then(({ data }) => {
-        if (!off) setFiles((data ?? []).filter((f): f is TaskFile => !!f.storage_path));
-      });
+    if (!trashItem) {
+      setFiles([]);
+      return;
+    }
+    supabase.rpc("trash_files", { k: trashItem.kind, item: trashItem.id }).then(({ data }) => {
+      if (!off) setFiles((data ?? []).filter((f): f is TaskFile => !!f.storage_path));
+    });
     return () => {
       off = true;
     };
-  }, [supabase, key, projectId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, key]);
 
   async function download(f: TaskFile) {
     const { data, error } = await supabase.storage.from(ATTACH_BUCKET).createSignedUrl(f.storage_path, 300, { download: f.name });
@@ -414,6 +414,7 @@ export function DeleteConfirm({
     return (
       <div ref={boxRef} className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold">{question}</span>
+        {note && <span className="basis-full text-sm text-(--c-text-2)">{note}</span>}
         <button type="button" onClick={onDelete} className={`${btn} bg-(--c-danger) text-(--c-on-danger)`}>
           {confirmLabel}
         </button>
@@ -471,9 +472,10 @@ export async function hasTaskFiles(supabase: Supa, taskIds: string[]) {
   return (count ?? 0) > 0;
 }
 
-/** Vor dem Löschen eines Projekts: alle hochgeladenen Dateien seiner Aufgaben entfernen */
-export async function removeProjectFiles(supabase: Supa, projectId: string) {
-  const { data } = await supabase.from("task_attachments").select("storage_path, tasks!inner(project_id)").eq("tasks.project_id", projectId).eq("kind", "file");
+/** Endgültig löschen aus dem Papierkorb: erst die Dateien im Speicher entfernen, dann die Einträge */
+export async function purgeTrashItem(supabase: Supa, kind: "task" | "project", id: string) {
+  const { data } = await supabase.rpc("trash_files", { k: kind, item: id });
   const paths = (data ?? []).map((r) => r.storage_path).filter((p): p is string => !!p);
   for (let i = 0; i < paths.length; i += 100) await supabase.storage.from(ATTACH_BUCKET).remove(paths.slice(i, i + 100));
+  return supabase.rpc("trash_purge", { k: kind, item: id });
 }
