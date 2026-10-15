@@ -137,8 +137,18 @@ async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
       max_tokens: 8000,
       system: systemPrompt(),
       tools: [TOOL],
-      tool_choice: { type: "tool", name: TOOL.name },
-      messages: [{ role: "user", content: [{ type: "text", text: contextText(ctx, todayVienna(), chooseProject) + "\n\nDas Protokoll:" }, ...pieces] }],
+      // Neuere Modelle erlauben kein erzwungenes Werkzeug – darum "auto" und eine klare Anweisung
+      tool_choice: { type: "auto" },
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: contextText(ctx, todayVienna(), chooseProject) + "\n\nDas Protokoll:" },
+            ...pieces,
+            { type: "text", text: `Rufe jetzt das Werkzeug ${TOOL.name} genau einmal auf – auch wenn es keine Aufgaben gibt (dann mit leerer Liste). Schreib keinen anderen Text.` },
+          ],
+        },
+      ],
     }),
   });
   if (!r.ok) {
@@ -147,9 +157,21 @@ async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
     throw new Fail(r.status === 401 ? "Der Schlüssel für die KI stimmt nicht." : r.status === 413 ? "Das Protokoll ist zu lang." : `Die KI hat nicht geantwortet (${r.status}). Bitte später nochmal versuchen.`);
   }
   const data = await r.json();
-  const use = (data.content ?? []).find((c: { type: string }) => c.type === "tool_use");
-  if (!use) throw new Fail("Die KI hat keine Aufgaben geliefert.");
-  return use.input as { projekt_id?: string; titel?: string; zusammenfassung?: string; aufgaben?: unknown };
+  type Out = { projekt_id?: string; titel?: string; zusammenfassung?: string; aufgaben?: unknown };
+  const blocks = (data.content ?? []) as { type: string; input?: unknown; text?: string }[];
+  const use = blocks.find((c) => c.type === "tool_use");
+  if (use?.input) return use.input as Out;
+  // Ersatz: JSON im Text (falls das Modell das Werkzeug nicht benutzt hat)
+  const text = blocks.filter((c) => c.type === "text").map((c) => c.text ?? "").join("\n");
+  const m = /\{[\s\S]*\}/.exec(text);
+  if (m) {
+    try {
+      const parsed = JSON.parse(m[0]) as Out;
+      if (Array.isArray(parsed.aufgaben)) return parsed;
+    } catch {}
+  }
+  console.error("KI ohne Ergebnis", JSON.stringify(data).slice(0, 500));
+  throw new Fail("Die KI hat keine Aufgaben geliefert. Bitte nochmal versuchen.");
 }
 
 // ---------------------------------------------------------------- Verarbeiten
