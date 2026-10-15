@@ -152,7 +152,7 @@ export default function HelpPage() {
       </Section>
 
       <Section id="projekte" title="Projekte anlegen und ordnen">
-        <p>In der Übersicht hat jeder Bereich zwei Ansichten. Oben über den Projekten schaltest du um.</p>
+        <p>In der Übersicht hat jeder Bereich drei Ansichten. Oben über den Projekten schaltest du um.</p>
         <ul>
           <li>
             <K>Board · Rubriken</K> zeigt deine Projekte in Spalten. Jede Spalte ist eine Rubrik, zum Beispiel Familie, Kirche oder
@@ -160,6 +160,11 @@ export default function HelpPage() {
           </li>
           <li>
             <K>Kacheln</K> zeigt alle Projekte als große Karten nebeneinander.
+          </li>
+          <li>
+            <K>Zeitplan</K> zeigt jedes Projekt als Balken, von der ersten bis zur letzten Aufgabe mit Datum. Der dunkle Teil des Balkens ist
+            erledigt, die Rauten sind Meilensteine. Rot umrandet heißt, dass es im Projekt überfällige Aufgaben gibt. Ein Klick öffnet das
+            Projekt. Projekte ohne Termine stehen darunter.
           </li>
         </ul>
         <p>So arbeitest du mit den Rubriken:</p>
@@ -371,6 +376,12 @@ export default function HelpPage() {
           Ohne Maus geht es auch: Spring mit der Tab-Taste zu einem Balken, dann verschieben ihn die Pfeiltasten um einen Tag. Mit gedrückter Umschalttaste änderst du
           stattdessen die Dauer.
         </Tip>
+        <p>
+          <strong>Wer hat wann was zu tun?</strong> Mit <K>Nach Person</K> sortiert der Zeitplan die Aufgaben nach den Verantwortlichen. Hat eine
+          Aufgabe mehrere, steht sie bei jeder Person. Unter dem Namen siehst du eine farbige Linie, wenn sich offene Aufgaben überschneiden: gelb
+          heißt zwei gleichzeitig, rot drei oder mehr. So erkennst du schnell, wer gerade zu viel auf dem Tisch hat. Mit <K>Nach Rubrik</K> kommst
+          du zurück.
+        </p>
       </Section>
 
       <Section id="projekt-rubriken" title="Rubriken im Projekt">
