@@ -62,7 +62,7 @@ export type Database = {
         Row: {
           id: string; user_id: string; project_id: string | null; source: "text" | "file" | "mail"; title: string;
           status: "processing" | "ready" | "done" | "failed" | "dismissed"; error: string | null; summary: string | null;
-          transcript: string | null; suggestions: Json; created_count: number; created_at: string; updated_at: string;
+          transcript: string | null; suggestions: Json; created_count: number; created_at: string; updated_at: string; new_project: Json | null;
         };
         Insert: { user_id: string; source: "text" | "file" | "mail"; project_id?: string | null; title?: string };
         Update: { project_id?: string | null; status?: "ready" | "done" | "dismissed"; suggestions?: Json; created_count?: number };

@@ -686,7 +686,9 @@ export default function HelpPage() {
           </li>
           <li>
             <strong>Per E-Mail:</strong> Wenn eingerichtet, steht auf der Seite <K>Aus Protokollen</K> eine Adresse. Leite das Protokoll von deiner
-            Anmelde-Adresse dorthin weiter. Du bekommst eine Antwort mit einem Link.
+            Anmelde-Adresse dorthin weiter. Du bekommst eine Antwort mit einem Link. Projektraum sucht das passende Projekt selbst aus – am
+            sichersten klappt das, wenn der Projektname im Betreff steht. Schreibst du „neues Projekt …“, schlägt Projektraum ein neues Projekt
+            vor; es wird erst angelegt, wenn du die Vorschläge bestätigst.
           </li>
         </ul>
         <p>

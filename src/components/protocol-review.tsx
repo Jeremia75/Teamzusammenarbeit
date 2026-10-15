@@ -7,26 +7,50 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Milestone, ProtocolImport, Section, Suggestion, TaskPriority } from "@/lib/database.types";
-import { PRIORITIES } from "@/lib/labels";
+import { PRIORITIES, PROJECT_COLORS } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
 import type { ProtocolProject } from "@/components/protocol-form";
 
 type Person = { id: string; name: string; color: string };
+/** Bereich, in dem ich ein neues Projekt anlegen darf */
+export type ProtocolWorkspace = { id: string; name: string };
+type NewProject = { name: string; workspace_id: string };
+const NEW = "__neu__";
+
+const newOf = (imp: ProtocolImport, workspaces: ProtocolWorkspace[]): NewProject | null => {
+  const n = imp.new_project as NewProject | null;
+  return n && typeof n.name === "string" && workspaces.some((w) => w.id === n.workspace_id) ? n : null;
+};
 
 const field = "h-10 rounded-lg border border-(--c-line) px-2.5 bg-(--c-surface) text-sm";
 
-export function ProtocolReview({ initial, projects, currentUserId }: { initial: ProtocolImport; projects: ProtocolProject[]; currentUserId: string }) {
+export function ProtocolReview({
+  initial,
+  projects,
+  workspaces,
+  currentUserId,
+}: {
+  initial: ProtocolImport;
+  projects: ProtocolProject[];
+  workspaces: ProtocolWorkspace[];
+  currentUserId: string;
+}) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [imp, setImp] = useState(initial);
   const [items, setItems] = useState<Suggestion[]>(Array.isArray(initial.suggestions) ? (initial.suggestions as unknown as Suggestion[]) : []);
-  const [projectId, setProjectId] = useState(initial.project_id && projects.some((p) => p.id === initial.project_id) ? initial.project_id : "");
+  const [projectId, setProjectId] = useState(
+    initial.project_id && projects.some((p) => p.id === initial.project_id) ? initial.project_id : newOf(initial, workspaces) ? NEW : "",
+  );
+  const [fresh, setFresh] = useState<NewProject>(newOf(initial, workspaces) ?? { name: "", workspace_id: workspaces[0]?.id ?? "" });
+  const isNew = projectId === NEW;
   const [people, setPeople] = useState<Person[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<number | null>(initial.status === "done" ? initial.created_count : null);
+  const [createdIn, setCreatedIn] = useState<{ id: string; name: string } | null>(null);
 
   // Während des Lesens alle 2 Sekunden nachsehen
   useEffect(() => {
@@ -37,17 +61,32 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
         setImp(data);
         setItems(Array.isArray(data.suggestions) ? (data.suggestions as unknown as Suggestion[]) : []);
         if (data.project_id && projects.some((p) => p.id === data.project_id)) setProjectId(data.project_id);
+        else if (newOf(data, workspaces)) {
+          setFresh(newOf(data, workspaces)!);
+          setProjectId(NEW);
+        }
         router.refresh();
       }
     }, 2000);
     return () => clearInterval(t);
-  }, [imp.status, imp.id, supabase, projects, router]);
+  }, [imp.status, imp.id, supabase, projects, workspaces, router]);
 
   // Mitarbeitende, Rubriken und Meilensteine des gewählten Projekts
   useEffect(() => {
     if (!projectId) return;
     let off = false;
     (async () => {
+      if (projectId === NEW) {
+        // Neues Projekt: Mitglieder des gewählten Bereichs, noch keine Rubriken oder Meilensteine
+        const { data: wm } = await supabase.from("workspace_members").select("user_id").eq("workspace_id", fresh.workspace_id);
+        const ids = (wm ?? []).map((x) => x.user_id);
+        const { data: prof } = ids.length ? await supabase.from("profiles").select("id, display_name, avatar_color").in("id", ids) : { data: [] };
+        if (off) return;
+        setPeople((prof ?? []).map((x) => ({ id: x.id, name: x.display_name || "Unbenannt", color: x.avatar_color })));
+        setSections([]);
+        setMilestones([]);
+        return;
+      }
       const { data: p } = await supabase.from("projects").select("workspace_id").eq("id", projectId).maybeSingle();
       const [{ data: wm }, { data: pm }, { data: sec }, { data: ms }] = await Promise.all([
         supabase.from("workspace_members").select("user_id").eq("workspace_id", p?.workspace_id ?? ""),
@@ -65,18 +104,40 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
     return () => {
       off = true;
     };
-  }, [projectId, supabase]);
+  }, [projectId, fresh.workspace_id, supabase]);
 
   const patch = (key: string, p: Partial<Suggestion>) => setItems((list) => list.map((s) => (s.key === key ? { ...s, ...p } : s)));
   const chosen = items.filter((s) => s.selected && s.title.trim());
-  const wrongProject = projectId !== (imp.project_id ?? "");
+  const wrongProject = !isNew && projectId !== (imp.project_id ?? "");
 
   async function create() {
     setError(null);
     if (!projectId) return setError("Bitte wähle zuerst das Projekt.");
+    if (isNew && (!fresh.name.trim() || !fresh.workspace_id)) return setError("Bitte gib dem neuen Projekt einen Namen und wähle den Bereich.");
     if (!chosen.length) return setError("Es ist keine Aufgabe ausgewählt.");
+    let target = projectId;
+    if (isNew) {
+      setBusy("Projekt wird angelegt …");
+      const { data: lastP } = await supabase.from("projects").select("position").eq("workspace_id", fresh.workspace_id).is("section_id", null).order("position", { ascending: false }).limit(1).maybeSingle();
+      const { data: p, error } = await supabase
+        .from("projects")
+        .insert({
+          workspace_id: fresh.workspace_id,
+          name: fresh.name.trim().slice(0, 120),
+          position: (lastP?.position ?? 0) + 1,
+          color: PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)],
+          created_by: currentUserId,
+        })
+        .select("id")
+        .single();
+      if (error) {
+        setBusy(null);
+        return setError("Projekt nicht angelegt: " + error.message);
+      }
+      target = p.id;
+    }
     setBusy("Aufgaben werden angelegt …");
-    const { data: last } = await supabase.from("tasks").select("position").eq("project_id", projectId).is("parent_id", null).order("position", { ascending: false }).limit(1).maybeSingle();
+    const { data: last } = await supabase.from("tasks").select("position").eq("project_id", target).is("parent_id", null).order("position", { ascending: false }).limit(1).maybeSingle();
     let pos = (last?.position ?? 0) + 1;
     const secIds = new Set(sections.map((s) => s.id));
     const msIds = new Set(milestones.map((m) => m.id));
@@ -87,7 +148,7 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
       const { data: t, error } = await supabase
         .from("tasks")
         .insert({
-          project_id: projectId,
+          project_id: target,
           title: s.title.trim().slice(0, 500),
           description: desc.slice(0, 10000),
           priority: s.priority,
@@ -111,11 +172,12 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
     }
     await supabase
       .from("protocol_imports")
-      .update({ status: "done", created_count: imp.created_count + n, project_id: projectId, suggestions: items as unknown as ProtocolImport["suggestions"] })
+      .update({ status: "done", created_count: imp.created_count + n, project_id: target, suggestions: items as unknown as ProtocolImport["suggestions"] })
       .eq("id", imp.id);
     setBusy(null);
     setCreated(n);
-    setImp({ ...imp, status: "done", created_count: imp.created_count + n, project_id: projectId });
+    setCreatedIn({ id: target, name: isNew ? fresh.name.trim() : (projects.find((p) => p.id === target)?.name ?? "") });
+    setImp({ ...imp, status: "done", created_count: imp.created_count + n, project_id: target });
     router.refresh();
   }
 
@@ -159,9 +221,12 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
       {created !== null && (
         <div data-panel role="status" className="rounded-xl border border-(--c-line) bg-(--c-surface) p-5 flex flex-wrap items-center gap-3">
           <strong>{created === 1 ? "1 Aufgabe angelegt." : `${created} Aufgaben angelegt.`}</strong>
-          {projectId && (
-            <Link href={`/p/${projectId}`} className="min-h-10 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold inline-flex items-center">
-              Zum Projekt {project?.name}
+          {(createdIn || (projectId && !isNew)) && (
+            <Link
+              href={`/p/${createdIn?.id ?? projectId}`}
+              className="min-h-10 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold inline-flex items-center"
+            >
+              Zum Projekt {createdIn?.name ?? project?.name}
             </Link>
           )}
         </div>
@@ -174,6 +239,7 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
               Anlegen im Projekt
               <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="h-11 min-w-64 rounded-lg border border-(--c-line) bg-(--c-surface) px-3 font-normal">
                 <option value="">Projekt wählen …</option>
+                {workspaces.length > 0 && <option value={NEW}>{fresh.name && newOf(imp, workspaces) ? `Neues Projekt: ${fresh.name}` : "+ Neues Projekt anlegen …"}</option>}
                 {[...new Set(projects.map((p) => p.group))].map((g) => (
                   <optgroup key={g} label={g}>
                     {projects.filter((p) => p.group === g).map((p) => (
@@ -185,6 +251,36 @@ export function ProtocolReview({ initial, projects, currentUserId }: { initial: 
                 ))}
               </select>
             </label>
+            {isNew && imp.status === "ready" && (
+              <>
+                <label className="flex flex-col gap-1 text-sm font-semibold">
+                  Name des neuen Projekts
+                  <input
+                    value={fresh.name}
+                    onChange={(e) => setFresh({ ...fresh, name: e.target.value })}
+                    placeholder="z. B. Sommerfest 2027"
+                    className="h-11 min-w-56 rounded-lg border border-(--c-line) bg-(--c-surface) px-3 font-normal"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm font-semibold">
+                  Im Bereich
+                  <select
+                    value={fresh.workspace_id}
+                    onChange={(e) => setFresh({ ...fresh, workspace_id: e.target.value })}
+                    className="h-11 rounded-lg border border-(--c-line) bg-(--c-surface) px-3 font-normal"
+                  >
+                    {workspaces.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+            {isNew && newOf(imp, workspaces) && imp.status === "ready" && (
+              <span className="basis-full text-xs text-(--c-muted)">Projektraum schlägt ein neues Projekt vor. Es wird erst angelegt, wenn du unten auf „Aufgaben anlegen“ klickst.</span>
+            )}
             {wrongProject && projectId && <span className="text-xs text-(--c-muted) pb-3">Rubriken, Meilensteine und Personen bitte kurz prüfen.</span>}
           </section>
 

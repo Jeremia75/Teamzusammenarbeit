@@ -16,7 +16,7 @@ import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.5
 import { unzipSync, strFromU8 } from "npm:fflate@0.8.2";
 import {
   addressOf, contextText, docxXmlToText, htmlToText, imageMime, kindOf, replyMail, stripMailNoise, systemPrompt,
-  toSuggestions, TOOL, verifyWebhook, type Context, type Kind,
+  newProjectOf, toSuggestions, TOOL, verifyWebhook, type Context, type Kind,
 } from "./logic.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
@@ -170,7 +170,7 @@ async function askAi(pieces: Piece[], ctx: Context, chooseProject: boolean) {
     throw new Fail(r.status === 401 ? "Der Schlüssel für die KI stimmt nicht." : r.status === 413 ? "Das Protokoll ist zu lang." : `Die KI hat nicht geantwortet (${r.status}). Bitte später nochmal versuchen.`);
   }
   const data = await r.json();
-  type Out = { projekt_id?: string; titel?: string; zusammenfassung?: string; aufgaben?: unknown };
+  type Out = { projekt_id?: string; neues_projekt?: unknown; titel?: string; zusammenfassung?: string; aufgaben?: unknown };
   const blocks = (data.content ?? []) as { type: string; input?: unknown; text?: string }[];
   const use = blocks.find((c) => c.type === "tool_use");
   if (use?.input) return use.input as Out;
@@ -197,14 +197,22 @@ async function processImport(sb: SupabaseClient, id: string, userId: string, pro
     const { data: ctx, error } = await sb.rpc("protocol_context", { uid: userId, proj: projectId });
     if (error) throw new Error(error.message);
     const context = ctx as Context;
-    if (!context.projects.length) throw new Fail(projectId ? "Du darfst in diesem Projekt keine Aufgaben anlegen." : "Du hast kein Projekt, in dem du Aufgaben anlegen darfst.");
+    if (!context.projects.length && (projectId || !context.bereiche?.length)) {
+      throw new Fail(projectId ? "Du darfst in diesem Projekt keine Aufgaben anlegen." : "Du hast kein Projekt, in dem du Aufgaben anlegen darfst.");
+    }
     const { pieces, transcript } = await piecesOf(inputs, termsOf(context));
-    const choose = !projectId && context.projects.length > 1;
+    // Per E-Mail: die KI wählt das Projekt oder schlägt ein neues vor
+    const choose = !projectId;
     const ai = await askAi(pieces, context, choose);
-    const project = projectId
+    const existing = projectId
       ? context.projects[0]
-      : (context.projects.find((p) => p.id === ai.projekt_id) ?? (context.projects.length === 1 ? context.projects[0] : null));
-    const suggestions = toSuggestions(ai, project);
+      : (context.projects.find((p) => p.id === ai.projekt_id) ?? null);
+    const fresh = !projectId && !existing ? newProjectOf(ai, context) : null;
+    const project = existing ?? (fresh || projectId ? null : context.projects.length === 1 ? context.projects[0] : null);
+    const suggestions = toSuggestions(
+      ai,
+      project ?? (fresh ? { id: "", name: fresh.project.name, bereich: "", rubriken: [], meilensteine: [], mitglieder: fresh.members, offene_aufgaben: [] } : null),
+    );
     count = suggestions.filter((s) => s.selected).length;
     if (ai.titel && !mailTo) title = String(ai.titel).slice(0, 200);
     const { error: e2 } = await sb
@@ -217,6 +225,7 @@ async function processImport(sb: SupabaseClient, id: string, userId: string, pro
         transcript,
         suggestions,
         project_id: project?.id ?? null,
+        new_project: fresh?.project ?? null,
       })
       .eq("id", id);
     if (e2) throw new Error(e2.message);

@@ -10,7 +10,10 @@ export type ProjectCtx = {
   mitglieder: Member[];
   offene_aufgaben: string[];
 };
-export type Context = { user_name: string; projects: ProjectCtx[] };
+export type Bereich = { id: string; name: string; mitglieder: Member[] };
+export type Context = { user_name: string; projects: ProjectCtx[]; bereiche?: Bereich[] };
+/** Vorschlag der KI für ein neues Projekt */
+export type NewProject = { name: string; workspace_id: string };
 
 /** So speichert Projektraum einen Vorschlag (wird im Prüf-Fenster bearbeitet) */
 export type Suggestion = {
@@ -117,7 +120,16 @@ export const TOOL = {
   input_schema: {
     type: "object",
     properties: {
-      projekt_id: { type: "string", description: "ID des passendsten Projekts aus der Liste (nur wenn mehrere zur Auswahl stehen)" },
+      projekt_id: { type: "string", description: "ID des passendsten vorhandenen Projekts aus der Liste" },
+      neues_projekt: {
+        type: "object",
+        description: "Nur wenn ausdrücklich ein neues Projekt gewünscht ist oder keines der Projekte passt: Name und Bereich für ein neues Projekt (dann projekt_id weglassen)",
+        properties: {
+          name: { type: "string", description: "Kurzer Projektname, z. B. 'Sommerfest 2027'" },
+          bereich_id: { type: "string", description: "ID des Bereichs aus der Liste" },
+        },
+        required: ["name", "bereich_id"],
+      },
       titel: { type: "string", description: "Kurzer Name für dieses Protokoll, z. B. 'Teamsitzung 14. Okt.'" },
       zusammenfassung: { type: "string", description: "2–4 Sätze: worum ging es, was wurde beschlossen" },
       aufgaben: {
@@ -163,13 +175,22 @@ export function systemPrompt() {
 export function contextText(ctx: Context, today: string, chooseProject: boolean) {
   const d = new Date(today + "T12:00:00Z");
   const lines = [`Heute ist ${WD[d.getUTCDay()]}, ${today}. Das Protokoll hat ${ctx.user_name} geschickt.`];
-  lines.push(chooseProject ? "Wähle das passendste Projekt (projekt_id). Projekte:" : "Projekt:");
+  lines.push(
+    chooseProject
+      ? "Wähle das passendste Projekt (projekt_id). Wenn im Protokoll ausdrücklich ein neues Projekt gewünscht ist oder keines passt, schlag stattdessen ein neues Projekt vor (neues_projekt). Projekte:"
+      : "Projekt:",
+  );
   for (const p of ctx.projects) {
     lines.push(`\n## ${p.name} (Bereich ${p.bereich})${chooseProject ? ` – id ${p.id}` : ""}`);
     if (p.mitglieder.length) lines.push(`Mitglieder: ${p.mitglieder.map((m) => m.name).join(", ")}`);
     if (p.rubriken.length) lines.push(`Rubriken: ${p.rubriken.map((r) => r.name).join(", ")}`);
     if (p.meilensteine.length) lines.push(`Meilensteine: ${p.meilensteine.map((m) => m.name + (m.faellig ? ` (bis ${m.faellig})` : "")).join(", ")}`);
     if (p.offene_aufgaben.length) lines.push(`Offene Aufgaben: ${p.offene_aufgaben.slice(0, chooseProject ? 15 : 60).join(" | ")}`);
+  }
+  if (!ctx.projects.length && chooseProject) lines.push("(noch keine Projekte)");
+  if (chooseProject && ctx.bereiche?.length) {
+    lines.push("\nBereiche für ein neues Projekt:");
+    for (const b of ctx.bereiche) lines.push(`- ${b.name} – id ${b.id}${b.mitglieder.length ? ` (Mitglieder: ${b.mitglieder.map((m) => m.name).join(", ")})` : ""}`);
   }
   return lines.join("\n");
 }
@@ -302,4 +323,14 @@ export function replyMail(o: { name: string; title: string; count: number; link:
   const text = `Hallo ${o.name},\n\naus deinem Protokoll „${o.title}“ hat Projektraum ${what}.\nPrüfen und anlegen: ${o.link}\n\nAngelegt wird erst, wenn du es bestätigst.\n\nProjektraum`;
   const html = `<p>Hallo ${esc(o.name)},</p><p>aus deinem Protokoll „${esc(o.title)}“ hat Projektraum <strong>${what}</strong>.</p><p><a href="${esc(o.link)}" style="display:inline-block;padding:10px 16px;background:#1F5FBF;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">Vorschläge prüfen</a></p><p style="color:#666">Angelegt wird erst, wenn du es bestätigst.</p>`;
   return { subject: `${o.count} ${o.count === 1 ? "Aufgabe" : "Aufgaben"} aus „${o.title}“`, text, html };
+}
+
+/** Neues Projekt aus der Antwort der KI prüfen (Bereich muss erlaubt sein) */
+export function newProjectOf(raw: { neues_projekt?: unknown }, ctx: Context): { project: NewProject; members: Member[] } | null {
+  const n = raw.neues_projekt as { name?: unknown; bereich_id?: unknown } | undefined;
+  if (!n || typeof n.name !== "string" || !n.name.trim()) return null;
+  const list = ctx.bereiche ?? [];
+  const b = list.find((x) => x.id === n.bereich_id) ?? (list.length === 1 ? list[0] : null);
+  if (!b) return null;
+  return { project: { name: n.name.trim().slice(0, 120), workspace_id: b.id }, members: b.mitglieder };
 }
