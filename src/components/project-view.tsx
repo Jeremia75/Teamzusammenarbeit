@@ -43,7 +43,23 @@ export function ProjectView(props: Props) {
   const [view, setViewState] = useState<View>(props.initialSections.length ? "sections" : "status");
   const [onlyMine, setOnlyMine] = useState(false);
   const [msFilter, setMsFilter] = useState<string | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenIdState] = useState<string | null>(null);
+  // Link mit ?aufgabe=… (z. B. aus "Meine Woche" oder der Glocke) öffnet die Aufgabe direkt
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("aufgabe");
+    if (id && props.initialTasks.some((t) => t.id === id)) setOpenIdState(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const setOpenId = (id: string | null) => {
+    setOpenIdState(id);
+    // Adresse aktuell halten, ohne neu zu laden – so lässt sich eine Aufgabe auch verlinken
+    try {
+      const url = new URL(window.location.href);
+      if (id) url.searchParams.set("aufgabe", id);
+      else url.searchParams.delete("aufgabe");
+      window.history.replaceState(window.history.state, "", url);
+    } catch {}
+  };
   const [error, setError] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 

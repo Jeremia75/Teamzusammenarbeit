@@ -5,6 +5,7 @@ import { signOut } from "./actions";
 import { SidebarProjects } from "@/components/sidebar-projects";
 import { NotificationPrompt } from "@/components/notification-prompt";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notification-bell";
 import { AppearanceProvider, type BgImage } from "@/components/appearance-provider";
 import { sanitize } from "@/lib/appearance";
 
@@ -13,10 +14,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [workspaces, { data: notify }, { data: look }] = await Promise.all([
+  const todayIso = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Vienna" }).format(new Date());
+  const [workspaces, { data: notify }, { data: look }, { count: dueCount }] = await Promise.all([
     loadWorkspaces(),
     supabase.from("notification_settings").select("asked_at").eq("user_id", user?.id ?? "").maybeSingle(),
     supabase.from("appearance_settings").select("settings, image_path").eq("user_id", user?.id ?? "").maybeSingle(),
+    // Für "Meine Woche": eigene offene Aufgaben, die heute oder früher fällig sind
+    supabase
+      .from("tasks")
+      .select("id, task_assignees!inner(user_id)", { count: "exact", head: true })
+      .eq("task_assignees.user_id", user?.id ?? "")
+      .neq("status", "done")
+      .lte("due_date", todayIso),
   ]);
 
   // Eigenes Hintergrundbild: privat gespeichert, Link gilt eine Woche
@@ -38,6 +47,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <img src="/icon.svg" alt="" width={32} height={32} className="size-8 rounded-lg ring-1 ring-(--c-line)" />
           <span className="font-extrabold text-[17px] tracking-tight">Projektraum</span>
         </Link>
+
+        <div className="flex flex-col gap-1 -mt-2">
+          <Link
+            href="/woche"
+            className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-bold text-(--c-ink) hover:bg-(--c-bg)"
+          >
+            <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+              <path d="M3.5 10h17M8 3v4M16 3v4M8.5 15l2 2 4-4" />
+            </svg>
+            <span className="flex-1">Meine Woche</span>
+            {!!dueCount && (
+              <span className="min-w-6 h-6 px-1.5 rounded-full bg-(--c-danger) text-(--c-on-danger) text-xs font-bold flex items-center justify-center" title="Heute oder früher fällig">
+                {dueCount}
+                <span className="sr-only"> heute oder früher fällig</span>
+              </span>
+            )}
+          </Link>
+          <NotificationBell userId={user?.id ?? ""} />
+        </div>
 
         <SidebarProjects workspaces={workspaces} />
 

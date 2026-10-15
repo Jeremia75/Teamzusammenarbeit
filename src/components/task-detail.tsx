@@ -366,17 +366,86 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
     };
   }, [supabase, taskId]);
 
+  // ---- @Erwähnungen ----
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
+  const [pick, setPick] = useState(0);
+  const others = members.filter((m) => m.id !== currentUserId);
+  const suggestions = mention
+    ? others.filter((m) => m.name.toLowerCase().split(/\s+/).some((p) => p.startsWith(mention.query.toLowerCase())) || m.name.toLowerCase().startsWith(mention.query.toLowerCase())).slice(0, 6)
+    : [];
+
+  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value;
+    setBody(v);
+    const caret = e.target.selectionStart ?? v.length;
+    const m = /(^|\s)@([^\s@]{0,30})$/.exec(v.slice(0, caret));
+    setMention(m && others.length ? { start: caret - m[2].length - 1, query: m[2] } : null);
+    setPick(0);
+  }
+  function choose(m: Member) {
+    if (!mention) return;
+    const caret = inputRef.current?.selectionStart ?? body.length;
+    const next = body.slice(0, mention.start) + "@" + m.name + " " + body.slice(caret);
+    setBody(next);
+    setMention(null);
+    requestAnimationFrame(() => {
+      const pos = mention.start + m.name.length + 2;
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(pos, pos);
+    });
+  }
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestions.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setPick((i) => (i + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setPick((i) => (i - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      choose(suggestions[pick]);
+    } else if (e.key === "Escape") {
+      // Nur die Auswahl schließen, nicht das Aufgabenfenster
+      e.preventDefault();
+      e.stopPropagation();
+      setMention(null);
+    }
+  }
+  // Längere Namen zuerst prüfen, damit "@Anna Maria" nicht als "@Anna" zählt
+  const byLength = [...members].sort((a, b) => b.name.length - a.name.length);
+  const mentionedIn = (text: string) => byLength.filter((m) => m.id !== currentUserId && text.includes("@" + m.name)).map((m) => m.id);
+
   async function send(e: React.FormEvent) {
     e.preventDefault();
     const text = body.trim();
     if (!text) return;
     setBody("");
+    setMention(null);
     const { data } = await supabase
       .from("comments")
-      .insert({ task_id: taskId, body: text, author_id: currentUserId })
+      .insert({ task_id: taskId, body: text, author_id: currentUserId, mentions: mentionedIn(text) })
       .select()
       .single();
     if (data) setComments((prev) => [...prev, data]);
+  }
+
+  /** Erwähnte Namen im Text hervorheben */
+  function render(text: string) {
+    if (!members.length) return text;
+    const esc = byLength.map((m) => m.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).filter(Boolean);
+    if (!esc.length) return text;
+    const parts = text.split(new RegExp(`(@(?:${esc.join("|")}))`, "g"));
+    return parts.map((p, i) =>
+      i % 2 === 1 ? (
+        <span key={i} className="font-semibold text-(--c-accent-ink) bg-(--c-accent-soft) rounded px-0.5">
+          {p}
+        </span>
+      ) : (
+        p
+      ),
+    );
   }
 
   return (
@@ -392,23 +461,56 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
                 <strong className="text-(--c-ink)">{author.name}</strong> ·{" "}
                 {new Date(c.created_at).toLocaleString("de-AT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </span>
-              <p className="text-sm whitespace-pre-wrap break-words">{c.body}</p>
+              <p className="text-sm whitespace-pre-wrap break-words">{render(c.body)}</p>
             </div>
           </div>
         );
       })}
-      <form onSubmit={send} className="flex gap-2">
-        <label className="sr-only" htmlFor="new-comment">Kommentar</label>
-        <input
-          id="new-comment"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Kommentar schreiben"
-          className={`${field} flex-1 min-w-0`}
-        />
-        <button type="submit" className="h-11 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold">
-          Senden
-        </button>
+      <form onSubmit={send} className="flex flex-col gap-1.5">
+        <div className="flex gap-2 relative">
+          <label className="sr-only" htmlFor="new-comment">Kommentar</label>
+          <input
+            ref={inputRef}
+            id="new-comment"
+            value={body}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            onBlur={() => setTimeout(() => setMention(null), 150)}
+            placeholder={others.length ? "Kommentar schreiben – mit @ erwähnst du jemanden" : "Kommentar schreiben"}
+            role="combobox"
+            aria-expanded={suggestions.length > 0}
+            aria-controls="mention-list"
+            aria-autocomplete="list"
+            className={`${field} flex-1 min-w-0`}
+          />
+          <button type="submit" className="h-11 px-4 rounded-lg bg-(--c-ink) text-(--c-on-ink) text-sm font-bold">
+            Senden
+          </button>
+          {suggestions.length > 0 && (
+            <ul
+              id="mention-list"
+              role="listbox"
+              aria-label="Person erwähnen"
+              className="absolute left-0 bottom-full mb-1 z-30 min-w-56 max-w-full rounded-xl border border-(--c-line) bg-(--c-surface) shadow-lg py-1"
+            >
+              {suggestions.map((m, i) => (
+                <li
+                  key={m.id}
+                  role="option"
+                  aria-selected={i === pick}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    choose(m);
+                  }}
+                  className={`flex items-center gap-2 px-3 min-h-10 cursor-pointer text-sm font-semibold ${i === pick ? "bg-(--c-hover)" : ""}`}
+                >
+                  <Avatar member={m} size={22} />
+                  {m.name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </form>
     </div>
   );
