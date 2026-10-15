@@ -118,11 +118,15 @@ export function Trash() {
                       Gelöscht von {it.deleted_by} am {new Date(it.deleted_at).toLocaleDateString("de-AT", { day: "numeric", month: "long" })} · noch{" "}
                       {left === 1 ? "1 Tag" : `${left} Tage`}
                     </span>
-                    {it.kind === "project" && !it.can_purge && (
-                      <span className="text-xs text-(--c-muted)">Wiederherstellen kann, wer das Projekt angelegt hat, oder ein Admin.</span>
+                    {!it.can_purge && (
+                      <span className="text-xs text-(--c-muted)">
+                        {it.kind === "project"
+                          ? "Wiederherstellen kann, wer das Projekt angelegt hat, oder ein Admin."
+                          : "Wiederherstellen kann, wer in diesem Bereich bearbeiten darf."}
+                      </span>
                     )}
                   </div>
-                  {purging !== it.id && (it.kind === "task" || it.can_purge) && (
+                  {purging !== it.id && it.can_purge && (
                     <div className="flex gap-2 shrink-0">
                       <button
                         type="button"

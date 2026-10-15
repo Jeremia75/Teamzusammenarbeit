@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskRecurrence, TaskStatus } from "@/lib/database.types";
+import type { TaskPriority, TaskRecurrence, TaskStatus, WorkspaceRole } from "@/lib/database.types";
 
 export const STATUSES: { id: TaskStatus; label: string; color: string }[] = [
   { id: "todo", label: "Offen", color: "var(--st-todo)" },
@@ -20,6 +20,16 @@ export const RECURRENCES: { id: TaskRecurrence; label: string }[] = [
   { id: "monthly", label: "Monatlich" },
   { id: "yearly", label: "Jährlich" },
 ];
+
+export const ROLES: { id: WorkspaceRole; label: string; hint: string }[] = [
+  { id: "editor", label: "Bearbeiten", hint: "darf alles anlegen, ändern und löschen" },
+  { id: "commenter", label: "Kommentieren", hint: "sieht alles und darf kommentieren" },
+  { id: "viewer", label: "Nur ansehen", hint: "sieht alles, ändert nichts – z. B. für Gäste" },
+];
+
+export function roleLabel(id: WorkspaceRole) {
+  return ROLES.find((r) => r.id === id)?.label ?? "";
+}
 
 export function recurrenceLabel(id: TaskRecurrence | null) {
   return RECURRENCES.find((r) => r.id === id)?.label ?? "";

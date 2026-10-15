@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RubricView } from "@/components/rubric-view";
 import type { Member } from "@/components/project-view";
+import { myWorkspaceRole } from "@/lib/queries";
 
 /** Eine Projekt-Rubrik: alle Aufgaben aller Projekte darin. */
 export default async function RubricPage({ params }: { params: Promise<{ sectionId: string }> }) {
@@ -14,7 +15,7 @@ export default async function RubricPage({ params }: { params: Promise<{ section
 
   const { data: rubric } = await supabase
     .from("project_sections")
-    .select("id, name, workspace_id, workspaces(name)")
+    .select("id, name, workspace_id, workspaces(name, organization_id)")
     .eq("id", sectionId)
     .maybeSingle();
 
@@ -31,11 +32,12 @@ export default async function RubricPage({ params }: { params: Promise<{ section
   const projectIds = projects.map((p) => p.id);
 
   const none = { data: [] };
-  const [{ data: tasks }, { data: milestones }, { data: sections }, { data: memberRows }] = await Promise.all([
+  const [{ data: tasks }, { data: milestones }, { data: sections }, { data: memberRows }, role] = await Promise.all([
     projectIds.length ? supabase.from("tasks").select("*").in("project_id", projectIds).order("position") : none,
     projectIds.length ? supabase.from("milestones").select("*").in("project_id", projectIds).order("position") : none,
     projectIds.length ? supabase.from("sections").select("*").in("project_id", projectIds).order("position") : none,
     supabase.from("workspace_members").select("user_id").eq("workspace_id", rubric.workspace_id),
+    myWorkspaceRole(supabase, rubric.workspace_id, rubric.workspaces?.organization_id ?? "", user?.id ?? ""),
   ]);
 
   const taskIds = (tasks ?? []).map((t) => t.id);
@@ -64,6 +66,7 @@ export default async function RubricPage({ params }: { params: Promise<{ section
       sections={sections ?? []}
       initialAssignees={assignees ?? []}
       members={members}
+      role={role}
     />
   );
 }

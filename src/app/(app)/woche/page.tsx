@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MyWeek, type WeekTask } from "@/components/my-week";
+import { loadWorkspaces } from "@/lib/queries";
 
 export const metadata = { title: "Meine Woche · Projektraum" };
 
@@ -12,12 +13,14 @@ export default async function WeekPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const cols = "id, title, status, priority, start_date, due_date, parent_id, project_id, recurrence, projects!inner(name, color, archived_at), parent:parent_id(title)";
+  const cols = "id, title, status, priority, start_date, due_date, parent_id, project_id, recurrence, projects!inner(name, color, archived_at, workspace_id), parent:parent_id(title)";
   const since = new Date(Date.now() - 7 * 86400000).toISOString();
-  const [{ data: mine }, { data: created }] = await Promise.all([
+  const [{ data: mine }, { data: created }, workspaces] = await Promise.all([
     supabase.from("tasks").select(`${cols}, task_assignees!inner(user_id)`).eq("task_assignees.user_id", user.id).is("projects.archived_at", null).or(`status.neq.done,completed_at.gte.${since}`).limit(500),
     supabase.from("tasks").select(`${cols}, task_assignees(user_id)`).eq("created_by", user.id).is("projects.archived_at", null).or(`status.neq.done,completed_at.gte.${since}`).limit(500),
+    loadWorkspaces(),
   ]);
+  const editable = new Set(workspaces.filter((w) => w.myRole === "editor").map((w) => w.id));
 
   const map = new Map<string, WeekTask>();
   for (const t of [...(mine ?? []), ...(created ?? []).filter((t) => t.task_assignees.length === 0)]) {
@@ -33,6 +36,7 @@ export default async function WeekPage() {
       color: t.projects.color,
       parent: (t.parent as { title: string } | null)?.title ?? null,
       recurrence: t.recurrence,
+      readOnly: !editable.has(t.projects.workspace_id),
     });
   }
   return <MyWeek initial={[...map.values()]} />;

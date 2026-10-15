@@ -1,4 +1,20 @@
 import { createClient } from "@/lib/supabase/server";
+import type { WorkspaceRole } from "@/lib/database.types";
+
+type Supa = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Meine Rolle in einem Bereich (gleiche Regel wie in der Datenbank):
+ * Admins und Eigentümer der Organisation dürfen immer bearbeiten.
+ */
+export async function myWorkspaceRole(supabase: Supa, workspaceId: string, organizationId: string, userId: string): Promise<WorkspaceRole> {
+  const [{ data: org }, { data: wm }] = await Promise.all([
+    supabase.from("organization_members").select("role").eq("organization_id", organizationId).eq("user_id", userId).maybeSingle(),
+    supabase.from("workspace_members").select("role").eq("workspace_id", workspaceId).eq("user_id", userId).maybeSingle(),
+  ]);
+  if (org?.role === "owner" || org?.role === "admin") return "editor";
+  return wm?.role ?? "viewer";
+}
 
 export type SidebarWorkspace = {
   id: string;
@@ -7,6 +23,8 @@ export type SidebarWorkspace = {
   organizationId: string;
   orgName: string;
   isPersonal: boolean;
+  /** Meine Rolle hier – "viewer" und "commenter" dürfen nichts anlegen oder ändern */
+  myRole: WorkspaceRole;
   projects: { id: string; name: string; color: string; sectionId: string | null; position: number }[];
   sections: { id: string; name: string; position: number }[];
 };
@@ -66,9 +84,9 @@ export async function loadOverview() {
   const shared = workspaces.filter((w) => !w.isPersonal);
   const [{ data: wsMembers }, { data: myRoles }] = await Promise.all([
     shared.length
-      ? supabase.from("workspace_members").select("workspace_id, user_id").in("workspace_id", shared.map((w) => w.id))
-      : Promise.resolve({ data: [] as { workspace_id: string; user_id: string }[] }),
-    supabase.from("organization_members").select("organization_id, role").eq("user_id", user?.id ?? ""),
+      ? supabase.from("workspace_members").select("workspace_id, user_id, role").in("workspace_id", shared.map((w) => w.id))
+      : Promise.resolve({ data: [] as { workspace_id: string; user_id: string; role: WorkspaceRole }[] }),
+    supabase.from("organization_members").select("organization_id, user_id, role").in("organization_id", [...new Set(workspaces.map((w) => w.organizationId))]),
   ]);
   const ids = [...new Set((wsMembers ?? []).map((m) => m.user_id))];
   const { data: profiles } = ids.length
@@ -76,16 +94,21 @@ export async function loadOverview() {
     : { data: [] as { id: string; display_name: string; avatar_color: string }[] };
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
 
-  const membersOf = (wsId: string) =>
-    (wsMembers ?? [])
+  const orgAdmin = (orgId: string, uid: string) =>
+    (myRoles ?? []).some((r) => r.organization_id === orgId && r.user_id === uid && (r.role === "owner" || r.role === "admin"));
+  const membersOf = (wsId: string) => {
+    const orgId = workspaces.find((w) => w.id === wsId)?.organizationId ?? "";
+    return (wsMembers ?? [])
       .filter((m) => m.workspace_id === wsId)
       .map((m) => ({
         id: m.user_id,
         name: byId.get(m.user_id)?.display_name || "Unbenannt",
         color: byId.get(m.user_id)?.avatar_color ?? "#8A94A0",
+        role: m.role,
+        isAdmin: orgAdmin(orgId, m.user_id),
       }));
-  const isAdmin = (orgId: string) =>
-    (myRoles ?? []).some((r) => r.organization_id === orgId && (r.role === "owner" || r.role === "admin"));
+  };
+  const isAdmin = (orgId: string) => orgAdmin(orgId, user?.id ?? "");
 
   return { userId: user?.id ?? "", workspaces, stats, membersOf, isAdmin };
 }
@@ -93,6 +116,17 @@ export async function loadOverview() {
 /** Alle Bereiche, auf die der Nutzer Zugriff hat – private zuerst. */
 export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const [{ data: myWs }, { data: myOrgs }] = await Promise.all([
+    supabase.from("workspace_members").select("workspace_id, role").eq("user_id", user?.id ?? ""),
+    supabase.from("organization_members").select("organization_id, role").eq("user_id", user?.id ?? ""),
+  ]);
+  const roleIn = (wsId: string, orgId: string): WorkspaceRole => {
+    if ((myOrgs ?? []).some((o) => o.organization_id === orgId && (o.role === "owner" || o.role === "admin"))) return "editor";
+    return (myWs ?? []).find((m) => m.workspace_id === wsId)?.role ?? "viewer";
+  };
   const { data, error } = await supabase
     .from("workspaces")
     .select("id, name, color, organization_id, organizations(name, is_personal), projects(id, name, color, archived_at, section_id, position), project_sections(id, name, position)")
@@ -108,6 +142,7 @@ export async function loadWorkspaces(): Promise<SidebarWorkspace[]> {
       organizationId: w.organization_id,
       orgName: w.organizations?.name ?? "",
       isPersonal: w.organizations?.is_personal ?? false,
+      myRole: roleIn(w.id, w.organization_id),
       ...boardOrder(w.projects ?? [], w.project_sections ?? []),
     }))
     .sort((a, b) => Number(b.isPersonal) - Number(a.isPersonal));

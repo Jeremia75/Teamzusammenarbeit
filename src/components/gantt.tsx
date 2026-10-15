@@ -47,6 +47,7 @@ export function Gantt({
   onUpdate,
   peopleOf,
   deps = [],
+  readOnly = false,
 }: {
   tasks: Task[];
   sections: Section[];
@@ -56,6 +57,8 @@ export function Gantt({
   onUpdate: (id: string, patch: Partial<Task>) => void;
   peopleOf: (taskId: string) => Person[];
   deps?: Dependency[];
+  /** Nur ansehen: Balken lassen sich nicht verschieben */
+  readOnly?: boolean;
 }) {
   const [zoom, setZoom] = useZoom("projektraum:gantt-zoom", ZOOMS, "month");
   const [groupBy, setGroupByState] = useState<GroupBy>("section");
@@ -134,7 +137,7 @@ export function Gantt({
     setDrag({ id: t.id, mode, x0: e.clientX, span: spanOf(t)!, moved: false });
   }
   function move(e: React.PointerEvent) {
-    if (!drag) return;
+    if (!drag || readOnly) return;
     const dd = Math.round((e.clientX - drag.x0) / dayW);
     if (!drag.moved && Math.abs(e.clientX - drag.x0) < 4) return;
     const s = { ...drag.span };
@@ -156,6 +159,7 @@ export function Gantt({
     setPreview(null);
   }
   function save(id: string, s: Span) {
+    if (readOnly) return;
     // Nur Fälligkeit und nicht in die Länge gezogen: bleibt eine reine Fälligkeit
     if (s.dueOnly && s.start === s.end) onUpdate(id, { due_date: toIso(s.end) });
     else onUpdate(id, { start_date: toIso(s.start), due_date: toIso(s.end) });
@@ -399,14 +403,14 @@ export function Gantt({
                         color: `var(--st-${t.status}-ink)`,
                       }}
                     >
-                      <span aria-hidden onPointerDown={(e) => begin(e, t, "start")} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-(--c-ink)/15" />
+                      {!readOnly && <span aria-hidden onPointerDown={(e) => begin(e, t, "start")} className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md hover:bg-(--c-ink)/15" />}
                       {!narrow && (
                         // Beschriftung wandert beim Scrollen mit, solange sie in den Balken passt
                         <span data-bar-label className={`sticky left-[124px] sm:left-[224px] px-2 whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${t.status === "done" ? "line-through opacity-80" : ""}`}>
                           {t.title}
                         </span>
                       )}
-                      <span aria-hidden onPointerDown={(e) => begin(e, t, "end")} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-(--c-ink)/15" />
+                      {!readOnly && <span aria-hidden onPointerDown={(e) => begin(e, t, "end")} className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md hover:bg-(--c-ink)/15" />}
                     </div>
                     {narrow && (
                       <span aria-hidden className="absolute top-2 h-6 leading-6 text-xs font-semibold text-(--c-text-2) whitespace-nowrap pointer-events-none" style={{ left: x(s.end) + dayW + 4 }}>
@@ -473,14 +477,14 @@ export function Gantt({
                 <button type="button" onClick={() => onOpen(t.id)} className="flex-1 min-w-0 text-left text-sm font-semibold truncate min-h-9 hover:underline underline-offset-4">
                   {t.title}
                 </button>
-                <button
+                {!readOnly && <button
                   type="button"
                   onClick={() => onUpdate(t.id, { start_date: toIso(today), due_date: toIso(today + 2) })}
                   aria-label={`${t.title} ab heute einplanen`}
                   className="shrink-0 min-h-9 px-3 rounded-lg border border-(--c-line) text-xs font-semibold hover:bg-(--c-hover)"
                 >
                   Ab heute einplanen
-                </button>
+                </button>}
               </li>
             ))}
           </ul>

@@ -43,6 +43,8 @@ type Props = {
   onRenameSection?: (id: string, name: string) => void;
   onDeleteSection?: (id: string) => void;
   onShiftSection?: (id: string, dir: -1 | 1) => void;
+  /** Nur ansehen: nichts ziehen, nichts abhaken */
+  readOnly?: boolean;
 };
 
 export function Board(props: Props) {
@@ -70,6 +72,7 @@ export function Board(props: Props) {
               key={col.key}
               aria-label={col.title}
               onDragOver={(e) => {
+                if (props.readOnly) return;
                 e.preventDefault();
                 if (drop?.col !== col.key) setDrop({ col: col.key, before: null });
               }}
@@ -102,6 +105,7 @@ export function Board(props: Props) {
                 <div
                   key={t.id}
                   onDragOver={(e) => {
+                    if (props.readOnly) return;
                     e.preventDefault();
                     e.stopPropagation();
                     const r = e.currentTarget.getBoundingClientRect();
@@ -127,6 +131,7 @@ export function Board(props: Props) {
                     project={props.projectOf?.(t)}
                     attachments={props.attachmentsOf?.(t.id) ?? 0}
                     selected={props.openId === t.id}
+                    readOnly={props.readOnly}
                     onOpen={() => props.onOpen(t.id)}
                     onToggleDone={() => props.onToggleDone(t)}
                     onDragStart={() => setDragId(t.id)}
@@ -318,6 +323,7 @@ export function TaskCard({
   project,
   attachments = 0,
   selected,
+  readOnly = false,
   onOpen,
   onToggleDone,
   onDragStart,
@@ -332,6 +338,7 @@ export function TaskCard({
   project?: { name: string; color: string };
   attachments?: number;
   selected: boolean;
+  readOnly?: boolean;
   onOpen: () => void;
   onToggleDone: () => void;
   onDragStart: () => void;
@@ -345,7 +352,7 @@ export function TaskCard({
 
   return (
     <div
-      draggable
+      draggable={!readOnly}
       data-card
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
@@ -363,9 +370,10 @@ export function TaskCard({
         <button
           type="button"
           onClick={onToggleDone}
+          disabled={readOnly}
           aria-label={done ? `${task.title} wieder öffnen` : `${task.title} als erledigt markieren`}
           aria-pressed={done}
-          className="shrink-0 size-6 -mt-0.5 rounded-full border-2 flex items-center justify-center hover:scale-110 transition"
+          className={`shrink-0 size-6 -mt-0.5 rounded-full border-2 flex items-center justify-center transition ${readOnly ? "cursor-default" : "hover:scale-110"}`}
           style={{ borderColor: done ? "var(--st-done)" : "var(--c-line-hover)", background: done ? "var(--st-done)" : "transparent" }}
         >
           <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={done ? "#FFFFFF" : "var(--c-line-hover)"} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">

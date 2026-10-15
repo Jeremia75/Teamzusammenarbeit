@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
+import type { Milestone, Section, Task, TaskStatus, WorkspaceRole } from "@/lib/database.types";
 import { STATUSES } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { TaskDetail } from "@/components/task-detail";
@@ -24,6 +24,8 @@ type Props = {
   sections: Section[];
   initialAssignees: Assignee[];
   members: Member[];
+  /** Meine Rolle im Bereich (Standard: Bearbeiten) */
+  role?: WorkspaceRole;
 };
 
 type View = "projects" | "status" | "list";
@@ -31,6 +33,8 @@ type View = "projects" | "status" | "list";
 /** Alle Aufgaben aller Projekte einer Projekt-Rubrik – im gleichen Schema wie die Projektansicht. */
 export function RubricView(props: Props) {
   const { rubric, projects, members, currentUserId, milestones, sections } = props;
+  const role = props.role ?? "editor";
+  const readOnly = role !== "editor";
   const supabase = useMemo(() => createClient(), []);
 
   const [tasks, setTasks] = useState<Task[]>(props.initialTasks);
@@ -306,7 +310,8 @@ export function RubricView(props: Props) {
                   onOpen={(id) => setOpenId(openId === id ? null : id)}
                   onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                   onMove={moveTask}
-                  onQuickAdd={view === "projects" ? (col, title) => col.projectId && addTask(col.projectId, title) : undefined}
+                  readOnly={readOnly}
+                  onQuickAdd={view === "projects" && !readOnly ? (col, title) => col.projectId && addTask(col.projectId, title) : undefined}
                 />
               )}
             </div>
@@ -321,6 +326,7 @@ export function RubricView(props: Props) {
                 members={members}
                 assigned={peopleOf(openTask.id).map((m) => m.id)}
                 currentUserId={currentUserId}
+                role={role}
                 onClose={() => setOpenId(null)}
                 onUpdate={updateTask}
                 onAddSubtask={(title) => addTask(openTask.project_id, title, { parent_id: openTask.id })}

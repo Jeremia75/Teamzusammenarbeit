@@ -12,6 +12,7 @@ export function Milestones({
   onDelete,
   selectedId,
   onSelect,
+  readOnly = false,
 }: {
   milestones: Milestone[];
   tasks: Task[];
@@ -19,6 +20,7 @@ export function Milestones({
   onDelete: (id: string) => void;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  readOnly?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -28,13 +30,13 @@ export function Milestones({
     <section aria-label="Meilensteine" className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-(--c-muted)">Ziele &amp; Meilensteine</h2>
-        <button
+        {!readOnly && <button
           type="button"
           onClick={() => setAdding(!adding)}
           className="min-h-11 px-3 text-sm font-semibold text-(--c-accent)"
         >
           {adding ? "Abbrechen" : "+ Meilenstein"}
-        </button>
+        </button>}
       </div>
 
       {adding && (
@@ -65,7 +67,9 @@ export function Milestones({
 
       {milestones.length === 0 && !adding ? (
         <p className="text-sm text-(--c-muted)">
-          Noch keine Meilensteine. Lege Etappenziele an und ordne ihnen Aufgaben zu, dann siehst du hier den Fortschritt.
+          {readOnly
+            ? "Noch keine Meilensteine."
+            : "Noch keine Meilensteine. Lege Etappenziele an und ordne ihnen Aufgaben zu, dann siehst du hier den Fortschritt."}
         </p>
       ) : (
         <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
@@ -109,7 +113,7 @@ export function Milestones({
                     {active ? "Filter aktiv – erneut klicken zum Aufheben" : "Aufgaben anzeigen"}
                   </span>
                 </button>
-                <button
+                {!readOnly && <button
                   type="button"
                   onClick={() => onDelete(m.id)}
                   aria-label={`Meilenstein ${m.name} löschen`}
@@ -118,7 +122,7 @@ export function Milestones({
                   <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                     <path d="M6 6l12 12M18 6L6 18" />
                   </svg>
-                </button>
+                </button>}
               </div>
             );
           })}

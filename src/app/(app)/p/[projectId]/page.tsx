@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectView, type Member } from "@/components/project-view";
+import { myWorkspaceRole } from "@/lib/queries";
 
 export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -19,7 +20,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
   // Kein Zugriff oder nicht vorhanden – RLS liefert in beiden Fällen nichts
   if (!project) notFound();
 
-  const [{ data: tasks }, { data: milestones }, { data: sections }, { data: memberRows }, { data: myRole }] = await Promise.all([
+  const [{ data: tasks }, { data: milestones }, { data: sections }, { data: memberRows }, { data: myRole }, role] = await Promise.all([
     supabase.from("tasks").select("*").eq("project_id", projectId).order("position"),
     supabase.from("milestones").select("*").eq("project_id", projectId).order("position"),
     supabase.from("sections").select("*").eq("project_id", projectId).order("position"),
@@ -30,6 +31,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
       .eq("organization_id", project.workspaces?.organization_id ?? "")
       .eq("user_id", user?.id ?? "")
       .maybeSingle(),
+    myWorkspaceRole(supabase, project.workspace_id, project.workspaces?.organization_id ?? "", user?.id ?? ""),
   ]);
   // Löschen dürfen: wer das Projekt angelegt hat, und Admins (gleiche Regel wie in der Datenbank)
   const canDelete = project.created_by === user?.id || myRole?.role === "owner" || myRole?.role === "admin";
@@ -60,7 +62,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
       initialSections={sections ?? []}
       initialAssignees={assignees ?? []}
       members={members}
-      canDelete={canDelete}
+      canDelete={canDelete && role === "editor"}
+      role={role}
     />
   );
 }

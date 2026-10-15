@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { PROJECT_COLORS } from "@/lib/labels";
+import { PROJECT_COLORS, roleLabel } from "@/lib/labels";
+import type { WorkspaceRole } from "@/lib/database.types";
 
 export async function createProject(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -59,10 +60,12 @@ export type MemberFormState = { ok: boolean; message: string } | null;
 export async function addMember(_prev: MemberFormState, formData: FormData): Promise<MemberFormState> {
   const email = String(formData.get("email") ?? "").trim();
   const workspaceId = String(formData.get("workspace_id") ?? "");
+  const r = String(formData.get("role") ?? "editor");
+  const role: WorkspaceRole = r === "viewer" || r === "commenter" ? r : "editor";
   if (!email || !workspaceId) return { ok: false, message: "Bitte eine E-Mail-Adresse eingeben." };
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("add_member_by_email", { ws: workspaceId, member_email: email });
+  const { data, error } = await supabase.rpc("add_member_by_email", { ws: workspaceId, member_email: email, member_role: role });
 
   if (error) return { ok: false, message: error.message };
   if (data === "not_found") {
@@ -72,7 +75,7 @@ export async function addMember(_prev: MemberFormState, formData: FormData): Pro
     };
   }
   revalidatePath("/", "layout");
-  return { ok: true, message: `${email} wurde hinzugefügt.` };
+  return { ok: true, message: `${email} wurde hinzugefügt (${roleLabel(role)}).` };
 }
 
 export async function signOut() {

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Dependency, Milestone, Section, Task, TaskStatus } from "@/lib/database.types";
-import { STATUSES, formatDate, isOverdue } from "@/lib/labels";
+import type { Dependency, Milestone, Section, Task, TaskStatus, WorkspaceRole } from "@/lib/database.types";
+import { STATUSES, formatDate, isOverdue, roleLabel } from "@/lib/labels";
 import { byPosition, positionBetween } from "@/lib/ordering";
 import { Avatar } from "@/components/avatar";
 import { TaskDetail } from "@/components/task-detail";
@@ -23,6 +23,8 @@ type Props = {
   workspace: { id: string; name: string };
   project: { id: string; name: string; description: string; color: string };
   canDelete?: boolean;
+  /** Meine Rolle im Bereich (Standard: Bearbeiten) */
+  role?: WorkspaceRole;
   initialTasks: Task[];
   initialMilestones: Milestone[];
   initialSections: Section[];
@@ -34,6 +36,8 @@ type View = "sections" | "status" | "list" | "timeline";
 
 export function ProjectView(props: Props) {
   const { project, members, currentUserId } = props;
+  const role = props.role ?? "editor";
+  const readOnly = role !== "editor";
   const supabase = useMemo(() => createClient(), []);
 
   const [tasks, setTasks] = useState<Task[]>(props.initialTasks);
@@ -327,7 +331,7 @@ export function ProjectView(props: Props) {
           ...(sortedSections.length === 0 || visible.some((t) => !t.section_id || !sections.some((s) => s.id === t.section_id))
             ? [{ key: "none", title: "Ohne Rubrik", sectionId: null }]
             : []),
-          ...sortedSections.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: true })),
+          ...sortedSections.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: !readOnly })),
         ];
 
   const tasksOf = (col: BoardColumn) =>
@@ -383,6 +387,16 @@ export function ProjectView(props: Props) {
         </div>
       </header>
 
+      {readOnly && (
+        <p data-panel="slim" role="note" className="rounded-lg border border-(--c-line) bg-(--c-surface) px-4 py-2.5 text-sm text-(--c-text-2)">
+          <strong className="text-(--c-ink)">{roleLabel(role)}:</strong>{" "}
+          {role === "commenter"
+            ? "Du siehst alles und kannst Kommentare schreiben, aber nichts ändern."
+            : "Du siehst alles, kannst aber nichts ändern."}{" "}
+          Mehr Rechte vergibt ein Admin deiner Firma.
+        </p>
+      )}
+
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
@@ -400,6 +414,7 @@ export function ProjectView(props: Props) {
         onDelete={deleteMilestone}
         selectedId={msFilter}
         onSelect={selectMilestone}
+        readOnly={readOnly}
       />
       </div>
 
@@ -468,6 +483,7 @@ export function ProjectView(props: Props) {
                 onUpdate={updateTask}
                 peopleOf={peopleOf}
                 deps={deps}
+                readOnly={readOnly}
               />
             ) : view === "list" ? (
               <TaskList
@@ -478,7 +494,7 @@ export function ProjectView(props: Props) {
                 milestoneName={milestoneName}
                 openId={openId}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
-                onAdd={(title) => addTask(title)}
+                onAdd={readOnly ? undefined : (title) => addTask(title)}
               />
             ) : (
               <Board
@@ -493,8 +509,9 @@ export function ProjectView(props: Props) {
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
                 onToggleDone={(t) => updateTask(t.id, { status: t.status === "done" ? "todo" : "done" })}
                 onMove={moveTask}
-                onQuickAdd={quickAdd}
-                onAddSection={view === "sections" ? addSection : undefined}
+                readOnly={readOnly}
+                onQuickAdd={readOnly ? undefined : quickAdd}
+                onAddSection={view === "sections" && !readOnly ? addSection : undefined}
                 onRenameSection={renameSection}
                 onDeleteSection={deleteSection}
                 onShiftSection={shiftSection}
@@ -512,6 +529,7 @@ export function ProjectView(props: Props) {
               members={members}
               assigned={peopleOf(openTask.id).map((m) => m.id)}
               currentUserId={currentUserId}
+              role={role}
               onClose={() => setOpenId(null)}
               onUpdate={updateTask}
               onAddSubtask={(title) => addTask(title, { parent_id: openTask.id })}
@@ -535,7 +553,7 @@ export function ProjectView(props: Props) {
         </div>
       </div>
 
-      {props.canDelete && <DeleteProject project={project} workspaceId={props.workspace.id} taskCount={topLevel.length} />}
+      {props.canDelete && !readOnly && <DeleteProject project={project} workspaceId={props.workspace.id} taskCount={topLevel.length} />}
     </div>
   );
 }

@@ -21,6 +21,8 @@ export type WeekTask = {
   color: string;
   parent: string | null;
   recurrence: TaskRecurrence | null;
+  /** Nur ansehen (Rolle im Bereich) – nicht abhakbar */
+  readOnly?: boolean;
 };
 
 const WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
@@ -78,6 +80,7 @@ export function MyWeek({ initial }: { initial: WeekTask[] }) {
   const count = (k: string) => buckets.find((b) => b.key === k)?.tasks.length ?? 0;
 
   async function toggle(t: WeekTask) {
+    if (t.readOnly) return;
     const next: TaskStatus = t.status === "done" ? "todo" : "done";
     setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, status: next } : x)));
     const { error } = await supabase.from("tasks").update({ status: next }).eq("id", t.id);
@@ -159,6 +162,8 @@ function Row({ t, onToggle, showDate, overdue }: { t: WeekTask; onToggle: () => 
       <button
         type="button"
         onClick={onToggle}
+        disabled={t.readOnly}
+        title={t.readOnly ? "Du kannst in diesem Bereich nur ansehen" : undefined}
         aria-pressed={done}
         aria-label={done ? `${t.title} wieder öffnen` : `${t.title} als erledigt markieren`}
         className={`mt-0.5 size-6 shrink-0 rounded-full border-2 flex items-center justify-center ${done ? "bg-(--st-done) border-(--st-done) text-white" : "border-(--c-line) hover:border-(--st-done)"}`}

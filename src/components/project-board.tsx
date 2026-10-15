@@ -21,11 +21,14 @@ export function ProjectBoard({
   initialProjects,
   initialSections,
   stats,
+  readOnly = false,
 }: {
   workspaceId: string;
   initialProjects: P[];
   initialSections: S[];
   stats: Record<string, ProjectStats>;
+  /** Nur ansehen: keine Rubriken anlegen, nichts verschieben, keine neuen Projekte */
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -62,7 +65,7 @@ export function ProjectBoard({
   const known = (id: string | null) => !!id && sections.some((s) => s.id === id);
   const columns: BoardColumn[] = [
     ...(sorted.length === 0 || projects.some((p) => !known(p.sectionId)) ? [{ key: "none", title: "Ohne Rubrik", sectionId: null }] : []),
-    ...sorted.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: true, href: `/r/${s.id}` })),
+    ...sorted.map((s) => ({ key: s.id, title: s.name, sectionId: s.id, editable: !readOnly, href: `/r/${s.id}` })),
   ];
   const projectsOf = (col: BoardColumn) =>
     projects.filter((p) => (col.sectionId ? p.sectionId === col.sectionId : !known(p.sectionId))).sort(byPosition);
@@ -157,9 +160,11 @@ export function ProjectBoard({
               <ProjectTile project={p} stats={stats[p.id] ?? EMPTY_STATS} />
             </li>
           ))}
-          <li>
-            <NewProjectTile workspaceId={workspaceId} />
-          </li>
+          {!readOnly && (
+            <li>
+              <NewProjectTile workspaceId={workspaceId} />
+            </li>
+          )}
         </ul>
       ) : (
         <div className="relative overflow-x-auto pb-2">
@@ -176,6 +181,7 @@ export function ProjectBoard({
                   key={col.key}
                   aria-label={col.title}
                   onDragOver={(e) => {
+                    if (readOnly) return;
                     e.preventDefault();
                     if (drop?.col !== col.key) setDrop({ col: col.key, before: null });
                   }}
@@ -216,7 +222,7 @@ export function ProjectBoard({
                   {list.map((p, i) => (
                     <div
                       key={p.id}
-                      draggable
+                      draggable={!readOnly}
                       onDragStart={(e) => {
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData("text/plain", p.id);
@@ -227,6 +233,7 @@ export function ProjectBoard({
                         setDrop(null);
                       }}
                       onDragOver={(e) => {
+                        if (readOnly) return;
                         e.preventDefault();
                         e.stopPropagation();
                         const r = e.currentTarget.getBoundingClientRect();
@@ -247,11 +254,11 @@ export function ProjectBoard({
                   ))}
                   {dragId && drop?.col === col.key && drop.before === null && <DropLine />}
 
-                  <NewProjectTile workspaceId={workspaceId} sectionId={col.sectionId ?? null} compact />
+                  {!readOnly && <NewProjectTile workspaceId={workspaceId} sectionId={col.sectionId ?? null} compact />}
                 </section>
               );
             })}
-            <AddSection onAdd={addSection} placeholder="z. B. Christlich, Arbeit, Familie" />
+            {!readOnly && <AddSection onAdd={addSection} placeholder="z. B. Christlich, Arbeit, Familie" />}
           </div>
         </div>
       )}

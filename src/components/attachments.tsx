@@ -75,7 +75,7 @@ function Icon({ name }: { name: string }) {
 }
 
 /** Abschnitt "Dateien und Links" im Aufgabenfenster */
-export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n: number) => void }) {
+export function Attachments({ taskId, onCount, readOnly = false }: { taskId: string; onCount?: (n: number) => void; readOnly?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState<Attachment[] | null>(null);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
@@ -187,7 +187,7 @@ export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n:
     <section
       aria-label="Dateien und Links"
       onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes("Files")) return;
+        if (readOnly || !e.dataTransfer.types.includes("Files")) return;
         e.preventDefault();
         setDragOver(true);
       }}
@@ -195,7 +195,7 @@ export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n:
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false);
       }}
       onDrop={(e) => {
-        if (!e.dataTransfer.files.length) return;
+        if (readOnly || !e.dataTransfer.files.length) return;
         e.preventDefault();
         setDragOver(false);
         upload(e.dataTransfer.files);
@@ -228,7 +228,7 @@ export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n:
                     {a.size != null ? ` · ${sizeLabel(a.size)}` : ""}
                   </span>
                 </button>
-                {confirm === a.id ? (
+                {readOnly ? null : confirm === a.id ? (
                   <span className="flex items-center gap-1 shrink-0">
                     <button type="button" onClick={() => remove(a)} className="min-h-9 px-2.5 rounded-md bg-(--c-danger) text-(--c-on-danger) text-xs font-bold">
                       Entfernen
@@ -255,7 +255,9 @@ export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n:
         </ul>
       )}
 
-      {linkOpen ? (
+      {readOnly ? (
+        items && items.length === 0 && <p className="text-sm text-(--c-muted)">Keine Dateien oder Links.</p>
+      ) : linkOpen ? (
         <form onSubmit={addLink} className="flex flex-col gap-2 rounded-lg border border-(--c-line) p-3">
           <label className="flex flex-col gap-1 text-sm font-semibold">
             Link
@@ -293,7 +295,7 @@ export function Attachments({ taskId, onCount }: { taskId: string; onCount?: (n:
         </div>
       )}
 
-      {(busy || error || (items && items.length === 0 && !linkOpen)) && (
+      {(busy || error || (!readOnly && items && items.length === 0 && !linkOpen)) && (
         <p role="status" className={`text-xs ${error ? "text-(--c-danger) font-semibold" : "text-(--c-muted)"}`}>
           {error ?? busy ?? "Du kannst Dateien auch einfach hierher ziehen. Bis 25 MB pro Datei."}
         </p>

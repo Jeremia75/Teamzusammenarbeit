@@ -2,10 +2,11 @@ import Link from "next/link";
 import type { ProjectStats, SidebarWorkspace } from "@/lib/queries";
 import { ProjectBoard } from "@/components/project-board";
 import { EMPTY_STATS } from "@/components/project-tile";
-import { MemberForm } from "@/components/member-form";
+import { MemberManager, type ManagedMember } from "@/components/member-form";
+import { roleLabel } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
 
-export type MemberInfo = { id: string; name: string; color: string };
+export type MemberInfo = ManagedMember;
 
 /** Ein Bereich mit allen Projekten als Kacheln. */
 export function WorkspaceOverview({
@@ -40,6 +41,11 @@ export function WorkspaceOverview({
               ))}
             </span>
             {members.length} {members.length === 1 ? "Mitglied" : "Mitglieder"}
+            {ws.myRole !== "editor" && (
+              <span className="ml-1 rounded-full bg-(--c-hover) px-2.5 py-1 text-xs font-bold text-(--c-text-2)" title="Deine Rolle in diesem Bereich">
+                Du: {roleLabel(ws.myRole)}
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -49,22 +55,14 @@ export function WorkspaceOverview({
         initialProjects={ws.projects}
         initialSections={ws.sections}
         stats={Object.fromEntries(ws.projects.map((p) => [p.id, stats.get(p.id) ?? EMPTY_STATS]))}
+        readOnly={ws.myRole !== "editor"}
       />
 
       {!ws.isPersonal && canManage && (
         <details className="bg-(--c-surface) border border-(--c-line) rounded-xl px-4 py-3">
           <summary className="min-h-9 flex items-center cursor-pointer text-sm font-semibold">Mitglieder verwalten</summary>
-          <div className="flex flex-col gap-3 pt-3">
-            <ul className="flex flex-wrap gap-3">
-              {members.map((m) => (
-                <li key={m.id} className="flex items-center gap-2 text-sm">
-                  <Avatar member={m} size={26} />
-                  {m.name}
-                  {m.id === currentUserId && <span className="text-(--c-muted)">(ich)</span>}
-                </li>
-              ))}
-            </ul>
-            <MemberForm workspaceId={ws.id} />
+          <div className="pt-3">
+            <MemberManager workspaceId={ws.id} members={members} currentUserId={currentUserId} />
           </div>
         </details>
       )}

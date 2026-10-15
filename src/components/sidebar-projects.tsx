@@ -27,6 +27,7 @@ export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[]
                 <span className="truncate">{ws.isPersonal ? ws.name : `${ws.orgName} · ${ws.name}`}</span>
               </Link>
             </h2>
+            {ws.myRole === "editor" && (
             <button
               type="button"
               aria-label={`Neues Projekt in ${ws.name}`}
@@ -37,6 +38,7 @@ export function SidebarProjects({ workspaces }: { workspaces: SidebarWorkspace[]
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </button>
+            )}
           </div>
 
           {adding === ws.id && (

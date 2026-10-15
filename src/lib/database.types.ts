@@ -58,6 +58,12 @@ export type Database = {
         Update: { settings?: Json | null; image_path?: string | null; updated_at?: string };
         Relationships: [];
       };
+      task_history: {
+        Row: { id: number; task_id: string; actor_id: string | null; via_ai: boolean; field: string; old_value: string | null; new_value: string | null; created_at: string };
+        Insert: { task_id: string; field: string; actor_id?: string | null; old_value?: string | null; new_value?: string | null };
+        Update: { new_value?: string | null };
+        Relationships: [];
+      };
       notifications: {
         Row: { id: number; user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id: string | null; actor_id: string | null; body: string | null; read_at: string | null; created_at: string };
         Insert: { user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id?: string | null; actor_id?: string | null; body?: string | null };
@@ -158,9 +164,9 @@ export type Database = {
         ];
       };
       workspace_members: {
-        Row: { created_at: string; user_id: string; workspace_id: string };
-        Insert: { created_at?: string; user_id: string; workspace_id: string };
-        Update: { created_at?: string; user_id?: string; workspace_id?: string };
+        Row: { created_at: string; user_id: string; workspace_id: string; role: WorkspaceRole };
+        Insert: { created_at?: string; user_id: string; workspace_id: string; role?: WorkspaceRole };
+        Update: { created_at?: string; user_id?: string; workspace_id?: string; role?: WorkspaceRole };
         Relationships: [
           { foreignKeyName: "workspace_members_workspace_id_fkey"; columns: ["workspace_id"]; isOneToOne: false; referencedRelation: "workspaces"; referencedColumns: ["id"] },
         ];
@@ -177,7 +183,8 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       create_organization: { Args: { first_workspace?: string; org_name: string }; Returns: string };
-      add_member_by_email: { Args: { ws: string; member_email: string }; Returns: string };
+      add_member_by_email: { Args: { ws: string; member_email: string; member_role?: WorkspaceRole }; Returns: string };
+      set_member_role: { Args: { ws: string; member: string; member_role: WorkspaceRole }; Returns: undefined };
       trash_task: { Args: { t: string }; Returns: undefined };
       trash_project: { Args: { proj: string }; Returns: undefined };
       trash_restore: { Args: { k: string; item: string }; Returns: undefined };
@@ -216,6 +223,9 @@ export type ProjectSection = T["project_sections"]["Row"];
 export type NotificationSettings = T["notification_settings"]["Row"];
 export type Attachment = T["task_attachments"]["Row"];
 export type Notification = T["notifications"]["Row"];
+export type HistoryEntry = T["task_history"]["Row"];
+/** Rolle in einem Bereich: Bearbeiten, Kommentieren, Nur ansehen */
+export type WorkspaceRole = "editor" | "commenter" | "viewer";
 export type Dependency = { task_id: string; depends_on: string };
 export type TaskRecurrence = Database["public"]["Enums"]["task_recurrence"];
 export type TaskStatus = Database["public"]["Enums"]["task_status"];

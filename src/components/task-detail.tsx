@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence } from "@/lib/database.types";
+import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence, WorkspaceRole } from "@/lib/database.types";
 import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
 import { Attachments, DeleteConfirm } from "@/components/attachments";
 import type { Member } from "@/components/project-view";
+import { TaskHistory } from "@/components/task-history";
 
 type Props = {
   task: Task;
@@ -32,6 +33,8 @@ type Props = {
     onRemove: (dependsOn: string) => void;
     onOpen: (id: string) => void;
   };
+  /** Meine Rolle im Bereich: "viewer" = nur ansehen, "commenter" = nur kommentieren */
+  role?: WorkspaceRole;
 };
 
 const field = "h-11 rounded-lg border border-(--c-line) px-3 bg-(--c-surface) font-normal text-sm";
@@ -39,6 +42,8 @@ const sectionLabel = "text-xs font-bold uppercase tracking-wider text-(--c-muted
 
 export function TaskDetail(props: Props) {
   const { task, subtasks, onUpdate } = props;
+  const readOnly = (props.role ?? "editor") !== "editor";
+  const canComment = (props.role ?? "editor") !== "viewer";
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [newSub, setNewSub] = useState("");
@@ -57,7 +62,8 @@ export function TaskDetail(props: Props) {
           value={title}
           rows={2}
           onChange={(e) => setTitle(e.target.value)}
-          onBlur={() => title.trim() && title !== task.title && onUpdate(task.id, { title: title.trim() })}
+          readOnly={readOnly}
+          onBlur={() => !readOnly && title.trim() && title !== task.title && onUpdate(task.id, { title: title.trim() })}
           className="flex-1 resize-none text-lg font-extrabold leading-snug rounded-lg px-2 py-1 -mx-2 hover:bg-(--c-hover) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
         />
         <button
@@ -72,6 +78,13 @@ export function TaskDetail(props: Props) {
         </button>
       </div>
 
+      {readOnly && (
+        <p role="note" className="rounded-lg bg-(--c-hover) px-3 py-2 text-sm text-(--c-text-2)">
+          {canComment ? "Du kannst diese Aufgabe ansehen und kommentieren, aber nicht ändern." : "Du kannst diese Aufgabe nur ansehen."}
+        </p>
+      )}
+
+      <fieldset disabled={readOnly} className="contents">
       <div className="flex flex-col gap-2">
         <span className={sectionLabel}>Status</span>
         <div role="group" aria-label="Status ändern" className="grid grid-cols-2 gap-1.5">
@@ -197,7 +210,8 @@ export function TaskDetail(props: Props) {
       <div className="flex flex-col gap-2">
         <span className={sectionLabel}>Verantwortlich</span>
         <div className="flex flex-wrap gap-2">
-          {props.members.map((m) => {
+          {readOnly && props.assigned.length === 0 && <span className="text-sm text-(--c-muted)">Niemand</span>}
+          {props.members.filter((m) => !readOnly || props.assigned.includes(m.id)).map((m) => {
             const on = props.assigned.includes(m.id);
             return (
               <button
@@ -224,12 +238,15 @@ export function TaskDetail(props: Props) {
           rows={3}
           placeholder="Details, Links, Notizen …"
           onChange={(e) => setDescription(e.target.value)}
-          onBlur={() => description !== task.description && onUpdate(task.id, { description })}
+          readOnly={readOnly}
+          onBlur={() => !readOnly && description !== task.description && onUpdate(task.id, { description })}
           className="rounded-lg border border-(--c-line) p-3 text-sm resize-y"
         />
       </label>
 
-      <Attachments taskId={task.id} onCount={props.onAttachmentCount ? (n) => props.onAttachmentCount!(task.id, n) : undefined} />
+      </fieldset>
+
+      <Attachments taskId={task.id} readOnly={readOnly} onCount={props.onAttachmentCount ? (n) => props.onAttachmentCount!(task.id, n) : undefined} />
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -252,6 +269,7 @@ export function TaskDetail(props: Props) {
                 type="checkbox"
                 id={`sub-${s.id}`}
                 checked={s.status === "done"}
+                disabled={readOnly}
                 onChange={(e) => onUpdate(s.id, { status: e.target.checked ? "done" : "todo" })}
                 className="size-[18px] accent-(--c-accent) cursor-pointer"
               />
@@ -261,7 +279,7 @@ export function TaskDetail(props: Props) {
               >
                 {s.title}
               </label>
-              <button
+              {!readOnly && <button
                 type="button"
                 onClick={() => props.onDelete(s.id)}
                 aria-label={`Unteraufgabe ${s.title} löschen`}
@@ -270,11 +288,12 @@ export function TaskDetail(props: Props) {
                 <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
-              </button>
+              </button>}
             </li>
           ))}
         </ul>
-        <form
+        {readOnly && subtasks.length === 0 && <p className="text-sm text-(--c-muted)">Keine Unteraufgaben.</p>}
+        {!readOnly && <form
           onSubmit={(e) => {
             e.preventDefault();
             const v = newSub.trim();
@@ -294,14 +313,22 @@ export function TaskDetail(props: Props) {
           <button type="submit" className="h-11 px-4 rounded-lg border border-(--c-line) text-sm font-bold hover:bg-(--c-hover)">
             +
           </button>
-        </form>
+        </form>}
       </div>
 
-      {props.deps && <Dependencies task={task} {...props.deps} />}
+      {props.deps && <Dependencies task={task} readOnly={readOnly} {...props.deps} />}
 
-      <Comments taskId={task.id} members={props.members} currentUserId={props.currentUserId} />
+      <Comments taskId={task.id} members={props.members} currentUserId={props.currentUserId} canComment={canComment} />
 
-      <div className="border-t border-(--c-line-soft) pt-4">
+      <TaskHistory
+        taskId={task.id}
+        subtasks={subtasks}
+        members={props.members}
+        currentUserId={props.currentUserId}
+        version={[task.title, task.description, task.status, task.priority, task.start_date, task.due_date, task.section_id, task.milestone_id, task.recurrence, props.assigned.join(), subtasks.map((x) => x.id + x.status + x.title).join(), props.deps?.waitingOn.map((x) => x.id).join()].join("|")}
+      />
+
+      {!readOnly && <div className="border-t border-(--c-line-soft) pt-4">
         {confirmDelete ? (
           <DeleteConfirm
             question={subtasks.length ? "Aufgabe samt Unteraufgaben löschen?" : "Aufgabe wirklich löschen?"}
@@ -315,7 +342,7 @@ export function TaskDetail(props: Props) {
             Aufgabe löschen
           </button>
         )}
-      </div>
+      </div>}
     </aside>
     </TaskDialog>
   );
@@ -357,7 +384,7 @@ function TaskDialog({ onClose, children }: { onClose: () => void; children: Reac
   );
 }
 
-function Comments({ taskId, members, currentUserId }: { taskId: string; members: Member[]; currentUserId: string }) {
+function Comments({ taskId, members, currentUserId, canComment = true }: { taskId: string; members: Member[]; currentUserId: string; canComment?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState("");
@@ -478,7 +505,8 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
           </div>
         );
       })}
-      <form onSubmit={send} className="flex flex-col gap-1.5">
+      {!canComment && comments.length === 0 && <p className="text-sm text-(--c-muted)">Noch keine Kommentare.</p>}
+      {canComment && <form onSubmit={send} className="flex flex-col gap-1.5">
         <div className="flex gap-2 relative">
           <label className="sr-only" htmlFor="new-comment">Kommentar</label>
           <input
@@ -523,7 +551,7 @@ function Comments({ taskId, members, currentUserId }: { taskId: string; members:
             </ul>
           )}
         </div>
-      </form>
+      </form>}
     </div>
   );
 }
@@ -537,13 +565,14 @@ function Dependencies({
   onAdd,
   onRemove,
   onOpen,
-}: { task: Task } & NonNullable<Props["deps"]>) {
+  readOnly = false,
+}: { task: Task; readOnly?: boolean } & NonNullable<Props["deps"]>) {
   const [adding, setAdding] = useState(false);
   const late = (t: Task) => !!(t.due_date && (task.start_date ?? task.due_date) && t.due_date >= (task.start_date ?? task.due_date)!);
   return (
     <div className="flex flex-col gap-2" role="group" aria-label="Abhängigkeiten">
       <span className={sectionLabel}>Wartet auf</span>
-      {waitingOn.length === 0 && !adding && <p className="text-sm text-(--c-muted)">Diese Aufgabe kann jederzeit beginnen.</p>}
+      {waitingOn.length === 0 && !adding && <p className="text-sm text-(--c-muted)">{readOnly ? "Auf nichts." : "Diese Aufgabe kann jederzeit beginnen."}</p>}
       {waitingOn.length > 0 && (
         <ul className="flex flex-col gap-1">
           {waitingOn.map((t) => (
@@ -553,11 +582,11 @@ function Dependencies({
                 {t.title}
               </button>
               {t.due_date && <span className={`text-xs shrink-0 ${t.status !== "done" && late(t) ? "text-(--c-danger) font-bold" : "text-(--c-muted)"}`}>bis {formatDate(t.due_date)}</span>}
-              <button type="button" onClick={() => onRemove(t.id)} aria-label={`Abhängigkeit von ${t.title} entfernen`} className="size-8 rounded-lg hover:bg-(--c-hover) flex items-center justify-center text-(--c-muted) shrink-0">
+              {!readOnly && <button type="button" onClick={() => onRemove(t.id)} aria-label={`Abhängigkeit von ${t.title} entfernen`} className="size-8 rounded-lg hover:bg-(--c-hover) flex items-center justify-center text-(--c-muted) shrink-0">
                 <svg aria-hidden width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
-              </button>
+              </button>}
             </li>
           ))}
         </ul>
@@ -588,7 +617,7 @@ function Dependencies({
           </select>
         </label>
       ) : (
-        candidates.length > 0 && (
+        candidates.length > 0 && !readOnly && (
           <button type="button" onClick={() => setAdding(true)} className="self-start min-h-10 px-3 rounded-lg border border-(--c-line) text-sm font-semibold hover:bg-(--c-hover)">
             + Wartet auf …
           </button>
