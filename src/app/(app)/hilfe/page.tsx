@@ -43,6 +43,8 @@ const TOPICS: [string, string][] = [
   ["tasten", "Tastenkürzel"],
   ["woche", "Meine Woche"],
   ["aufgaben", "Aufgaben anlegen und bearbeiten"],
+  ["mehrere", "Mehrere Aufgaben auf einmal ändern"],
+  ["erinnerung", "Erinnerungen"],
   ["dateien", "Dateien und Links anhängen"],
   ["unteraufgaben", "Unteraufgaben"],
   ["farben", "Was die Farben bedeuten"],
@@ -297,6 +299,41 @@ export default function HelpPage() {
           Mit dem Kreuz oben rechts, der Taste Esc oder einem Klick neben das Fenster schließt du es wieder. Ganz unten in den Details findest du{" "}
           <K>Aufgabe löschen</K>. Projektraum fragt vorher noch einmal nach.
         </p>
+      </Section>
+
+      <Section id="mehrere" title="Mehrere Aufgaben auf einmal ändern">
+        <p>
+          Willst du zum Beispiel zehn Aufgaben gleichzeitig auf „Erledigt“ setzen oder alle einer Person geben, musst du sie nicht einzeln öffnen.
+        </p>
+        <ol>
+          <li>
+            Klick im Projekt (oder in einer Rubrik) über der Tafel auf <K>Auswählen</K>. Jetzt öffnet ein Klick auf eine Karte sie nicht, sondern wählt sie
+            aus. Sie bekommt einen blauen Rand und ein Häkchen. In der Liste gibt es dafür vorne Kästchen.
+          </li>
+          <li>Unten erscheint eine dunkle Leiste. Dort siehst du, wie viele Aufgaben ausgewählt sind. Mit <K>Alle</K> wählst du alle sichtbaren auf einmal.</li>
+          <li>
+            Wähl in der Leiste, was du ändern willst: <K>Status</K>, <K>Fällig</K>, <K>Wer</K>, <K>Priorität</K>, <K>Rubrik</K>, <K>Meilenstein</K> oder{" "}
+            <K>Löschen</K>. Die Änderung gilt für alle ausgewählten Aufgaben.
+          </li>
+          <li>Mit <K>Fertig</K> oder der Taste Esc beendest du die Auswahl.</li>
+        </ol>
+        <p>Nach jeder Änderung kannst du sie unten mit <K>Rückgängig</K> zurücknehmen. Gelöschte Aufgaben liegen außerdem 30 Tage im Papierkorb.</p>
+        <Tip>
+          Am PC geht es noch schneller: Halte <K>Strg</K> gedrückt (am Mac <K>⌘</K>) und klick Karten an. Dann musst du vorher nicht auf Auswählen klicken.
+        </Tip>
+      </Section>
+
+      <Section id="erinnerung" title="Erinnerungen">
+        <p>
+          Du willst an eine Aufgabe zu einer bestimmten Zeit erinnert werden? Öffne die Aufgabe und klick bei <K>Erinnerung</K> auf <K>Erinnere mich …</K>.
+          Wähl einen Vorschlag, etwa <K>Morgen 8:00</K> oder <K>1 Tag vor Fälligkeit, 8:00</K>, oder stell unter „Oder“ selbst Tag und Uhrzeit ein.
+        </p>
+        <p>
+          Zur eingestellten Zeit bekommst du eine E-Mail mit einem Link direkt zur Aufgabe und einen Hinweis in den Mitteilungen. Das kann bis zu
+          5 Minuten später sein. Die Erinnerung gilt nur für dich, die anderen merken davon nichts. Jede Person kann sich pro Aufgabe eine eigene
+          Erinnerung stellen.
+        </p>
+        <p>Mit <K>Ändern</K> verschiebst du die Erinnerung, mit <K>Entfernen</K> nimmst du sie wieder weg.</p>
       </Section>
 
       <Section id="dateien" title="Dateien und Links anhängen">
@@ -591,7 +628,8 @@ export default function HelpPage() {
           <li>dir jemand eine Aufgabe zuteilt,</li>
           <li>dich jemand in einem Kommentar erwähnt,</li>
           <li>jemand eine Aufgabe kommentiert, für die du verantwortlich bist oder die du angelegt hast,</li>
-          <li>jemand so eine Aufgabe erledigt.</li>
+          <li>jemand so eine Aufgabe erledigt,</li>
+          <li>eine Erinnerung fällig ist, die du dir gestellt hast.</li>
         </ul>
         <p>
           Was du selbst tust, löst keine Mitteilung bei dir aus. Ein Klick auf eine Mitteilung öffnet die Aufgabe. Mit <K>Alle gelesen</K> räumst du auf.
@@ -632,6 +670,10 @@ export default function HelpPage() {
             ein, kommt keine E-Mail.
           </li>
         </ol>
+        <p>
+          Dazu kannst du den <strong>Wochenrückblick</strong> einschalten. Er kommt jeden Montag um 7 Uhr. Darin steht, was du letzte Woche erledigt
+          hast, was überfällig ist, was diese Woche fällig wird und wie viel in deinen Projekten im Team erledigt und neu dazugekommen ist.
+        </p>
         <p>
           In den E-Mails stehen die Aufgaben, für die du verantwortlich bist. Dazu kommen Aufgaben, die du selbst angelegt hast und die
           noch niemandem zugeordnet sind. Erledigte Aufgaben fehlen. Ein Klick auf eine Aufgabe in der E-Mail öffnet ihr Projekt.
