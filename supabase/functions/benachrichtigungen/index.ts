@@ -7,7 +7,7 @@
 //   MAIL_FROM       – Absender, z. B. "Projektraum <projektraum@deine-domain.at>"
 //   APP_URL         – optional, Standard https://teamzusammenarbeit.vercel.app
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { assignedMail, dailyMail, mondayOf, reminderMail, viennaNow, weeklyMail, type Assignment, type Mail, type OpenTask, type Reminder, type WeekTeam } from "./mails.ts";
+import { assignedMail, dailyMail, mentionMail, mondayOf, reminderMail, viennaNow, weeklyMail, type Assignment, type Mail, type Mention, type OpenTask, type Reminder, type WeekTeam } from "./mails.ts";
 import { backupPath, errorMail, expiredBackups, gzip, type AppError } from "./waechter.ts";
 
 const DAILY_HOUR = 7;
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
     if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
   }
 
-  const report = { trashPurged, backup, files, errorsMailed: 0, assigned: 0, daily: 0, reminders: 0, weekly: 0, errors: [] as string[] };
+  const report = { trashPurged, backup, files, errorsMailed: 0, assigned: 0, daily: 0, mentions: 0, reminders: 0, weekly: 0, errors: [] as string[] };
 
   // 0c) Neue Fehler per E-Mail melden
   try {
@@ -153,6 +153,29 @@ Deno.serve(async (req) => {
       await sb.rpc("notify_mark_outbox", { ids, err: String(e).slice(0, 500) });
       report.errors.push(String(e));
     }
+  }
+
+  // 1b) Erwähnungen, die nach 3 Minuten noch ungelesen sind – gesammelt je Person
+  try {
+    const { data: ments, error } = await sb.rpc("notify_pending_mentions");
+    if (error) throw error;
+    const byPerson = new Map<string, Mention[]>();
+    for (const m of (ments ?? []) as Mention[]) byPerson.set(m.user_id, [...(byPerson.get(m.user_id) ?? []), m]);
+    const sent: number[] = [];
+    for (const [uid, items] of byPerson) {
+      try {
+        const to = await emailOf(uid);
+        if (to) await send(to, mentionMail(items, appUrl));
+        sent.push(...items.map((i) => i.id));
+        report.mentions += items.length;
+      } catch (e) {
+        report.errors.push("Erwähnung: " + String(e));
+      }
+    }
+    const { error: e2 } = await sb.rpc("notify_mark_mentions", { ids: sent });
+    if (e2) throw e2;
+  } catch (e) {
+    report.errors.push("Erwähnungen: " + String(e));
   }
 
   // 2) Tägliche Mail ab 7 Uhr, einmal pro Tag

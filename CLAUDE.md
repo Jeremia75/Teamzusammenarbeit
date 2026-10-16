@@ -19,3 +19,4 @@
 - Erinnerungen: Tabelle `task_reminders` (eine je Person+Aufgabe, ohne Fremdschlüssel), UI `src/components/reminder.tsx` im Aufgabenfenster. Versand in `benachrichtigungen` über `reminders_due`/`reminders_mark` (legt Glocken-Eintrag „reminder“ an – braucht `supabase/manuell_erinnerungen.sql`).
 - Wochenrückblick: `notification_settings.weekly_review`, montags ab 7 Uhr Wien (`notify_weekly_recipients`, `notify_week_review`, `notify_mark_weekly`); Mail-Vorlage `weeklyMail` in `mails.ts`. Versandfehler landen jetzt auch über `report_error` in `app_errors`.
 - Edge Function deployen: alle Dateien (index.ts, mails.ts, waechter.ts) per `deploy_edge_function`, `verify_jwt: false`.
+- @Erwähnung per Mail: `notification_settings.on_mention` (Standard an), `notifications.mailed_at`; Versand über `notify_pending_mentions` (ungelesen, älter als 3 Min.) und `notify_mark_mentions`, Vorlage `mentionMail`.

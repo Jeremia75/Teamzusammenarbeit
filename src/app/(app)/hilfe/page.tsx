@@ -639,6 +639,11 @@ export default function HelpPage() {
           Person mit der Maus oder mit den Pfeiltasten und der Eingabetaste. Der Name wird im Kommentar blau hervorgehoben, und die Person bekommt eine
           Mitteilung. Erwähnen kannst du alle, die im selben Bereich mitarbeiten.
         </p>
+        <p>
+          Wer erwähnt wird, bekommt außerdem eine <strong>E-Mail</strong> mit dem Kommentar und einem Knopf zum Antworten. Die E-Mail kommt nach
+          etwa 3 bis 8 Minuten und nur dann, wenn die Person die Mitteilung nicht schon in Projektraum gelesen hat. Abschalten kann man das unter{" "}
+          <K>E-Mail &amp; Kalender</K>.
+        </p>
       </Section>
 
       <Section id="benachrichtigungen" title="E-Mail-Benachrichtigungen">
@@ -646,7 +651,7 @@ export default function HelpPage() {
           Projektraum kann dich per E-Mail an deine Aufgaben erinnern. Sobald du deine erste Aufgabe hast, fragt Projektraum dich einmal,
           ob du das möchtest. Ändern kannst du es jederzeit links in der Seitenleiste unter <K>E-Mail &amp; Kalender</K>.
         </p>
-        <p>Du kannst zwei Dinge einstellen.</p>
+        <p>Du kannst mehrere Dinge einstellen.</p>
         <ol>
           <li>
             <strong>Eine regelmäßige E-Mail.</strong> Wähle eine von drei Möglichkeiten:
@@ -663,6 +668,10 @@ export default function HelpPage() {
                 <K>Keine regelmäßige E-Mail</K>.
               </li>
             </ul>
+          </li>
+          <li>
+            <strong>Eine E-Mail, wenn dich jemand mit @ erwähnt.</strong> Sie kommt nur, wenn du die Mitteilung nicht schon in Projektraum gelesen
+            hast.
           </li>
           <li>
             <strong>Eine E-Mail bei neuen Aufgaben.</strong> Ordnet dir jemand eine Aufgabe zu, bekommst du wenige Minuten später eine

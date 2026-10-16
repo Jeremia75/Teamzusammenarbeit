@@ -124,9 +124,9 @@ export type Database = {
         ];
       };
       notification_settings: {
-        Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; weekly_review: boolean; asked_at: string | null; last_daily_on: string | null; last_weekly_on: string | null; updated_at: string };
-        Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
-        Update: { email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
+        Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; on_mention: boolean; weekly_review: boolean; asked_at: string | null; last_daily_on: string | null; last_weekly_on: string | null; updated_at: string };
+        Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; on_mention?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
+        Update: { email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; on_mention?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
         Relationships: [];
       };
       project_sections: {

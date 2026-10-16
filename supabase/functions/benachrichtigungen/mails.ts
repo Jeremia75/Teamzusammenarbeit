@@ -291,3 +291,38 @@ export function mondayOf(iso: string): string {
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sonntag
   return addDays(iso, -((wd + 6) % 7));
 }
+
+// ------------------------------------------------------------- Erwähnung
+export type Mention = {
+  id: number;
+  user_id: string;
+  task_id: string;
+  title: string;
+  project_id: string;
+  project_name: string;
+  actor_name: string;
+  body: string;
+  created_at: string;
+};
+
+/** Eine Mail je Person mit allen Erwähnungen, die noch ungelesen sind */
+export function mentionMail(items: Mention[], appUrl: string): Mail {
+  const link = (m: Mention) => `${appUrl}/p/${m.project_id}?aufgabe=${m.task_id}`;
+  const actors = [...new Set(items.map((i) => i.actor_name))];
+  const who = actors.length === 1 ? actors[0] : "Dein Team";
+  const one = items.length === 1 ? items[0] : null;
+  const subject = one ? `${who} hat dich erwähnt: ${one.title}` : `${who} hat dich ${items.length}-mal erwähnt`;
+  const quote = (b: string) => esc(b.length > 280 ? b.slice(0, 278) + "…" : b);
+  const rows = items
+    .map(
+      (m) => `<div style="margin:0 0 16px">
+<div style="font-size:13px;color:${C.muted};margin-bottom:4px">${esc(m.actor_name)} bei <a href="${link(m)}" style="color:${C.ink};font-weight:600">${esc(m.title)}</a> · ${esc(m.project_name)}</div>
+<div style="border-left:3px solid ${C.line};padding:4px 0 4px 12px;white-space:pre-wrap;font-size:15px;line-height:1.5">${quote(m.body)}</div>
+</div>`,
+    )
+    .join("");
+  const body = rows + button(one ? link(one) : appUrl, one ? "Antworten" : "Projektraum öffnen");
+  const text =
+    items.map((m) => `${m.actor_name} bei „${m.title}“ (${m.project_name}):\n${m.body}\n${link(m)}`).join("\n\n") + `\n`;
+  return { subject, html: shell(one ? "Du wurdest erwähnt" : `Du wurdest ${items.length}-mal erwähnt`, body, appUrl), text };
+}
