@@ -60,7 +60,7 @@ export function useUndo() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2 w-[min(480px,calc(100%-24px))] flex items-center gap-3 rounded-xl bg-(--c-ink) text-(--c-on-ink) pl-4 pr-2 py-2 shadow-2xl"
+      className="fixed z-50 bottom-4 [body[data-bulk]_&]:bottom-24 left-1/2 -translate-x-1/2 w-[min(480px,calc(100%-24px))] flex items-center gap-3 rounded-xl bg-(--c-ink) text-(--c-on-ink) pl-4 pr-2 py-2 shadow-2xl"
     >
       <span className="flex-1 min-w-0 text-sm font-semibold truncate">{offer.text}</span>
       <button type="button" onClick={() => void run()} className="min-h-11 px-3 rounded-lg text-sm font-bold underline underline-offset-4 hover:bg-white/10">

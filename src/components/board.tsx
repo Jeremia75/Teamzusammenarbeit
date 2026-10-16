@@ -7,6 +7,7 @@ import { STATUS_TINT, formatDate, isOverdue, priorityOf, recurrenceLabel, status
 import { Avatar } from "@/components/avatar";
 import { StatusBar } from "@/components/status-bar";
 import type { Member } from "@/components/project-view";
+import { clickPicks, type Selection } from "@/components/bulk-edit";
 
 export type BoardColumn = {
   key: string;
@@ -45,6 +46,8 @@ type Props = {
   onShiftSection?: (id: string, dir: -1 | 1) => void;
   /** Nur ansehen: nichts ziehen, nichts abhaken */
   readOnly?: boolean;
+  /** Mehrere Aufgaben auswählen (bulk-edit.tsx) */
+  selection?: Selection;
 };
 
 export function Board(props: Props) {
@@ -130,8 +133,9 @@ export function Board(props: Props) {
                     project={props.projectOf?.(t)}
                     attachments={props.attachmentsOf?.(t.id) ?? 0}
                     selected={props.openId === t.id}
+                    picked={props.selection?.ids.has(t.id)}
                     readOnly={props.readOnly}
-                    onOpen={() => props.onOpen(t.id)}
+                    onOpen={(e) => (clickPicks(props.selection, e) ? props.selection!.toggle(t.id) : props.onOpen(t.id))}
                     onToggleDone={() => props.onToggleDone(t)}
                     onDragStart={() => setDragId(t.id)}
                     onDragEnd={() => {
@@ -404,6 +408,7 @@ export function TaskCard({
   project,
   attachments = 0,
   selected,
+  picked = false,
   readOnly = false,
   onOpen,
   onToggleDone,
@@ -419,8 +424,10 @@ export function TaskCard({
   project?: { name: string; color: string };
   attachments?: number;
   selected: boolean;
+  /** für „Mehrere bearbeiten“ ausgewählt */
+  picked?: boolean;
   readOnly?: boolean;
-  onOpen: () => void;
+  onOpen: (e: React.MouseEvent) => void;
   onToggleDone: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
@@ -442,11 +449,18 @@ export function TaskCard({
       }}
       onDragEnd={onDragEnd}
       className={`relative rounded-lg border-2 overflow-hidden transition ${dragging ? "opacity-40" : ""} ${
-        selected ? "border-(--c-accent)" : "border-transparent hover:border-(--c-line-strong)"
+        picked ? "border-(--c-accent) ring-2 ring-(--c-accent)/40" : selected ? "border-(--c-accent)" : "border-transparent hover:border-(--c-line-strong)"
       } ${done && colorful ? "opacity-75" : ""}`}
       style={{ background: colorful ? STATUS_TINT[task.status] : "var(--c-surface)" }}
     >
       {colorful && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: st.color }} />}
+      {picked && (
+        <span aria-hidden className="absolute top-1.5 right-1.5 size-5 rounded-full bg-(--c-accent) text-white flex items-center justify-center">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12l5 5 9-10" />
+          </svg>
+        </span>
+      )}
       <div className={`flex gap-2 p-3 ${colorful ? "pl-4" : ""}`}>
         <button
           type="button"
@@ -461,7 +475,7 @@ export function TaskCard({
             <path d="M5 12l5 5 9-10" />
           </svg>
         </button>
-        <button type="button" onClick={onOpen} aria-expanded={selected} className="min-w-0 flex-1 text-left flex flex-col gap-2 cursor-pointer">
+        <button type="button" onClick={onOpen} aria-expanded={selected} aria-pressed={picked || undefined} className="min-w-0 flex-1 text-left flex flex-col gap-2 cursor-pointer">
           {colorful && (
             <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide" style={{ color: statusTextColor(task.status) }}>
               {st.label}

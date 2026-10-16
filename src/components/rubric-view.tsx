@@ -11,6 +11,7 @@ import { useAttachmentCounts } from "@/components/attachments";
 import { Board, NEW_TITLE, type BoardColumn } from "@/components/board";
 import { short, useUndo } from "@/components/undo";
 import { useNewTaskShortcut } from "@/components/shortcuts";
+import { BulkBar, SelectToggle, useBulkActions, useSelection } from "@/components/bulk-edit";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
 
@@ -217,6 +218,11 @@ export function RubricView(props: Props) {
   topLevel.forEach((t) => (counts[t.status] += 1));
   const openTask = tasks.find((t) => t.id === openId) ?? null;
 
+  // Mehrere Aufgaben auf einmal bearbeiten
+  const selection = useSelection(useMemo(() => visible.map((t) => t.id), [visible]));
+  const bulk = useBulkActions({ supabase, tasks, setTasks, assignees, setAssignees, offerUndo, fail, reload });
+  const canSelect = !readOnly;
+
   const columns: BoardColumn[] =
     view === "status"
       ? STATUSES.map((s) => ({ key: s.id, title: s.label, status: s.id }))
@@ -251,7 +257,7 @@ export function RubricView(props: Props) {
 
   // ---------------------------------------------------------------- UI
   return (
-    <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
+    <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 [body[data-bulk]_&]:pb-44">
       <header data-panel className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <Link
@@ -289,6 +295,9 @@ export function RubricView(props: Props) {
       )}
 
       {undoToast}
+      {canSelect && (
+        <BulkBar sel={selection} visibleIds={visible.map((t) => t.id)} tasks={tasks} members={members} assignees={assignees} actions={bulk} />
+      )}
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
@@ -326,10 +335,13 @@ export function RubricView(props: Props) {
                 </button>
               ))}
             </div>
-            <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
-              <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
-              Nur meine Aufgaben
-            </label>
+            <div className="flex flex-wrap items-center gap-3 pb-1">
+              {canSelect && <SelectToggle sel={selection} />}
+              <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
+                <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
+                Nur meine Aufgaben
+              </label>
+            </div>
           </div>
 
           {view === "projects" && (
@@ -350,6 +362,7 @@ export function RubricView(props: Props) {
                   openId={openId}
                   onOpen={(id) => setOpenId(openId === id ? null : id)}
                   projectOf={projectOf}
+                  selection={canSelect ? selection : undefined}
                 />
               ) : (
                 <Board
@@ -367,6 +380,7 @@ export function RubricView(props: Props) {
                   onMove={moveTask}
                   readOnly={readOnly}
                   onQuickAdd={view === "projects" && !readOnly ? (col) => (col.projectId ? createAndOpen(col.projectId) : undefined) : undefined}
+                  selection={canSelect ? selection : undefined}
                 />
               )}
             </div>

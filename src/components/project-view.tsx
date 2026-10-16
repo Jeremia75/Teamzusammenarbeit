@@ -18,6 +18,7 @@ import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
 import { SaveAsTemplate } from "@/components/project-template";
 import { useNewTaskShortcut } from "@/components/shortcuts";
+import { BulkBar, SelectToggle, clickPicks, useBulkActions, useSelection, type Selection } from "@/components/bulk-edit";
 
 export type Member = { id: string; name: string; color: string };
 export type Assignee = { task_id: string; user_id: string };
@@ -339,6 +340,15 @@ export function ProjectView(props: Props) {
   topLevel.forEach((t) => (counts[t.status] += 1));
   const openTask = tasks.find((t) => t.id === openId) ?? null;
 
+  // Mehrere Aufgaben auf einmal bearbeiten (nicht im Zeitplan)
+  const selection = useSelection(useMemo(() => visible.map((t) => t.id), [visible]));
+  const bulk = useBulkActions({ supabase, tasks, setTasks, assignees, setAssignees, offerUndo, fail, reload });
+  const canSelect = !readOnly && view !== "timeline";
+  useEffect(() => {
+    if (!canSelect) selection.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSelect]);
+
   // Spalten je Ansicht
   const columns: BoardColumn[] =
     view === "status"
@@ -431,7 +441,7 @@ export function ProjectView(props: Props) {
 
   // ---------------------------------------------------------------- UI
   return (
-    <div className="px-4 sm:px-7 py-6 flex flex-col gap-6">
+    <div className="px-4 sm:px-7 py-6 flex flex-col gap-6 [body[data-bulk]_&]:pb-44">
       <header data-panel className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1 min-w-0">
           <Link href={`/w/${props.workspace.id}`} className="self-start text-sm font-semibold text-(--c-muted) hover:text-(--c-ink) hover:underline underline-offset-4">
@@ -475,6 +485,18 @@ export function ProjectView(props: Props) {
       )}
 
       {undoToast}
+      {canSelect && (
+        <BulkBar
+          sel={selection}
+          visibleIds={visible.map((t) => t.id)}
+          tasks={tasks}
+          members={members}
+          assignees={assignees}
+          sections={sortedSections}
+          milestones={milestones}
+          actions={bulk}
+        />
+      )}
       {error && (
         <div role="alert" className="flex items-center gap-3 rounded-lg bg-(--c-danger-soft) text-(--c-danger) px-4 py-3 text-sm font-semibold">
           {error}
@@ -520,10 +542,13 @@ export function ProjectView(props: Props) {
               </button>
             ))}
           </div>
-          <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
-            <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
-            Nur meine Aufgaben
-          </label>
+          <div className="flex flex-wrap items-center gap-3 pb-1">
+            {canSelect && <SelectToggle sel={selection} />}
+            <label className="flex items-center gap-2 text-sm font-semibold min-h-11 cursor-pointer">
+              <input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} className="size-4 accent-(--c-accent)" />
+              Nur meine Aufgaben
+            </label>
+          </div>
         </div>
 
         {(filterMilestone || view === "sections" || view === "timeline") && (
@@ -573,6 +598,7 @@ export function ProjectView(props: Props) {
                 openId={openId}
                 onOpen={(id) => setOpenId(openId === id ? null : id)}
                 onAdd={readOnly ? undefined : () => createAndOpen()}
+                selection={canSelect ? selection : undefined}
               />
             ) : (
               <Board
@@ -593,6 +619,7 @@ export function ProjectView(props: Props) {
                 onRenameSection={renameSection}
                 onDeleteSection={deleteSection}
                 onShiftSection={shiftSection}
+                selection={canSelect ? selection : undefined}
               />
             )}
           </div>
@@ -660,6 +687,7 @@ export function TaskList({
   onOpen,
   onAdd,
   projectOf,
+  selection,
 }: {
   tasks: Task[];
   sections: Section[];
@@ -671,6 +699,8 @@ export function TaskList({
   onAdd?: () => void | Promise<unknown>;
   /** Spalte „Projekt“ zeigen (Ansicht über mehrere Projekte) */
   projectOf?: (task: Task) => { name: string; color: string } | undefined;
+  /** Kästchen zum Auswählen (mehrere Aufgaben bearbeiten) */
+  selection?: Selection;
 }) {
   const order: Record<TaskStatus, number> = { doing: 0, review: 1, todo: 2, done: 3 };
   const sorted = [...tasks].sort(
@@ -683,6 +713,17 @@ export function TaskList({
       <table className="w-full min-w-[820px] text-sm border-collapse">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-(--c-muted)">
+            {selection && (
+              <th scope="col" className="w-11 pl-3">
+                <input
+                  type="checkbox"
+                  aria-label="Alle auswählen"
+                  checked={sorted.length > 0 && sorted.every((t) => selection.ids.has(t.id))}
+                  onChange={(e) => selection.setMany(sorted.map((t) => t.id), e.target.checked)}
+                  className="size-4.5 accent-(--c-accent) cursor-pointer"
+                />
+              </th>
+            )}
             <th scope="col" className="px-4 py-3 font-bold">Aufgabe</th>
             {projectOf && <th scope="col" className="px-2 py-3 font-bold">Projekt</th>}
             <th scope="col" className="px-2 py-3 font-bold">Status</th>
@@ -698,11 +739,25 @@ export function TaskList({
             const st = STATUSES.find((s) => s.id === t.status)!;
             const subs = subtasksOf(t.id);
             return (
-              <tr key={t.id} className={`border-t border-(--c-line-soft) ${openId === t.id ? "bg-(--c-accent-soft)" : ""}`}>
+              <tr
+                key={t.id}
+                className={`border-t border-(--c-line-soft) ${selection?.ids.has(t.id) || openId === t.id ? "bg-(--c-accent-soft)" : ""}`}
+              >
+                {selection && (
+                  <td className="pl-3">
+                    <input
+                      type="checkbox"
+                      aria-label={`${t.title} auswählen`}
+                      checked={selection.ids.has(t.id)}
+                      onChange={() => selection.toggle(t.id)}
+                      className="size-4.5 accent-(--c-accent) cursor-pointer"
+                    />
+                  </td>
+                )}
                 <td className="px-2 py-1">
                   <button
                     type="button"
-                    onClick={() => onOpen(t.id)}
+                    onClick={(e) => (clickPicks(selection, e) ? selection!.toggle(t.id) : onOpen(t.id))}
                     className={`min-h-11 px-2 text-left font-semibold ${t.status === "done" ? "line-through text-(--c-muted)" : ""}`}
                   >
                     {t.title}
