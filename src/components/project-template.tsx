@@ -23,7 +23,7 @@ export function SaveAsTemplate({ projectId, projectName }: { projectId: string; 
     const { error } = await supabase.rpc("save_project_template", { proj: projectId, tpl_name: name, tpl_description: description });
     setBusy(false);
     if (error) return setMsg({ ok: false, text: "Nicht gespeichert: " + error.message });
-    setMsg({ ok: true, text: `Vorlage „${name.trim()}“ gespeichert. Du findest sie beim Anlegen eines neuen Projekts.` });
+    setMsg({ ok: true, text: `Vorlage „${name.trim()}“ gespeichert. Du findest sie links unter „Vorlagen“ und beim Anlegen eines neuen Projekts.` });
   }
 
   return (
@@ -47,7 +47,12 @@ export function SaveAsTemplate({ projectId, projectName }: { projectId: string; 
         </button>
         {msg && (
           <p role="status" className={`text-sm ${msg.ok ? "text-(--c-success-ink)" : "text-(--c-danger)"}`}>
-            {msg.text}
+            {msg.text}{" "}
+            {msg.ok && (
+              <a href="/vorlagen" className="font-semibold underline underline-offset-2">
+                Zu den Vorlagen
+              </a>
+            )}
           </p>
         )}
       </form>

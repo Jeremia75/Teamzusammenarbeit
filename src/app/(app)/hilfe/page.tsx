@@ -548,11 +548,13 @@ export default function HelpPage() {
           auf“. Verantwortliche, Kommentare und Dateien nicht.
         </p>
         <p>
-          <strong>Neues Projekt aus einer Vorlage:</strong> Beim Anlegen eines Projekts (in der Übersicht oder links mit <K>+</K>) wählst du unter{" "}
+          <strong>Neues Projekt aus einer Vorlage:</strong> Links in der Seitenleiste findest du <K>Vorlagen</K>. Dort stehen alle gespeicherten
+          Vorlagen. Klick bei einer auf <K>Projekt daraus anlegen</K>, wähl Name, Bereich und <K>Startdatum</K> und klick auf{" "}
+          <K>Anlegen und öffnen</K>. Alternativ wählst du beim Anlegen eines Projekts (in der Übersicht oder links mit <K>+</K>) unter{" "}
           <K>Vorlage</K> die gewünschte und ein <K>Startdatum</K>. Alle Termine werden dann passend verschoben: Lag in der Vorlage eine Aufgabe zwei
           Wochen nach dem ersten Termin, liegt sie im neuen Projekt zwei Wochen nach dem Startdatum.
         </p>
-        <p>Nicht mehr gebrauchte Vorlagen entfernst du in derselben Auswahl mit <K>Diese Vorlage entfernen</K>.</p>
+        <p>Nicht mehr gebrauchte Vorlagen entfernst du auf der Seite <K>Vorlagen</K> mit <K>Entfernen</K>.</p>
       </Section>
 
       <Section id="wiederholen" title="Wiederkehrende Aufgaben">
