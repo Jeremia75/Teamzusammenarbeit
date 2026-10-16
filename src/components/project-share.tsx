@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ROLES } from "@/lib/labels";
 import type { WorkspaceRole } from "@/lib/database.types";
 import { Avatar } from "@/components/avatar";
+import { INVITES_CHANGED, PendingInvites } from "@/components/pending-invites";
 
 export type Guest = { id: string; name: string; color: string; role: WorkspaceRole; alsoMember?: boolean };
 
@@ -30,8 +31,13 @@ export function ProjectShare({ projectId, projectName, guests }: { projectId: st
     const { data, error } = await supabase.rpc("add_project_guest", { proj: projectId, guest_email: mail, guest_role: role });
     setBusy(false);
     if (error) return setMsg({ ok: false, text: error.message });
-    if (data === "not_found") {
-      return setMsg({ ok: false, text: `${mail} ist noch nicht registriert. Bitte die Person, sich zuerst selbst ein Konto anzulegen, und versuche es dann erneut.` });
+    if (data === "invited") {
+      setEmail("");
+      window.dispatchEvent(new Event(INVITES_CHANGED));
+      return setMsg({
+        ok: true,
+        text: `${mail} hat noch kein Konto. Wir haben eine Einladung per E-Mail geschickt. Nach der Registrierung sieht die Person „${projectName}“.`,
+      });
     }
     setEmail("");
     setMsg({ ok: true, text: `${mail} sieht jetzt „${projectName}“ (${ROLES.find((r) => r.id === role)?.label}).` });
@@ -67,7 +73,7 @@ export function ProjectShare({ projectId, projectName, guests }: { projectId: st
       </summary>
       <div className="flex flex-col gap-4 pt-3">
         <p className="text-sm text-(--c-text-2)">
-          Gäste sehen nur dieses Projekt – nicht die anderen Projekte im Bereich. Die Person muss sich vorher selbst ein Konto anlegen.
+          Gäste sehen nur dieses Projekt – nicht die anderen Projekte im Bereich. Hat die Person noch kein Konto, bekommt sie eine Einladung per E-Mail.
         </p>
         {list.length > 0 && (
           <ul aria-label="Gäste in diesem Projekt" className="flex flex-col divide-y divide-(--c-line-soft)">
@@ -102,6 +108,7 @@ export function ProjectShare({ projectId, projectName, guests }: { projectId: st
             ))}
           </ul>
         )}
+        <PendingInvites projectId={projectId} />
         <form onSubmit={add} className="flex flex-col gap-2">
           <label htmlFor="guest-email" className="text-sm font-semibold">
             Gast hinzufügen

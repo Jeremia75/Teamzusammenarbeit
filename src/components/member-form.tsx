@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addMember, type MemberFormState } from "@/app/(app)/actions";
 import { createClient } from "@/lib/supabase/client";
 import { ROLES } from "@/lib/labels";
 import type { WorkspaceRole } from "@/lib/database.types";
 import { Avatar } from "@/components/avatar";
+import { INVITES_CHANGED, PendingInvites } from "@/components/pending-invites";
 
 export type ManagedMember = { id: string; name: string; color: string; role: WorkspaceRole; isAdmin: boolean };
 
@@ -65,6 +66,7 @@ export function MemberManager({ workspaceId, members, currentUserId }: { workspa
           {msg.text}
         </p>
       )}
+      <PendingInvites workspaceId={workspaceId} />
       <MemberForm workspaceId={workspaceId} />
       <p className="text-xs text-(--c-muted) leading-relaxed">
         {ROLES.map((r) => (
@@ -79,12 +81,15 @@ export function MemberManager({ workspaceId, members, currentUserId }: { workspa
 
 export function MemberForm({ workspaceId }: { workspaceId: string }) {
   const [state, action, pending] = useActionState<MemberFormState, FormData>(addMember, null);
+  useEffect(() => {
+    if (state?.invited) window.dispatchEvent(new Event(INVITES_CHANGED));
+  }, [state]);
 
   return (
     <form action={action} className="flex flex-col gap-2">
       <input type="hidden" name="workspace_id" value={workspaceId} />
       <label htmlFor={`member-${workspaceId}`} className="text-sm font-semibold">
-        Mitglied hinzufügen
+        Mitglied hinzufügen oder einladen
       </label>
       <div className="flex flex-wrap gap-2">
         <input

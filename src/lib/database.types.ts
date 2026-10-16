@@ -183,6 +183,12 @@ export type Database = {
           { foreignKeyName: "tasks_section_id_fkey"; columns: ["section_id"]; isOneToOne: false; referencedRelation: "sections"; referencedColumns: ["id"] },
         ];
       };
+      invitations: {
+        Row: { id: string; email: string; organization_id: string; workspace_id: string | null; project_id: string | null; role: WorkspaceRole; invited_by: string; created_at: string; mailed_at: string | null; mail_error: string | null; accepted_at: string | null; accepted_by: string | null; withdrawn_at: string | null };
+        Insert: { email: string; organization_id: string; role: WorkspaceRole };
+        Update: { withdrawn_at?: string | null };
+        Relationships: [];
+      };
       task_reminders: {
         Row: { id: number; task_id: string; user_id: string; remind_at: string; sent_at: string | null; created_at: string };
         Insert: { task_id: string; user_id?: string; remind_at: string };
@@ -226,6 +232,10 @@ export type Database = {
       set_project_guest_role: { Args: { proj: string; guest: string; guest_role: WorkspaceRole }; Returns: undefined };
       remove_project_guest: { Args: { proj: string; guest: string }; Returns: undefined };
       set_member_role: { Args: { ws: string; member: string; member_role: WorkspaceRole }; Returns: undefined };
+      withdraw_invitation: { Args: { inv: string }; Returns: undefined };
+      resend_invitation: { Args: { inv: string }; Returns: undefined };
+      accept_my_invitations: { Args: Record<string, never>; Returns: number };
+      send_feedback: { Args: { body: string; page?: string; agent?: string }; Returns: string };
       trash_task: { Args: { t: string }; Returns: undefined };
       trash_project: { Args: { proj: string }; Returns: undefined };
       trash_restore: { Args: { k: string; item: string }; Returns: undefined };

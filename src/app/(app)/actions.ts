@@ -55,7 +55,7 @@ export async function createOrganization(formData: FormData) {
   redirect("/");
 }
 
-export type MemberFormState = { ok: boolean; message: string } | null;
+export type MemberFormState = { ok: boolean; message: string; invited?: boolean } | null;
 
 export async function addMember(_prev: MemberFormState, formData: FormData): Promise<MemberFormState> {
   const email = String(formData.get("email") ?? "").trim();
@@ -68,10 +68,11 @@ export async function addMember(_prev: MemberFormState, formData: FormData): Pro
   const { data, error } = await supabase.rpc("add_member_by_email", { ws: workspaceId, member_email: email, member_role: role });
 
   if (error) return { ok: false, message: error.message };
-  if (data === "not_found") {
+  if (data === "invited") {
     return {
-      ok: false,
-      message: `${email} ist noch nicht registriert. Bitte die Person, sich zuerst selbst ein Konto anzulegen, und versuche es dann erneut.`,
+      ok: true,
+      invited: true,
+      message: `${email} hat noch kein Konto. Wir haben eine Einladung per E-Mail geschickt. Sobald sich die Person mit dieser Adresse registriert, ist sie Mitglied (${roleLabel(role)}).`,
     };
   }
   revalidatePath("/", "layout");

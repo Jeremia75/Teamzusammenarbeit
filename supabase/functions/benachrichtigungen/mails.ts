@@ -326,3 +326,45 @@ export function mentionMail(items: Mention[], appUrl: string): Mail {
     items.map((m) => `${m.actor_name} bei „${m.title}“ (${m.project_name}):\n${m.body}\n${link(m)}`).join("\n\n") + `\n`;
   return { subject, html: shell(one ? "Du wurdest erwähnt" : `Du wurdest ${items.length}-mal erwähnt`, body, appUrl), text };
 }
+
+// ------------------------------------------------------------- Einladung
+export type Invitation = {
+  id: string;
+  email: string;
+  role: string;
+  target_name: string;
+  org_name: string;
+  is_project: boolean;
+  inviter_name: string;
+};
+
+const ROLE_TEXT: Record<string, string> = {
+  editor: "Du kannst Aufgaben anlegen, ändern und erledigen.",
+  commenter: "Du kannst alles sehen und kommentieren.",
+  viewer: "Du kannst alles sehen.",
+};
+
+/** Einladung an jemanden, der noch kein Konto hat */
+export function invitationMail(inv: Invitation, appUrl: string): Mail {
+  const where = inv.is_project ? `das Projekt „${inv.target_name}“` : `den Bereich „${inv.target_name}“`;
+  const org = inv.org_name && inv.org_name !== inv.target_name ? ` (${inv.org_name})` : "";
+  const link = `${appUrl}/login?modus=registrieren&email=${encodeURIComponent(inv.email)}`;
+  const subject = `${inv.inviter_name} lädt dich zu Projektraum ein`;
+  const body =
+    `<p style="margin:0 0 12px;font-size:16px;line-height:1.5">${esc(inv.inviter_name)} hat dich in ${esc(where)}${esc(org)} eingeladen. ` +
+    `Projektraum ist eine einfache App, um gemeinsam Aufgaben und Projekte zu planen.</p>` +
+    `<p style="margin:0 0 12px;color:${C.muted}">${esc(ROLE_TEXT[inv.role] ?? "")}</p>` +
+    `<p style="margin:0 0 4px">So geht's:</p>` +
+    `<ol style="margin:0;padding-left:20px;line-height:1.6"><li>Auf den Knopf klicken und ein Konto mit <strong>${esc(inv.email)}</strong> anlegen.</li>` +
+    `<li>Den Link in der Bestätigungs-Mail anklicken.</li><li>Fertig: ${esc(where)} ist sofort da.</li></ol>` +
+    button(link, "Einladung annehmen") +
+    `<p style="margin:16px 0 0;font-size:13px;color:${C.muted}">Wichtig: Bitte genau diese E-Mail-Adresse verwenden, sonst klappt die Zuordnung nicht.</p>`;
+  const text =
+    `${inv.inviter_name} hat dich in ${where}${org} in Projektraum eingeladen.\n\n` +
+    `1. Konto mit ${inv.email} anlegen: ${link}\n2. Den Link in der Bestätigungs-Mail anklicken.\n3. Fertig.\n`;
+  const html = shell("Du bist eingeladen", body, appUrl).replace(
+    /Du bekommst diese E-Mail[\s\S]*?<\/a>\./,
+    `Du bekommst diese E-Mail, weil ${esc(inv.inviter_name)} dich eingeladen hat. Wenn du nichts damit anfangen kannst, ignoriere sie einfach.`,
+  );
+  return { subject, html, text };
+}

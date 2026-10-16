@@ -12,6 +12,8 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     // Abgelaufener oder schon benutzter Link (z. B. Passwort vergessen): zurück zur Anmeldung mit Hinweis
     if (error) return NextResponse.redirect(`${origin}/login?fehler=link`);
+    // Offene Einladungen für diese Adresse gleich übernehmen (falls das in der Datenbank nicht schon passiert ist)
+    await supabase.rpc("accept_my_invitations");
   } else if (searchParams.get("error")) {
     return NextResponse.redirect(`${origin}/login?fehler=link`);
   }
