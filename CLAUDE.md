@@ -14,3 +14,4 @@
 - Rückgängig: `useUndo()` in `src/components/undo.tsx` (Meldung unten, 8 s, Strg+Z) – fürs Abhaken, Verschieben, Löschen in Projekt, Rubrik und Meine Woche.
 - „+ Aufgabe hinzufügen“ legt sofort eine Aufgabe „Neue Aufgabe“ an und öffnet ihr Detailfenster (`fresh`); ohne Titel und Änderungen geschlossen, wird sie wieder gelöscht.
 - Tastenkürzel: `src/components/shortcuts.tsx` (`<Shortcuts />` im Layout). N = neue Aufgabe über Ereignis `projektraum:new-task` (Ansichten melden sich mit `useNewTaskShortcut`), `/` = Suche, `?` = Übersicht, G+S/W/P/H/T = gehen. Nur außerhalb von Feldern und offenen Fenstern.
+- Tafel (`board.tsx`): jede Spalte scrollt für sich (`data-col-body`, max. Fensterhöhe). Waagrecht scrollt `HScroll`: eigener Balken versteckt, ein selbst gezeichneter Balken (`data-hbar-thumb`) klebt unten am Bildschirm.

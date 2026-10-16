@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Task, TaskStatus } from "@/lib/database.types";
 import { STATUS_TINT, formatDate, isOverdue, priorityOf, recurrenceLabel, statusOf } from "@/lib/labels";
 import { Avatar } from "@/components/avatar";
@@ -58,9 +58,8 @@ export function Board(props: Props) {
   }
 
   return (
-    // Eigener Scrollbereich (max. Fensterhöhe), damit die Spaltenköpfe beim Runterscrollen oben stehen bleiben
-    <div data-board-scroll className="relative overflow-auto overscroll-contain pb-2 max-h-[calc(100dvh-1rem)]">
-      {/* items-stretch: alle Spalten gleich hoch, damit jeder Kopf beim Scrollen stehen bleibt */}
+    <HScroll>
+      {/* Jede Spalte scrollt für sich (höchstens Fensterhöhe), die anderen bleiben stehen */}
       <div className="flex gap-3.5 items-stretch">
         {props.columns.map((col, ci) => {
           const list = props.tasksOf(col);
@@ -80,9 +79,9 @@ export function Board(props: Props) {
                 e.preventDefault();
                 finish(col);
               }}
-              className="flex-[1_0_272px] max-w-[340px] flex flex-col"
+              className="flex-[1_0_272px] max-w-[340px] flex flex-col max-h-[calc(100dvh-2.5rem)]"
             >
-              <div data-col-head className={`sticky top-0 z-10 px-2.5 pt-2.5 pb-1 rounded-t-xl backdrop-blur-sm transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
+              <div data-col-head className={`shrink-0 px-2.5 pt-2.5 pb-1 rounded-t-xl transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
                 <ColumnHeader
                   col={col}
                   count={list.length}
@@ -99,7 +98,7 @@ export function Board(props: Props) {
                   </div>
                 )}
               </div>
-              <div className={`px-2.5 pb-2.5 pt-1 rounded-b-xl flex flex-col gap-2 transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
+              <div data-col-body className={`min-h-0 overflow-y-auto overscroll-contain px-2.5 pb-2.5 pt-1 rounded-b-xl flex flex-col gap-2 transition-colors ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)" : "bg-(--c-col)"}`}>
 
               {list.map((t) => (
                 <div
@@ -147,13 +146,95 @@ export function Board(props: Props) {
               {props.onQuickAdd && <QuickAdd onAdd={() => props.onQuickAdd?.(col)} />}
               </div>
               {/* freie Fläche unter kurzen Spalten: nimmt beim Ziehen ebenfalls Aufgaben an */}
-              <div aria-hidden className={`flex-1 min-h-4 rounded-xl ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)/60" : ""}`} />
+              <div aria-hidden className={`shrink-0 grow min-h-4 rounded-xl ${dragId && drop?.col === col.key ? "bg-(--c-col-drop)/60" : ""}`} />
             </section>
           );
         })}
 
         {props.onAddSection && <AddSection onAdd={props.onAddSection} />}
       </div>
+    </HScroll>
+  );
+}
+
+/**
+ * Waagrechter Scrollbereich der Tafel. Der eigene Balken des Bereichs ist versteckt;
+ * stattdessen klebt ein selbst gezeichneter Balken unten am Bildschirmrand und ist so
+ * immer zu sehen (auch am Mac, wo Balken sonst verschwinden), egal wie weit die Seite
+ * gescrollt ist. Ziehen am Griff oder Klicken in die Leiste schiebt die Tafel.
+ */
+function HScroll({ children }: { children: React.ReactNode }) {
+  const area = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const [m, setM] = useState({ left: 0, width: 0, client: 0 });
+  const drag = useRef<{ x: number; start: number } | null>(null);
+
+  useEffect(() => {
+    const a = area.current;
+    if (!a) return;
+    const measure = () => setM({ left: a.scrollLeft, width: a.scrollWidth, client: a.clientWidth });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(a);
+    if (a.firstElementChild) ro.observe(a.firstElementChild);
+    a.addEventListener("scroll", measure, { passive: true });
+    return () => {
+      ro.disconnect();
+      a.removeEventListener("scroll", measure);
+    };
+  }, []);
+
+  const needed = m.width > m.client + 1;
+  const ratio = needed ? m.client / m.width : 1;
+  const thumbPct = Math.max(ratio * 100, 8);
+  const maxLeft = m.width - m.client;
+  const posPct = needed && maxLeft > 0 ? (m.left / maxLeft) * (100 - thumbPct) : 0;
+
+  /** Bildschirm-Pixel auf der Leiste → Pixel in der Tafel */
+  function perPx() {
+    const t = track.current;
+    if (!t || !needed) return 0;
+    const free = t.clientWidth * (1 - thumbPct / 100);
+    return free > 0 ? maxLeft / free : 0;
+  }
+
+  return (
+    <div>
+      <div ref={area} className="overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </div>
+      {needed && (
+        <div aria-hidden className="sticky bottom-0 z-20 py-1.5 bg-(--c-bg)/85 backdrop-blur-sm">
+          <div
+            ref={track}
+            className="relative h-3 rounded-full bg-(--c-line-soft) cursor-pointer"
+            onPointerDown={(e) => {
+              // Klick neben den Griff: eine Bildschirmbreite weiter
+              if (e.target !== e.currentTarget || !area.current || !track.current) return;
+              const r = track.current.getBoundingClientRect();
+              const thumbLeft = r.left + (posPct / 100) * r.width;
+              area.current.scrollBy({ left: e.clientX < thumbLeft ? -m.client * 0.9 : m.client * 0.9, behavior: "smooth" });
+            }}
+          >
+            <div
+              data-hbar-thumb
+              className="absolute top-0 h-3 rounded-full bg-(--c-muted)/70 hover:bg-(--c-muted) active:bg-(--c-ink)/70 cursor-grab active:cursor-grabbing touch-none"
+              style={{ width: `${thumbPct}%`, left: `${posPct}%` }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.currentTarget.setPointerCapture(e.pointerId);
+                drag.current = { x: e.clientX, start: area.current?.scrollLeft ?? 0 };
+              }}
+              onPointerMove={(e) => {
+                if (!drag.current || !area.current) return;
+                area.current.scrollLeft = drag.current.start + (e.clientX - drag.current.x) * perPx();
+              }}
+              onPointerUp={() => (drag.current = null)}
+              onPointerCancel={() => (drag.current = null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
