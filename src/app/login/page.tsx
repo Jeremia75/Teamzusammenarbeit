@@ -104,32 +104,32 @@ export default function LoginPage() {
           />
         </label>
         {mode !== "reset" && (
-          <label className="flex flex-col gap-1 text-sm font-semibold">
-            <span className="flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <label className="flex flex-col gap-1 text-sm font-semibold">
               Passwort
-              {mode === "login" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("reset");
-                    setMessage(null);
-                  }}
-                  className="text-sm font-semibold text-(--c-accent) min-h-9"
-                >
-                  Passwort vergessen?
-                </button>
-              )}
-            </span>
-            <input
-              type="password"
-              minLength={8}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
+              <input
+                type="password"
+                minLength={8}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </label>
+            {mode === "login" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("reset");
+                  setMessage(null);
+                }}
+                className="self-end text-sm font-semibold text-(--c-accent) min-h-9"
+              >
+                Passwort vergessen?
+              </button>
+            )}
+          </div>
         )}
 
         <button

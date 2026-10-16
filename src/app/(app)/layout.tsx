@@ -152,6 +152,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Abmelden
             </button>
           </form>
+          <p className="px-1 text-xs text-(--c-muted)">
+            <Link href="/impressum" className="hover:underline underline-offset-2">Impressum</Link>
+            {" · "}
+            <Link href="/datenschutz" className="hover:underline underline-offset-2">Datenschutz</Link>
+          </p>
         </div>
       </nav>
 
