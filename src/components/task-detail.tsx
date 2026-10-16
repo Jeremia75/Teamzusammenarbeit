@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence, WorkspaceRole } from "@/lib/database.types";
 import { PRIORITIES, RECURRENCES, STATUSES, formatDate } from "@/lib/labels";
@@ -69,6 +69,27 @@ export function TaskDetail(props: Props) {
   const subDone = subtasks.filter((s) => s.status === "done").length;
   const subPct = subtasks.length ? Math.round((subDone / subtasks.length) * 100) : 0;
 
+  // Titelfeld wächst mit dem Text; eine Zeile steht mittig (gleich hoch wie der Schließen-Knopf)
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const fitTitle = () => {
+    const el = titleRef.current;
+    if (!el || !el.offsetParent) return; // Fenster noch nicht offen: später messen
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+  useLayoutEffect(fitTitle, [title]);
+  useEffect(() => {
+    // nach dem Öffnen des Fensters und bei geänderter Breite neu messen
+    const raf = requestAnimationFrame(fitTitle);
+    const el = titleRef.current;
+    const ro = el ? new ResizeObserver(() => fitTitle()) : null;
+    if (el && ro) ro.observe(el.parentElement ?? el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+    };
+  }, []);
+
   return (
     <TaskDialog onClose={close} focusTitle={props.fresh}>
     <aside aria-label="Aufgabendetails" className="bg-(--c-surface) p-5 sm:p-6 flex flex-col gap-5">
@@ -76,8 +97,9 @@ export function TaskDetail(props: Props) {
         <label className="sr-only" htmlFor="task-title">Titel</label>
         <textarea
           id="task-title"
+          ref={titleRef}
           value={title}
-          rows={2}
+          rows={1}
           onChange={(e) => setTitle(e.target.value)}
           readOnly={readOnly}
           placeholder="Was ist zu tun?"
@@ -89,7 +111,7 @@ export function TaskDetail(props: Props) {
             }
           }}
           onBlur={() => !readOnly && title.trim() && title.trim() !== task.title && props.onUpdate(task.id, { title: title.trim() })}
-          className="flex-1 resize-none text-lg font-extrabold leading-snug rounded-lg px-2 py-1 -mx-2 hover:bg-(--c-hover) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
+          className="flex-1 resize-none overflow-hidden min-h-11 text-lg font-extrabold leading-snug rounded-lg px-2 py-2.5 -mx-2 hover:bg-(--c-hover) focus:bg-(--c-surface) focus:outline-2 focus:outline-(--c-accent)"
         />
         <button
           type="button"
