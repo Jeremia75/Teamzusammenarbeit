@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskReminder } from "@/components/reminder";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Comment, Milestone, Section, Task, TaskPriority, TaskRecurrence, WorkspaceRole } from "@/lib/database.types";
@@ -295,6 +296,8 @@ export function TaskDetail(props: Props) {
       </label>
 
       </fieldset>
+
+      <TaskReminder taskId={task.id} userId={props.currentUserId} dueDate={task.due_date} />
 
       <Attachments taskId={task.id} readOnly={readOnly} onCount={(n) => {
         if (n > 0) touched.current = true;

@@ -93,8 +93,8 @@ export type Database = {
         Relationships: [];
       };
       notifications: {
-        Row: { id: number; user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id: string | null; actor_id: string | null; body: string | null; read_at: string | null; created_at: string };
-        Insert: { user_id: string; kind: "assigned" | "mention" | "comment" | "done"; task_id?: string | null; actor_id?: string | null; body?: string | null };
+        Row: { id: number; user_id: string; kind: "assigned" | "mention" | "comment" | "done" | "reminder"; task_id: string | null; actor_id: string | null; body: string | null; read_at: string | null; created_at: string };
+        Insert: { user_id: string; kind: "assigned" | "mention" | "comment" | "done" | "reminder"; task_id?: string | null; actor_id?: string | null; body?: string | null };
         Update: { read_at?: string | null };
         Relationships: [
           { foreignKeyName: "notifications_task_id_fkey"; columns: ["task_id"]; isOneToOne: false; referencedRelation: "tasks"; referencedColumns: ["id"] },
@@ -124,9 +124,9 @@ export type Database = {
         ];
       };
       notification_settings: {
-        Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; asked_at: string | null; last_daily_on: string | null; updated_at: string };
-        Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
-        Update: { email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; asked_at?: string | null; updated_at?: string };
+        Row: { user_id: string; email_enabled: boolean; daily_mode: "off" | "digest" | "due"; on_assigned: boolean; weekly_review: boolean; asked_at: string | null; last_daily_on: string | null; last_weekly_on: string | null; updated_at: string };
+        Insert: { user_id: string; email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
+        Update: { email_enabled?: boolean; daily_mode?: "off" | "digest" | "due"; on_assigned?: boolean; weekly_review?: boolean; asked_at?: string | null; updated_at?: string };
         Relationships: [];
       };
       project_sections: {
@@ -182,6 +182,12 @@ export type Database = {
           { foreignKeyName: "tasks_project_id_fkey"; columns: ["project_id"]; isOneToOne: false; referencedRelation: "projects"; referencedColumns: ["id"] },
           { foreignKeyName: "tasks_section_id_fkey"; columns: ["section_id"]; isOneToOne: false; referencedRelation: "sections"; referencedColumns: ["id"] },
         ];
+      };
+      task_reminders: {
+        Row: { id: number; task_id: string; user_id: string; remind_at: string; sent_at: string | null; created_at: string };
+        Insert: { task_id: string; user_id?: string; remind_at: string };
+        Update: { remind_at?: string };
+        Relationships: [];
       };
       sections: {
         Row: { created_at: string; id: string; name: string; position: number; project_id: string };

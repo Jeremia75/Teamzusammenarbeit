@@ -29,6 +29,8 @@ function text(n: Item) {
       return `${n.actor} hat ${t} kommentiert`;
     case "done":
       return `${n.actor} hat ${t} erledigt`;
+    case "reminder":
+      return `Erinnerung: ${t}`;
   }
 }
 

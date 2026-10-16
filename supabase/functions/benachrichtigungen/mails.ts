@@ -181,3 +181,113 @@ export function assignedMail(items: Assignment[], today: string, appUrl: string)
     `\n\n${appUrl}\n`;
   return { subject, html: shell("Neue Aufgabe für dich", body, appUrl), text };
 }
+
+// ------------------------------------------------------------- Erinnerung
+export type Reminder = {
+  id: number;
+  user_id: string;
+  task_id: string;
+  title: string;
+  due_date: string | null;
+  status: string;
+  project_id: string;
+  project_name: string;
+  remind_at: string;
+};
+
+/** Eine Mail je Person mit allen Erinnerungen, die gerade fällig sind */
+export function reminderMail(items: Reminder[], today: string, appUrl: string): Mail {
+  const one = items.length === 1 ? items[0] : null;
+  const subject = one ? `Erinnerung: ${one.title}` : `Erinnerung an ${items.length} Aufgaben`;
+  const link = (t: Reminder) => `${appUrl}/p/${t.project_id}?aufgabe=${t.task_id}`;
+  const rows = items
+    .map((t) => {
+      const done = t.status === "done";
+      return `<li style="margin:0 0 10px">
+<a href="${link(t)}" style="color:${C.ink};font-weight:600;text-decoration:${done ? "line-through" : "none"}">${esc(t.title)}</a><br>
+<span style="font-size:13px;color:${C.muted}">${esc(t.project_name)}${
+        t.due_date ? ` · <span style="color:${t.due_date < today && !done ? C.red : C.muted}">fällig ${formatDate(t.due_date)}</span>` : ""
+      }${done ? " · schon erledigt" : ""}</span>
+</li>`;
+    })
+    .join("");
+  const body =
+    `<p style="margin:0 0 12px">Du wolltest an ${one ? "diese Aufgabe" : "diese Aufgaben"} erinnert werden:</p>` +
+    `<ul style="padding-left:18px;margin:0">${rows}</ul>` +
+    button(one ? link(one) : appUrl, one ? "Aufgabe öffnen" : "Projektraum öffnen");
+  const text =
+    `Du wolltest an ${one ? "diese Aufgabe" : "diese Aufgaben"} erinnert werden:\n` +
+    items.map((t) => `- ${t.title} (${t.project_name}${t.due_date ? ", fällig " + formatDate(t.due_date) : ""})\n  ${link(t)}`).join("\n") +
+    `\n`;
+  return { subject, html: shellReminder("Erinnerung", body, appUrl), text };
+}
+
+/** Wie shell(), aber mit passendem Hinweis unten (Erinnerungen setzt man selbst bei der Aufgabe) */
+function shellReminder(title: string, body: string, appUrl: string): string {
+  return shell(title, body, appUrl).replace(
+    /Du bekommst diese E-Mail[\s\S]*?<\/a>\./,
+    "Du bekommst diese E-Mail, weil du bei der Aufgabe eine Erinnerung eingestellt hast. Ändern oder entfernen kannst du sie im Fenster der Aufgabe.",
+  );
+}
+
+// ------------------------------------------------------------- Wochenrückblick
+export type WeekTeam = { project_id: string; project_name: string; done: number; created: number; open: number };
+
+/**
+ * Montags: Rückblick auf die letzte Woche und Ausblick auf diese.
+ * done: meine in den letzten 7 Tagen erledigten Aufgaben; open: meine offenen (wie in der täglichen Mail).
+ * Gibt null zurück, wenn es gar nichts zu berichten gibt.
+ */
+export function weeklyMail(name: string, done: OpenTask[], open: OpenTask[], team: WeekTeam[], today: string, appUrl: string): Mail | null {
+  const weekEnd = addDays(today, 6);
+  const overdue = open.filter((t) => t.due_date && t.due_date < today);
+  const thisWeek = open.filter((t) => t.due_date && t.due_date >= today && t.due_date <= weekEnd);
+  const teamDone = team.reduce((s, p) => s + p.done, 0);
+  if (!done.length && !overdue.length && !thisWeek.length && !teamDone) return null;
+
+  const lastMon = addDays(today, -7);
+  const lastSun = addDays(today, -1);
+  const subject = `Dein Wochenrückblick: ${done.length} erledigt${overdue.length ? `, ${overdue.length} überfällig` : ""}${
+    thisWeek.length ? `, ${thisWeek.length} diese Woche fällig` : ""
+  }`;
+
+  const praise =
+    done.length >= 10 ? "Starke Woche!" : done.length >= 3 ? "Gut gemacht." : done.length ? "Es geht voran." : "Letzte Woche hast du nichts abgehakt.";
+  const teamTable = team.length
+    ? `<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px">Im Team (${teamDone} erledigt)</h2>
+<table style="border-collapse:collapse;width:100%;font-size:14px">
+<tr style="color:${C.muted};text-align:left"><th style="padding:4px 0;font-weight:600">Projekt</th><th style="padding:4px 8px;font-weight:600;text-align:right">erledigt</th><th style="padding:4px 8px;font-weight:600;text-align:right">neu</th><th style="padding:4px 0;font-weight:600;text-align:right">offen</th></tr>
+${team
+  .map(
+    (p) =>
+      `<tr style="border-top:1px solid ${C.line}"><td style="padding:6px 0"><a href="${appUrl}/p/${p.project_id}" style="color:${C.ink};text-decoration:none;font-weight:600">${esc(p.project_name)}</a></td><td style="padding:6px 8px;text-align:right">${p.done}</td><td style="padding:6px 8px;text-align:right">${p.created}</td><td style="padding:6px 0;text-align:right">${p.open}</td></tr>`,
+  )
+  .join("")}
+</table>`
+    : "";
+
+  const body =
+    `<p style="margin:0;color:${C.muted}">Woche vom ${formatDate(lastMon)} bis ${formatDate(lastSun)}</p>` +
+    `<p style="margin:12px 0 0;font-size:16px"><strong>${done.length}</strong> ${done.length === 1 ? "Aufgabe" : "Aufgaben"} erledigt. ${praise}</p>` +
+    group("Erledigt", done, appUrl, "0000-00-00", "#0E7C66") +
+    group("Überfällig", overdue, appUrl, today, C.red) +
+    group("Diese Woche fällig", thisWeek, appUrl, today) +
+    teamTable +
+    button(appUrl);
+  const text =
+    `Hallo ${name}, dein Rückblick auf die Woche vom ${formatDate(lastMon)} bis ${formatDate(lastSun)}:\n` +
+    `${done.length} erledigt. ${praise}\n` +
+    textGroup("Erledigt", done) +
+    textGroup("Überfällig", overdue) +
+    textGroup("Diese Woche fällig", thisWeek) +
+    (team.length ? `\nIm Team:\n${team.map((p) => `- ${p.project_name}: ${p.done} erledigt, ${p.created} neu, ${p.open} offen`).join("\n")}\n` : "") +
+    `\n${appUrl}\n`;
+  return { subject, html: shell(`Hallo ${name}, deine Woche`, body, appUrl), text };
+}
+
+/** Montag der Woche, in der iso liegt */
+export function mondayOf(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sonntag
+  return addDays(iso, -((wd + 6) % 7));
+}

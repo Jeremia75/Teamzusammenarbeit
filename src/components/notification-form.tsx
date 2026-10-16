@@ -23,7 +23,7 @@ export function NotificationForm({
 }: {
   userId: string;
   email: string;
-  initial: Pick<NotificationSettings, "email_enabled" | "daily_mode" | "on_assigned"> | null;
+  initial: Pick<NotificationSettings, "email_enabled" | "daily_mode" | "on_assigned"> & { weekly_review?: boolean } | null;
   submitLabel?: string;
   onSaved?: () => void;
   secondary?: React.ReactNode;
@@ -33,6 +33,7 @@ export function NotificationForm({
   const [enabled, setEnabled] = useState<boolean | null>(initial ? initial.email_enabled : null);
   const [mode, setMode] = useState<Mode>(initial && initial.daily_mode !== "off" ? initial.daily_mode : initial ? "off" : "due");
   const [assigned, setAssigned] = useState(initial ? initial.on_assigned : true);
+  const [weekly, setWeekly] = useState(initial ? !!initial.weekly_review : false);
   const [state, setState] = useState<{ ok: boolean; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -40,12 +41,13 @@ export function NotificationForm({
     e.preventDefault();
     if (enabled === null) return setState({ ok: false, msg: "Bitte wähle Ja oder Nein." });
     setBusy(true);
-    const on = enabled && (mode !== "off" || assigned);
+    const on = enabled && (mode !== "off" || assigned || weekly);
     const { error } = await supabase.from("notification_settings").upsert({
       user_id: userId,
       email_enabled: on,
       daily_mode: enabled ? mode : "off",
       on_assigned: enabled ? assigned : false,
+      weekly_review: enabled ? weekly : false,
       asked_at: new Date().toISOString(),
     });
     setBusy(false);
@@ -99,6 +101,19 @@ export function NotificationForm({
               <span className="flex flex-col">
                 <span className="font-semibold">E-Mail, wenn mir jemand eine Aufgabe zuordnet</span>
                 <span className="text-sm text-(--c-muted)">Kommt gleich, wenige Minuten nach der Zuordnung. Wenn du dich selbst einträgst, kommt keine.</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="font-bold mb-2">Wochenrückblick</legend>
+            <label className={`${option} ${weekly ? "border-(--c-accent) bg-(--c-accent-soft)" : "border-(--c-line) bg-(--c-surface)"}`}>
+              <input type="checkbox" checked={weekly} onChange={(e) => setWeekly(e.target.checked)} className={radio} />
+              <span className="flex flex-col">
+                <span className="font-semibold">Jeden Montag einen Rückblick auf die letzte Woche</span>
+                <span className="text-sm text-(--c-muted)">
+                  Um 7 Uhr: was du erledigt hast, was überfällig ist, was diese Woche ansteht und was im Team weitergegangen ist.
+                </span>
               </span>
             </label>
           </fieldset>

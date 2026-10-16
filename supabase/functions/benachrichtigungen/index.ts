@@ -7,10 +7,11 @@
 //   MAIL_FROM       – Absender, z. B. "Projektraum <projektraum@deine-domain.at>"
 //   APP_URL         – optional, Standard https://teamzusammenarbeit.vercel.app
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { assignedMail, dailyMail, viennaNow, type Assignment, type Mail, type OpenTask } from "./mails.ts";
+import { assignedMail, dailyMail, mondayOf, reminderMail, viennaNow, weeklyMail, type Assignment, type Mail, type OpenTask, type Reminder, type WeekTeam } from "./mails.ts";
 import { backupPath, errorMail, expiredBackups, gzip, type AppError } from "./waechter.ts";
 
 const DAILY_HOUR = 7;
+const WEEKLY_HOUR = 7; // Wochenrückblick montags ab 7 Uhr
 
 Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
     if (!r.ok) throw new Error(`Resend ${r.status}: ${(await r.text()).slice(0, 300)}`);
   }
 
-  const report = { trashPurged, backup, files, errorsMailed: 0, assigned: 0, daily: 0, errors: [] as string[] };
+  const report = { trashPurged, backup, files, errorsMailed: 0, assigned: 0, daily: 0, reminders: 0, weekly: 0, errors: [] as string[] };
 
   // 0c) Neue Fehler per E-Mail melden
   try {
@@ -173,6 +174,60 @@ Deno.serve(async (req) => {
         report.errors.push(String(e));
       }
     }
+  }
+
+  // 3) Erinnerungen, die jetzt fällig sind – eine Mail je Person
+  try {
+    const { data: due, error } = await sb.rpc("reminders_due");
+    if (error) throw error;
+    const byPerson = new Map<string, Reminder[]>();
+    for (const r of (due ?? []) as Reminder[]) byPerson.set(r.user_id, [...(byPerson.get(r.user_id) ?? []), r]);
+    for (const [uid, items] of byPerson) {
+      try {
+        const to = await emailOf(uid);
+        if (to) await send(to, reminderMail(items, today, appUrl));
+        const { error: e2 } = await sb.rpc("reminders_mark", { ids: items.map((i) => i.id) });
+        if (e2) throw e2;
+        report.reminders += items.length;
+      } catch (e) {
+        report.errors.push("Erinnerung: " + String(e));
+      }
+    }
+  } catch (e) {
+    report.errors.push("Erinnerungen: " + String(e));
+  }
+
+  // 4) Wochenrückblick: montags ab 7 Uhr, einmal pro Woche
+  const weekStart = mondayOf(today);
+  if (today === weekStart && hour >= WEEKLY_HOUR) {
+    const { data: recipients, error: wErr } = await sb.rpc("notify_weekly_recipients", { week_start: weekStart });
+    if (wErr) report.errors.push(wErr.message);
+    const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    for (const r of (recipients ?? []) as { user_id: string; display_name: string }[]) {
+      try {
+        const [{ data: review, error: e1 }, { data: open, error: e2 }] = await Promise.all([
+          sb.rpc("notify_week_review", { uid: r.user_id, since }),
+          sb.rpc("notify_open_tasks", { uid: r.user_id }),
+        ]);
+        if (e1) throw e1;
+        if (e2) throw e2;
+        const rv = (review ?? { done: [], team: [] }) as { done: OpenTask[]; team: WeekTeam[] };
+        const mail = weeklyMail(r.display_name, rv.done, (open ?? []) as OpenTask[], rv.team, today, appUrl);
+        const to = await emailOf(r.user_id);
+        if (mail && to) {
+          await send(to, mail);
+          report.weekly++;
+        }
+        await sb.rpc("notify_mark_weekly", { uid: r.user_id, today });
+      } catch (e) {
+        report.errors.push("Wochenrückblick: " + String(e));
+      }
+    }
+  }
+
+  // Fehler beim Versand auch in der Fehlerliste festhalten (werden beim nächsten Lauf gemailt)
+  for (const msg of report.errors.slice(0, 5)) {
+    await sb.rpc("report_error", { src: "function", msg: "E-Mail-Versand: " + msg.slice(0, 180), detail: msg });
   }
 
   return json(report);
