@@ -134,6 +134,11 @@ export function Board(props: Props) {
                     attachments={props.attachmentsOf?.(t.id) ?? 0}
                     selected={props.openId === t.id}
                     picked={props.selection?.ids.has(t.id)}
+                    onPick={
+                      props.selection && (props.selection.active || props.selection.ids.size > 0)
+                        ? () => props.selection!.toggle(t.id)
+                        : undefined
+                    }
                     readOnly={props.readOnly}
                     onOpen={(e) => (clickPicks(props.selection, e) ? props.selection!.toggle(t.id) : props.onOpen(t.id))}
                     onToggleDone={() => props.onToggleDone(t)}
@@ -409,6 +414,7 @@ export function TaskCard({
   attachments = 0,
   selected,
   picked = false,
+  onPick,
   readOnly = false,
   onOpen,
   onToggleDone,
@@ -426,6 +432,8 @@ export function TaskCard({
   selected: boolean;
   /** für „Mehrere bearbeiten“ ausgewählt */
   picked?: boolean;
+  /** Auswahlmodus: Kästchen oben rechts zum An-/Abwählen */
+  onPick?: () => void;
   readOnly?: boolean;
   onOpen: (e: React.MouseEvent) => void;
   onToggleDone: () => void;
@@ -454,14 +462,31 @@ export function TaskCard({
       style={{ background: colorful ? STATUS_TINT[task.status] : "var(--c-surface)" }}
     >
       {colorful && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5" style={{ background: st.color }} />}
-      {picked && (
-        <span aria-hidden className="absolute top-1.5 right-1.5 size-5 rounded-full bg-(--c-accent) text-white flex items-center justify-center">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12l5 5 9-10" />
-          </svg>
-        </span>
+      {(picked || onPick) && (
+        <button
+          type="button"
+          tabIndex={onPick ? 0 : -1}
+          disabled={!onPick}
+          onClick={(e) => {
+            e.stopPropagation();
+            onPick?.();
+          }}
+          aria-label={picked ? `${task.title} abwählen` : `${task.title} auswählen`}
+          aria-pressed={picked}
+          className="absolute z-10 top-1 right-1 size-8 flex items-center justify-center rounded-full cursor-pointer"
+        >
+          <span
+            className={`size-5 rounded-full flex items-center justify-center border-2 transition ${
+              picked ? "bg-(--c-accent) border-(--c-accent) text-white" : "bg-(--c-surface) border-(--c-line-hover) text-transparent hover:border-(--c-accent)"
+            }`}
+          >
+            <svg aria-hidden width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12l5 5 9-10" />
+            </svg>
+          </span>
+        </button>
       )}
-      <div className={`flex gap-2 p-3 ${colorful ? "pl-4" : ""}`}>
+      <div className={`flex gap-2 p-3 ${colorful ? "pl-4" : ""} ${picked || onPick ? "pr-9" : ""}`}>
         <button
           type="button"
           onClick={onToggleDone}
