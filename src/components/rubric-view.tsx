@@ -10,6 +10,7 @@ import { TaskDetail } from "@/components/task-detail";
 import { useAttachmentCounts } from "@/components/attachments";
 import { Board, NEW_TITLE, type BoardColumn } from "@/components/board";
 import { short, useUndo } from "@/components/undo";
+import { useNewTaskShortcut } from "@/components/shortcuts";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { TaskList, type Assignee, type Member } from "@/components/project-view";
 
@@ -136,6 +137,16 @@ export function RubricView(props: Props) {
       setOpenId(t.id);
     }
   }
+  // Taste N: neue Aufgabe – nur eindeutig, wenn die Rubrik genau ein Projekt hat
+  useNewTaskShortcut(
+    readOnly
+      ? null
+      : () => {
+          if (projects.length === 1) void createAndOpen(projects[0].id);
+          else if (!projects.length) return "In dieser Rubrik gibt es noch kein Projekt.";
+          else return "Hier sind mehrere Projekte – nimm „+ Aufgabe hinzufügen“ unter dem passenden Projekt.";
+        },
+  );
   // Fenster einer neuen Aufgabe ohne Titel und ohne Änderungen geschlossen: wieder entfernen
   function closeDetail(r?: { titled: boolean; touched: boolean }) {
     const id = openId;

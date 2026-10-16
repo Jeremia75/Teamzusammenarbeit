@@ -17,6 +17,7 @@ import { short, useUndo } from "@/components/undo";
 import { StatusBar, StatusLegend } from "@/components/status-bar";
 import { ProjectShare, type Guest } from "@/components/project-share";
 import { SaveAsTemplate } from "@/components/project-template";
+import { useNewTaskShortcut } from "@/components/shortcuts";
 
 export type Member = { id: string; name: string; color: string };
 export type Assignee = { task_id: string; user_id: string };
@@ -402,6 +403,15 @@ export function ProjectView(props: Props) {
       ...(col.status ? { status: col.status } : { section_id: col.sectionId ?? null }),
     });
   }
+  // Taste N: neue Aufgabe (auf der Tafel in die erste Spalte, sonst ans Ende)
+  useNewTaskShortcut(
+    readOnly
+      ? null
+      : () => {
+          if (view !== "timeline" && view !== "list" && columns[0]) void quickAdd(columns[0]);
+          else void createAndOpen();
+        },
+  );
   // Fenster einer neuen Aufgabe ohne Titel und ohne Änderungen geschlossen: wieder entfernen
   function closeDetail(r?: { titled: boolean; touched: boolean }) {
     const id = openId;

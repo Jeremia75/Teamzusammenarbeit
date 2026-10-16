@@ -7,6 +7,7 @@ import { NotificationPrompt } from "@/components/notification-prompt";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { SearchButton } from "@/components/search";
+import { Shortcuts, ShortcutsButton } from "@/components/shortcuts";
 import { AppearanceProvider, type BgImage } from "@/components/appearance-provider";
 import { sanitize } from "@/lib/appearance";
 
@@ -102,6 +103,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </svg>
             Hilfe
           </Link>
+          <ShortcutsButton />
           <Link
             href="/einstellungen"
             className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-(--c-text-2) hover:bg-(--c-bg) hover:text-(--c-ink)"
@@ -154,6 +156,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </nav>
 
       <main className="flex-[999_1_560px] min-w-0">{children}</main>
+      <Shortcuts />
       {user && <NotificationPrompt userId={user.id} email={user.email ?? ""} needed={!notify?.asked_at} />}
     </div>
     </AppearanceProvider>

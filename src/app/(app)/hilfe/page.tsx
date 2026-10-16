@@ -40,6 +40,7 @@ const TOPICS: [string, string][] = [
   ["projekte", "Projekte anlegen und ordnen"],
   ["rubrik-oeffnen", "Eine Rubrik öffnen"],
   ["suche", "Suchen"],
+  ["tasten", "Tastenkürzel"],
   ["woche", "Meine Woche"],
   ["aufgaben", "Aufgaben anlegen und bearbeiten"],
   ["dateien", "Dateien und Links anhängen"],
@@ -236,6 +237,19 @@ export default function HelpPage() {
           Buchstaben findet Projektraum passende Projekte, Aufgaben (auch in der Beschreibung), Kommentare sowie Dateien und Links.
         </p>
         <p>Mit den Pfeiltasten wählst du einen Treffer aus, mit der Eingabetaste öffnest du ihn. Mit Esc schließt du die Suche wieder.</p>
+      </Section>
+
+      <Section id="tasten" title="Tastenkürzel">
+        <p>
+          Am PC geht vieles schneller mit der Tastatur. Drück <K>?</K> (oder klick links auf <K>Tastenkürzel</K>), dann siehst du alle auf einen Blick.
+        </p>
+        <ul>
+          <li><K>N</K> legt im offenen Projekt eine neue Aufgabe an und öffnet gleich ihr Fenster.</li>
+          <li><K>/</K> öffnet die Suche, genau wie <K>Strg</K> + <K>K</K>.</li>
+          <li><K>G</K> und gleich danach <K>W</K> bringt dich zu „Meine Woche“, <K>G</K> <K>S</K> zur Startseite, <K>G</K> <K>P</K> zu den Protokollen, <K>G</K> <K>H</K> zur Hilfe, <K>G</K> <K>T</K> in den Papierkorb.</li>
+          <li><K>Strg</K> + <K>Z</K> macht den letzten Schritt rückgängig, solange unten die Meldung steht. <K>Esc</K> schließt ein offenes Fenster.</li>
+        </ul>
+        <p>Die einfachen Tasten wirken nur, wenn du gerade nicht in ein Feld schreibst. Beim Tippen passiert also nichts aus Versehen.</p>
       </Section>
 
       <Section id="woche" title="Meine Woche">

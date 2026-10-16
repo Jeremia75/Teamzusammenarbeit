@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { OPEN_SEARCH_EVENT } from "@/components/shortcuts";
 import { createClient } from "@/lib/supabase/client";
 import { statusOf } from "@/lib/labels";
 import type { TaskStatus } from "@/lib/database.types";
@@ -46,8 +47,13 @@ export function SearchButton() {
         setOpen(true);
       }
     };
+    const openIt = () => setOpen(true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_SEARCH_EVENT, openIt);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_SEARCH_EVENT, openIt);
+    };
   }, []);
   return (
     <>
