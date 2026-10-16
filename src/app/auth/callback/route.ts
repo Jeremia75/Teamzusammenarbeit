@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Ziel des Bestätigungslinks aus der Registrierungs-E-Mail
+// Ziel der Links aus den Mails von Supabase (Registrierung bestätigen, Passwort vergessen)
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
 
+  const next = searchParams.get("next");
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    // Abgelaufener oder schon benutzter Link (z. B. Passwort vergessen): zurück zur Anmeldung mit Hinweis
+    if (error) return NextResponse.redirect(`${origin}/login?fehler=link`);
+  } else if (searchParams.get("error")) {
+    return NextResponse.redirect(`${origin}/login?fehler=link`);
   }
-  const next = searchParams.get("next");
   return NextResponse.redirect(`${origin}${next && /^\/(?![\/\\])/.test(next) ? next : "/"}`);
 }

@@ -31,7 +31,9 @@ export async function middleware(request: NextRequest) {
 
   const isPublic =
     request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/auth");
+    request.nextUrl.pathname.startsWith("/auth") ||
+    request.nextUrl.pathname === "/impressum" ||
+    request.nextUrl.pathname === "/datenschutz";
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

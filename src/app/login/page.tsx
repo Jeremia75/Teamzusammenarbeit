@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -12,12 +13,21 @@ function nextPath() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Link aus einer Einladung: /login?modus=registrieren&email=…
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const mail = q.get("email");
+    if (mail) setEmail(mail);
+    if (q.get("modus") === "registrieren") setMode("signup");
+    if (q.get("fehler") === "link") setMessage("Der Link ist abgelaufen oder wurde schon benutzt. Fordere bitte einen neuen an.");
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,7 +35,17 @@ export default function LoginPage() {
     setMessage(null);
     const supabase = createClient();
 
-    if (mode === "login") {
+    if (mode === "reset") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/neues-passwort`,
+      });
+      // Immer die gleiche Antwort – so lässt sich nicht herausfinden, welche Adressen registriert sind
+      setMessage(
+        error && /rate|security purposes/i.test(error.message)
+          ? "Bitte warte kurz, bevor du noch einen Link anforderst."
+          : `Wenn ${email} bei Projektraum registriert ist, kommt gleich eine E-Mail mit einem Link. Schau auch im Spam-Ordner nach.`,
+      );
+    } else if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMessage("Anmeldung fehlgeschlagen: " + error.message);
       else router.replace(nextPath());
@@ -55,7 +75,11 @@ export default function LoginPage() {
       >
         <h1 className="text-2xl font-extrabold tracking-tight">Projektraum</h1>
         <p className="text-sm text-(--c-muted)">
-          {mode === "login" ? "Melde dich an." : "Lege ein neues Konto an."}
+          {mode === "login"
+            ? "Melde dich an."
+            : mode === "signup"
+              ? "Lege ein neues Konto an."
+              : "Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, mit dem du ein neues Passwort festlegst."}
         </p>
 
         {mode === "signup" && (
@@ -79,35 +103,64 @@ export default function LoginPage() {
             required
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Passwort
-          <input
-            type="password"
-            minLength={8}
-            className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
+        {mode !== "reset" && (
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            <span className="flex items-center justify-between">
+              Passwort
+              {mode === "login" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("reset");
+                    setMessage(null);
+                  }}
+                  className="text-sm font-semibold text-(--c-accent) min-h-9"
+                >
+                  Passwort vergessen?
+                </button>
+              )}
+            </span>
+            <input
+              type="password"
+              minLength={8}
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              className="h-11 rounded-lg border border-(--c-line) px-3 font-normal"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+        )}
 
         <button
           type="submit"
           disabled={busy}
           className="h-11 rounded-lg bg-(--c-ink) text-(--c-on-ink) font-bold disabled:opacity-60"
         >
-          {mode === "login" ? "Anmelden" : "Konto erstellen"}
+          {mode === "login" ? "Anmelden" : mode === "signup" ? "Konto erstellen" : "Link schicken"}
         </button>
 
-        {message && <p className="text-sm text-(--c-text-2)">{message}</p>}
+        {message && (
+          <p role="status" className="text-sm text-(--c-text-2)">
+            {message}
+          </p>
+        )}
 
         <button
           type="button"
-          onClick={() => setMode(mode === "login" ? "signup" : "login")}
+          onClick={() => {
+            setMode(mode === "login" ? "signup" : "login");
+            setMessage(null);
+          }}
           className="text-sm text-(--c-accent) font-semibold min-h-11"
         >
-          {mode === "login" ? "Noch kein Konto? Registrieren" : "Schon registriert? Anmelden"}
+          {mode === "login" ? "Noch kein Konto? Registrieren" : mode === "signup" ? "Schon registriert? Anmelden" : "Zurück zur Anmeldung"}
         </button>
+        <p className="text-xs text-(--c-muted) text-center">
+          <Link href="/impressum" className="underline underline-offset-2">Impressum</Link>
+          {" · "}
+          <Link href="/datenschutz" className="underline underline-offset-2">Datenschutz</Link>
+        </p>
       </form>
     </main>
   );
