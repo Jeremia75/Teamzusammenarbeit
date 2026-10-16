@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
 import { SearchButton } from "@/components/search";
 import { Shortcuts, ShortcutsButton } from "@/components/shortcuts";
+import { FeedbackButton } from "@/components/feedback";
 import { AppearanceProvider, type BgImage } from "@/components/appearance-provider";
 import { sanitize } from "@/lib/appearance";
 
@@ -104,6 +105,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Hilfe
           </Link>
           <ShortcutsButton />
+          <FeedbackButton />
           <Link
             href="/einstellungen"
             className="flex items-center gap-2.5 min-h-11 px-2 rounded-lg text-sm font-semibold text-(--c-text-2) hover:bg-(--c-bg) hover:text-(--c-ink)"

@@ -99,6 +99,15 @@ Deno.serve(async (req) => {
     await sb.rpc("report_error", { src: "function", msg: "Dateisicherung fehlgeschlagen", detail: String((e as Error)?.message ?? e) });
   }
 
+  // 0e) Aufräumen laut Datenschutzerklärung: Fehlerprotokolle und nicht angenommene Einladungen nach 90 Tagen
+  try {
+    const cut = new Date(Date.now() - 90 * 864e5).toISOString();
+    await sb.from("app_errors").delete().lt("last_seen", cut);
+    await sb.from("invitations").delete().is("accepted_at", null).lt("created_at", cut);
+  } catch (e) {
+    console.error("Aufräumen", e);
+  }
+
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) return json({ trashPurged, backup, files, skipped: "RESEND_API_KEY fehlt – keine E-Mails verschickt" });
   const from = Deno.env.get("MAIL_FROM") ?? "Projektraum <onboarding@resend.dev>";

@@ -570,10 +570,12 @@ export default function HelpPage() {
 
       <Section id="team" title="Im Team arbeiten">
         <p>
-          <strong>Jemanden einladen.</strong> Die Person legt sich zuerst selbst ein Konto in Projektraum an. Danach öffnest du in der
-          Übersicht unter dem Firmenbereich <K>Mitglieder verwalten</K>, trägst ihre E-Mail-Adresse ein und klickst auf{" "}
-          <K>Hinzufügen</K>. Ab dann sieht sie alle Projekte dieses Bereichs. Deinen privaten Bereich sieht sie nie. Daneben wählst du,
-          was sie darf – mehr dazu unter <a href="#rollen">Rollen</a>.
+          <strong>Jemanden einladen.</strong> Öffne in der Übersicht unter dem Firmenbereich <K>Mitglieder verwalten</K>, trag die
+          E-Mail-Adresse ein und klick auf <K>Hinzufügen</K>. Daneben wählst du, was die Person darf – mehr dazu unter{" "}
+          <a href="#rollen">Rollen</a>. Hat sie schon ein Konto, sieht sie sofort alle Projekte dieses Bereichs. Hat sie noch keines,
+          bekommt sie eine Einladung per E-Mail. Sobald sie sich mit genau dieser Adresse registriert und den Bestätigungslink anklickt, ist
+          sie dabei. Bis dahin steht sie unter „Eingeladen, noch nicht registriert“; dort kannst du die Einladung erneut schicken oder
+          zurückziehen. Deinen privaten Bereich sieht sie nie.
         </p>
         <p>
           <strong>Aufgaben verteilen.</strong> Öffne eine Aufgabe und klicke unter <strong>Verantwortlich</strong> auf die Person. Ihr
@@ -862,6 +864,14 @@ export default function HelpPage() {
         <dl className="flex flex-col gap-4">
           {[
             ["Wer sieht meine privaten Projekte?", "Nur du. Der Bereich Privat gehört dir allein."],
+            [
+              "Ich habe mein Passwort vergessen.",
+              "Klick auf der Anmeldeseite auf „Passwort vergessen?“, gib deine E-Mail-Adresse ein und öffne den Link in der Mail. Dort legst du ein neues Passwort fest. Der Link gilt nur einmal und nur kurze Zeit.",
+            ],
+            [
+              "Mir fehlt etwas oder etwas stört mich.",
+              "Klick links in der Seitenleiste auf „Feedback geben“ und schreib es in ein paar Worten. Jede Rückmeldung kommt an und wird gelesen.",
+            ],
             [
               "Ich habe aus Versehen etwas abgehakt, verschoben oder gelöscht.",
               "Gleich danach erscheint unten kurz eine Meldung mit Rückgängig. Ein Klick darauf (oder Strg+Z) macht es wieder rückgängig. Ist die Meldung schon weg: Abgehakte Aufgaben einfach nochmal anklicken, gelöschte findest du 30 Tage lang im Papierkorb.",
